@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `ff6a26c22a36`  
+**Commit at time of writing:** `588a9764691d`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2015,6 +2015,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+588a976  2026-09-12  docs: GUIDE and CHANGELOG catch up with the closed work package
+f572c5b  2026-09-12  docs: the record catches up with C3' and C1'
 ff6a26c  2026-09-12  feat: C1' -- the nondeterminism, as a relation, proved to collapse
 e97593b  2026-09-12  feat: C3' -- the bound is attained for every n, with no cascade traced
 e2ad74f  2026-09-12  docs: CHANGELOG.md -- the account you want after a git pull
@@ -2181,13 +2183,13 @@ were re-sized along the way.
 | B5 | ~~Lemma 3.7 — the `+1/n` inductive step~~ | ✅ | §3.27 — `leftSyncAt_next`, on the real-time layer §3.26 |
 | **B6** | ~~Assemble `2 − 1/n`~~ | ✅ | **§3.28 — `convergesBy`** |
 | B7 | ~~The symmetric half~~ | ✅ | §3.23 — `rightSync_iff_leftSync_mirror` |
-| **C** | **Fidelity** | | |
+| **C** | ~~**Fidelity**~~ | ✅ | every departure from the paper's model, closed |
 | C1 | ~~Nondeterminism: measure it~~ | ✅ | §3.31 — the priority order is forced in 7 of 8 cases |
 | **C1′** | ~~Nondeterminism: `step` as a **relation**~~ | ✅ | **§3.33 — `convergesBy_of_isRun`.** The relation collapses to the function on reachable states |
 | C2 | ~~Converging `n = 3` trace; a genuine three-way meeting~~ | ✅ | §3.29 |
 | C3 | ~~An `ε`-family showing the bound is *attained*~~ | ✅ | §3.30, at `n = 2` |
 | **C3′** | ~~Sharpness for general `n`~~ | ✅ | **§3.32 — `bound_sharp_general`**, with no cascade traced |
-| **D** | **Cleanup** | | |
+| **D** | ~~**Cleanup**~~ | ✅ | complete |
 | D1 | ~~Remove unused definitions~~ | ✅ | `Config.Together`, `Config.Valid` gone |
 | D2 | ~~Make `HaveMetBy` locally checkable~~ | ✅ | **not needed** — B3 and B5 both went through with the history-shaped definition; see below |
 
