@@ -202,6 +202,33 @@ Recorded because each cost real effort to worry about.
 
 ---
 
+## 8a. A lemma that read as obvious and was false
+
+Attempting the last case of Lemma 3.2, I aimed at: *a co-located pair that ends
+a step heading apart is sitting exactly on the boundary they share.* Heading
+apart is what a pair does after **separating**, and separations happen on the
+boundary. Obvious.
+
+It is false. Four drones stacked at one point, heading alternately outward: the
+two middle drones each escort the *outward* neighbour, so the middle pair
+splits at a point that is not their boundary. `Dpss/Counterexample.lean` builds
+it and proves the refutation.
+
+The statement needs **reachability** — in a state the algorithm can actually
+produce, a pair heading apart has just separated. But that must be carried as
+an induction hypothesis, not proved pointwise.
+
+> **Lesson.** When a case analysis stubbornly refuses to close, consider that
+> the goal may be false rather than that you are proving it badly. Building the
+> counterexample took less time than the failed proof attempt, and unlike the
+> attempt it produced something permanent.
+
+This is also the nondeterminism the paper flags — three or more drones
+converging with a middle drone free to choose — showing up as a concrete
+obstruction rather than a footnote.
+
+---
+
 ## 9. Two false lemmas Lean caught
 
 Worth recording that the method works, on exactly the class of error the paper

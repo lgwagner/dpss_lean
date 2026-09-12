@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `2e8b5653ee21`  
+**Commit at time of writing:** `37a715921f2f`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**325 theorems**, all `sorry`-free, across 19 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**345 theorems**, all `sorry`-free, across 20 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -681,6 +681,46 @@ branches closing because **a meeting pair always agrees on where to go**
 strengthened to carry the negations of the earlier branches, which `split_ifs`
 supplies but the current statements discard.
 
+### 3.20 `Dpss/Counterexample.lean` — **a lemma that is false**
+
+The target of §3.19 was:
+
+> *a co-located pair that ends a step heading apart is sitting exactly on the
+> boundary they share.*
+
+It reads as obviously true — heading apart is what a pair does **after
+separating**, and separations happen on the boundary. Working the case analysis
+with the branch negations carried, one combination refused to close. It refused
+because **the statement is false**, and this file proves it so.
+
+Four drones stacked at `3/8`, heading alternately:
+
+    drone 0 →     drone 1 ←     drone 2 →     drone 3 ←        all at 3/8
+
+The middle pair is `(1, 2)`; their shared boundary is `1/2`.
+
+* Drone 1 is meeting its **left** neighbour, and `3/8` is past drone 1's own
+  left endpoint `1/4`, so it escorts **leftward**.
+* Drone 2 is meeting its **right** neighbour, and `3/8` is short of drone 2's
+  right endpoint `3/4`, so it escorts **rightward**.
+
+Neither is separating from the other — that would need them at `1/2`. So the
+pair leaves the step heading apart at a point that is **not** their shared
+boundary. `not_forall_apart_implies_on_boundary` states the refutation.
+
+**What it means.** The lemma needs **reachability**. In a state the algorithm
+can actually produce, a pair heading apart has just separated, so the statement
+is presumably true where it is needed — but it must be carried as an induction
+hypothesis, not proved pointwise. My attempt did neither, which is why it would
+not close.
+
+It is also exactly the nondeterminism Avigad–van Doorn flag: three or more
+drones converging, a middle drone free to escort either neighbour. Here *two*
+middle drones each pick the outward neighbour and the pair splits early.
+
+**Second time in this project** that reaching for a concrete instance overturned
+something that read as obvious — the first was the bounce bug (§3.11).
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -849,6 +889,26 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.ordered_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_mono_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one'' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.hn4' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.h12' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.nextIdx_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_dir_f0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_dir_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_dir_f2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_dir_f3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.leftEnd_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.commonEnd_f0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.commonEnd_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.commonEnd_f2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_not_on_boundary' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_meetLeft_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_meetRight_f2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_newDir_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.cascade_newDir_f2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.apart_off_boundary' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Counterexample.not_forall_apart_implies_on_boundary' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.advance_time' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.advance_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.advance_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1138,7 +1198,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**325/325 clean — `sorryAx` appears zero times.**
+**345/345 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1188,6 +1248,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+37a7159  2026-09-12  feat: why a drone ends up heading where it does
 2e8b565  2026-09-12  feat: Lemma 3.6, unconditionally
 0573e4d  2026-09-12  feat: a pinned left-synchronized drone freezes the clock
 9cc4325  2026-09-12  feat: Lemmas 3.3 and 3.4, and the have-met predicate
@@ -1243,7 +1304,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | A3 | ~~Consecutive turns `1/n` apart~~ | ✅ | §3.15 |
 | A4 | ~~Assemble `NonZeno`~~ | ✅ | **§3.16 — done** |
 | **B** | **Theorem 2.1** | | *the headline* |
-| B1 | Lemma 3.2 — `BothLeftApart` case 3 only | **L** | §3.13; cases 1 and 2 now closed |
+| B1 | Lemma 3.2 — `BothLeftApart` case 3 | **L** | §3.13; needs a *reachability* invariant, see §3.20 |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
 | B3 | Lemma 3.5 — every pair has met by time 1 | **L** | `HaveMetBy` now defined (§3.17); the proof is not |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
