@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `beb1ee8ce590`  
+**Commit at time of writing:** `9f72d4cb3153`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -35,10 +35,10 @@ Target theorem, from Avigad–van Doorn (arXiv:2008.04262) Theorem 2.1:
 | Stage | Deliverable | State |
 |---|---|---|
 | 0 | Toolchain, Mathlib project, papers read, `[verify]` items resolved | **done** |
-| 1 | Definitional layer: state, events, trajectory, order invariant, non-Zeno | **in progress** — see below |
-| 2 | `Synchronized` defined; Theorem 2.1 stated | not started |
+| 1 | Definitional layer: state, events, runs, order invariant, non-Zeno | **in progress** — non-Zeno outstanding |
+| 2 | `Synchronized` defined; Theorem 2.1 stated | **done** |
 | 3 | Sanity tests at `n = 2, 3`; refute the false phase-1 bound | not started |
-| 4 | Close the `2 − 1/n` proof | stretch, not started |
+| 4 | Close the `2 − 1/n` proof | Lemma 3.1 done; 3.2–3.8 not started |
 | 5 | Phase-1 upper bound (open problem) | explicitly out of scope |
 
 Stage 1 broken down:
@@ -48,15 +48,16 @@ Stage 1 broken down:
 | Geometry: assigned intervals, endpoints | done |
 | `Config` (time, positions, directions) | done |
 | Motion between events (`advance`) | done |
-| Ordering invariant under motion | **done — main result so far** |
+| Ordering invariant under motion | done |
 | The three events as state transformations | done |
 | Per-event scheduling (when each event comes due) | done |
 | Combining them into `timeToNextEvent` (a minimum) | done |
 | `timeToNextEvent` strictly positive (local non-Zeno) | done |
-| `step` and runs | **not started** |
-| Non-Zeno proper (uniform lower bound on steps) | **not started** |
-| Runs / event sequences | **not started** |
-| Non-Zeno | **not started** |
+| `step` and runs | done |
+| Drones stay on the perimeter (`onPerimeter_step`) | done |
+| Lemma 3.1: where a drone may turn | done |
+| Crossing an interval costs `1/n` of time | done |
+| **Non-Zeno proper (the counting step)** | **not started** |
 
 ---
 
@@ -188,64 +189,118 @@ nothing more. Infinitely many strictly positive steps can still sum to a finite
 time — that is exactly how Zeno behaviour works. Ruling it out needs a uniform
 lower bound on the step sizes, following Avigad–van Doorn §2. Not started.
 
+### 3.6 `Dpss/Step.lean` — one step of the system
+
+Fly to the next event, then let everything due fire. Because several events can
+come due at once, each drone's post-event direction is a function of the whole
+configuration (`newDir`) rather than a composition of updates, so simultaneity
+is automatic and no ordering of updates needs justifying.
+
+`newDir` resolves competition as **border > separation > meet**. Most of these
+can never compete: a drone cannot meet both neighbours (that needs opposite
+headings), nor separate from both (the two points differ). A separation and a
+meet *can* coincide — the genuine ambiguity the paper leaves open — and giving
+separation priority is one resolution. See gap 7.
+
+Proved: `adjOrdered_step` (a step never flies past a collision, so nobody
+overtakes) and `step_time_lt` (time strictly advances when nothing was due).
+`run` is the orbit of `step`; `NonZeno` is *stated*.
+
+### 3.7 `Dpss/Turning.lean` — **Lemma 3.1**
+
+The first result here that is a named theorem *of the paper*.
+
+- `rightEnd_le_pos_of_turnsLeft` — a rightward drone can only turn left at or
+  beyond its right endpoint.
+- `pos_le_leftEnd_of_turnsRight` — the mirror image.
+
+Every case is forced: a border turn is at the perimeter edge, past the
+endpoint; a separation is exactly on it; a meet reverses the drone only if the
+pair met beyond it; and the remaining events cannot apply to a drone heading
+that way at all.
+
+`turn_separation` — a drone turning right and later left has crossed its entire
+interval, a distance of `1/n`.
+
+### 3.8 `Dpss/NonZeno.lean` — crossing costs time
+
+- `pos_sub_eq_of_dirConst` — while a drone holds its heading, its position
+  advances exactly as time does. This is where the normalization "one unit of
+  distance per unit of time" is finally cashed in.
+- `time_advance_of_crossing` — therefore crossing the interval costs at least
+  `1/n` of time. With Lemma 3.1: **consecutive turns of one drone are at least
+  `1/n` apart.**
+
+A subtle off-by-one is documented in the file. A step flies *first* and turns
+*afterwards*, so a drone turning during step `k` flew with heading
+`(run k).dir i` but turned at position `(run (k+1)).pos i`. Getting that
+backwards would have silently wrecked every bound in the file.
+
+### 3.9 `Dpss/Synchronization.lean` — the goal, stated
+
+- `onPerimeter_step` — **the first genuine invariant of the running system**
+  rather than a fact about one step in isolation. Drones never leave `[0,1]`,
+  because a step never flies longer than any drone's time to the border it is
+  heading for.
+- `LeftSync` / `RightSync` / `Sync` / `AllSync` — the paper's safety property,
+  quantified over run indices. Not a weakening: motion between events is
+  monotone, so a drone inside its interval at every event time is inside it at
+  *every* time.
+- **`ConvergesBy`** — Theorem 2.1 as a formal statement. A `Prop`-valued
+  definition rather than a `theorem` with a `sorry`, so the repository stays
+  provably `sorry`-free while still recording the target precisely.
+- `convergesBy_of_one` — the `n = 1` case, **proved**. Mathematically trivial,
+  but it confirms the definitions are not mis-signed or vacuous.
+
 ---
 
 ## 4. What is **not** proved — read this part
 
-This is the honest gap list. Nothing below is done.
+This is the honest gap list, ordered by importance.
 
-1. **There is still no running system.** `timeToNextEvent` now exists and is
-   proved strictly positive, but **nothing iterates it**. There is no `step`
-   function and no notion of a run, so every result so far still concerns *one*
-   flight or *one* event in isolation. This is the immediate next target.
+1. **Non-Zeno: the counting step is missing.** The geometry is done —
+   consecutive turns of one drone are at least `1/n` apart. What remains: every
+   event turns at least one drone, each drone turns at most once per `1/n`,
+   therefore only finitely many events fit in a bounded interval. That needs a
+   pigeonhole over `Fin n`, and it also needs gap 2, since otherwise a step
+   might fly to a deadline where nothing actually fires. **This is the headline
+   opportunity (§5) and it is not finished.**
 
-2. **Non-Zeno is not proved, and `timeToNextEvent_pos` is not it.** Strictly
-   positive steps can still sum to a finite time — that is exactly how Zeno
-   behaviour works. What is missing is a uniform lower bound on step size. This
-   is the headline opportunity (§5) and it remains open.
+2. **The minimum is not yet proved genuine.** `timeToNextEvent` minimises over
+   `borderTime` for *every* drone, including interior ones where no border
+   event is reachable. The local domination lemmas are proved, anchoring every
+   spurious deadline at an end drone whose border event *is* genuine. **The
+   chaining into "`timeToNextEvent` is attained by a genuine event" is not
+   done** — it needs argmin machinery that does not exist here.
 
-3. **A modelling claim, now half proved.** `NextEvent.lean` computes
-   `borderTime` for *every* drone, including interior ones for which no border
-   event is reachable — a neighbour is in the way. The worry is that such a
-   number becomes the minimum, making `timeToNextEvent` report a deadline with
-   no event behind it.
+   Instructive: my first attempt at the rightward version of this was
+   **false**, and Lean caught it. `droneNextTime j` only consults the pair
+   `(j, j+1)`, so a meet with the *left* neighbour is accounted for at `j-1`,
+   never at `j`.
 
-   The **local** steps are now proved:
-   `droneNextTime_le_borderTime_of_next_left` (a leftward drone's border
-   deadline is at least its left neighbour's deadline),
-   `droneNextTime_le_borderTime_of_self_right` (the mirror image, when the
-   right neighbour also heads right), and
-   `meetTime_le_borderTime_of_approaching` (when a pair is closing, the left
-   drone's deadline is realised by the meet — a genuine event). Chaining these
-   anchors every spurious border deadline at an end drone, whose border event
-   *is* genuine.
+3. **`EscortsCoherent` is not proved preserved by a step.** It is assumed
+   wherever needed. A meet event does establish it, but that it survives an
+   arbitrary step — cascades included — is unproved. This is the weakest link
+   in the invariant set.
 
-   **The chaining itself is not formalized.** The statement that wants proving
-   is "`timeToNextEvent` is attained by a genuine event", and it needs argmin
-   machinery that does not exist here yet. So the argument is no longer bare
-   prose, but it is not finished either.
+4. **Theorem 2.1 is stated but not proved**, except at `n = 1`. Lemma 3.1 is
+   done; **Lemmas 3.2 through 3.8 are untouched.** Lemma 3.5 in particular
+   ("every adjacent pair has met by time 1") is the uniform timing result that
+   makes the bound `n`-independent, and nothing here approaches it.
 
-   Worth recording how this went: my first attempt at the rightward lemma was
-   simply **false**, and Lean caught it. I had forgotten that `droneNextTime j`
-   only ever consults the pair `(j, j+1)`, so a meet with the *left* neighbour
-   is accounted for at `j-1` and never at `j`. The asymmetry between the two
-   lemmas is real, not an oversight.
+5. **No sanity tests. The model has never been run.** Nothing is instantiated
+   at `n = 2` or `n = 3`. The only evidence the definitions are non-vacuous is
+   local: the `meetTime` checks (§3.2), the schedule-correctness theorems
+   (§3.4), and `n = 1` (§3.9). That is meaningfully more than nothing, and
+   meaningfully less than having executed the system once.
 
-4. **`Synchronized` is not defined**, so Theorem 2.1 is not even *stated* yet.
-   That is Stage 2.
+6. **The paper's sharp `n = 2` and `n = 3` values are not checked.** They would
+   make excellent regression tests (`2` and `2.5` for `n = 2`).
 
-5. **No sanity tests.** Nothing has been instantiated at `n = 2` or `n = 3`.
-   The model has not been run even once. Until Stage 3 there is no evidence the
-   definitions are non-vacuous *as a system* — only the local checks in §3.2
-   and §3.4.
-
-6. **None of Lemmas 3.1–3.8 are formalized.** The proof skeleton is recorded in
-   `PLAN.md` §3 but not touched in Lean.
-
-7. **The nondeterminism is not modelled.** When three or more drones converge,
-   the paper leaves open which neighbour the middle drone escorts. My events
-   are currently deterministic per-pair. This does not bite in phase 2, but a
-   fully faithful model needs a relation, not a function.
+7. **The nondeterminism is not modelled.** When three or more drones converge
+   the paper leaves open which neighbour the middle one escorts, and notes the
+   strongest bound quantifies over all resolutions. `newDir` picks one. A fully
+   faithful model needs a relation, not a function.
 
 8. **Unused definitions.** `Config.Together` and `Config.Valid` are defined but
    no theorem uses them.
@@ -297,6 +352,17 @@ argument for it (§2 of their paper) but never mechanize it. So:
 Formalizing AvD's argument in Lean closes that gap. It is a genuine
 contribution rather than a reproduction, it sits in Stage 1, and **it stands
 even if the `2 − 1/n` proof never closes.**
+
+**A departure worth flagging.** I am *not* following the paper's own non-Zeno
+argument. It rests on the claim that "if drone `i+1` makes two consecutive left
+turns, then drone `i` must turn right in the interim", which it calls not hard
+to show and does not show. I could not reconstruct it: a right turn by `i+1`
+comes either from separating from `i` — at which instant `i` turns **left** —
+or from meeting `i` left of their shared boundary, at which instant `i` does
+not turn at all. It may still be true, but formalizing an unverified sketch is
+the one move this particular project cannot afford. The route taken instead
+(interval-crossing, §3.7–3.8) is self-contained and reuses a lemma the
+convergence proof needs anyway.
 
 The authors invite exactly this: *"given sufficient interest and resources, a
 proper measure for step-time could be developed and used to dispatch this
@@ -491,6 +557,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+9f72d4c  2026-09-12  feat: Stage 2 -- synchronization defined, Theorem 2.1 stated
 beb1ee8  2026-09-12  feat: crossing an interval costs at least 1/n of time
 8213bd8  2026-09-12  feat: Lemma 3.1 -- where a drone is allowed to turn
 f07504a  2026-09-12  feat: step function and runs
@@ -514,11 +581,13 @@ bcdb11f  2026-09-11  Create README.md
 
 ## 9. Next steps, in order
 
-1. ~~Constrain the border predicates.~~ **Done** — `Schedule.lean`.
-2. ~~`timeToNextEvent`, proved strictly positive.~~ **Done** — `NextEvent.lean`.
-3. Finish gap 3: chain the local domination lemmas into "`timeToNextEvent` is
-   attained by a genuine event".
-4. `step` and runs: iterate event-to-event.
-5. Non-Zeno proper, following AvD §2. The load-bearing step is: *if drone `i+1`
-   makes two consecutive left turns, drone `i` must turn right in between.*
-6. Then Stage 2: define `Synchronized`, state Theorem 2.1.
+1. ~~Border predicates, `timeToNextEvent`, `step` and runs, Lemma 3.1,
+   `Synchronized`, Theorem 2.1 stated.~~ **All done.**
+2. **Finish non-Zeno** (gap 1): every event turns a drone; pigeonhole over
+   `Fin n`; conclude finitely many events per bounded interval.
+3. Prove `EscortsCoherent` preserved by a step (gap 3), so the invariants close
+   under iteration.
+4. Chain the domination lemmas into "the minimum is genuine" (gap 2).
+5. Stage 3: instantiate at `n = 2, 3`, run the model, check the paper's sharp
+   values, and refute the known-false phase-1 bound.
+6. Lemmas 3.2 → 3.7, then Theorem 2.1 itself.
