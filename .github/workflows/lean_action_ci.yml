@@ -5,11 +5,8 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read # Read access to repository contents
-  pages: write # Write access to GitHub Pages
-  id-token: write # Write access to ID tokens
+  contents: read
 
 jobs:
   build:
@@ -17,5 +14,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+
+      # Builds the project against the pinned Mathlib. Fails on any error.
       - uses: leanprover/lean-action@v1
-      - uses: leanprover-community/docgen-action@v1
+
+      # A build can succeed while a proof is stubbed out with `sorry`.
+      # This step asks Lean which axioms each theorem actually depends on and
+      # fails if any depends on `sorryAx`. See STATUS.md §6-7.
+      - name: Axiom audit (no theorem may depend on sorryAx)
+        run: python3 scripts/audit.py
+
+      # Belt and braces: catch a `sorry` in the sources directly.
+      - name: No `sorry` in sources
+        run: |
+          if grep -rn "sorry" Dpss/; then
+            echo "::error::found 'sorry' in Dpss/"
+            exit 1
+          fi
+          echo "no 'sorry' found"
