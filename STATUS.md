@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `4c4fe2d38bd6`  
+**Commit at time of writing:** `69e6577973cd`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -70,7 +70,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**273 theorems**, all `sorry`-free, across 13 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 161 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**278 theorems**, all `sorry`-free, across 13 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -413,12 +413,39 @@ formalize directly. The same content packs into a single number, the pair's
   synchronized**.
 - `leftSync_of_balanceNonneg` — **Lemma 3.2, modulo one obligation.**
 
-That obligation is `BalanceNonneg`: the balance, once zero, never goes
-negative. It is written as a *definition*, not assumed as a hypothesis, so it
-stays visible as open and cannot be used by accident. The danger it rules out
-is both drones heading left at once, which drives the balance down at rate 2 —
-and excluding that is precisely the timing argument the paper draws a picture
-for.
+#### The obligation, reduced to one configuration
+
+`BalanceNonneg` — the balance, once zero, never goes negative — is written as a
+*definition*, not assumed as a hypothesis, so it stays visible as open and
+cannot be used by accident.
+
+It is now narrowed to a single named configuration class. The balance falls
+only when both drones head left; and when both head left while **co-located**
+they are escorting, so the scheduler cannot run the step past their separation,
+which is exactly where the balance reaches zero. `pairBalance_nonneg_step`
+proves all of that. What is left is:
+
+> **`BothLeftApart`** — both drones of the pair heading left *while apart*.
+> The only way the balance can go negative.
+
+`balanceNonneg_of_never_bothLeftApart` closes the loop: rule that class out and
+the balance stays nonnegative forever, hence Lemma 3.2.
+
+Two further pieces of the timing argument are proved:
+`pos_eq_leftEnd_of_turnsRightAt_of_leftSync` — **a left-synchronized drone
+turns round exactly at its left endpoint** (Lemma 3.1 puts the turn at or
+before it; synchronization forbids going beyond), and its mirror image. That is
+the paper's one-line *"since it is left synchronized, we know it is at its left
+endpoint"*, and it is what fixes the drone's turn time at exactly `1/n` after
+leaving the boundary — hence no later than its neighbour's.
+
+**What remains is genuinely the hard step.** Ruling out `BothLeftApart` needs
+the phase relationship between the two drones, not just their positions: after
+separating they set off from the same point in opposite directions, drone `j`
+must turn at exactly `1/n` while `j+1` cannot turn before `1/n`, so `j` turns
+first and the pair never both heads left while apart. Formalizing that requires
+tracking elapsed time since the separation for both drones. It is the **L** in
+the work package, and it is where the paper draws its figure.
 
 ---
 
@@ -775,6 +802,11 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.commonEnd_le_pos_of_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_neg_of_coLocated_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftEnd_le_pos_of_pairBalance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_eq_two_mul_separationTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_nonneg_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_leftEnd_of_turnsRightAt_of_leftSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_rightEnd_of_turnsLeftAt_of_rightSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.balanceNonneg_of_never_bothLeftApart' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_balanceNonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -825,7 +857,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**273/273 clean — `sorryAx` appears zero times.**
+**278/278 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -875,6 +907,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+69e6577  2026-09-12  feat: the pair balance -- Lemma 3.2, modulo one invariance
 4c4fe2d  2026-09-12  feat: three drones -- the first case where the middle-drone machinery runs
 f268410  2026-09-12  feat: a converging n = 2 trace, checked against the paper's bound
 f551b06  2026-09-12  feat: a complete n = 2 trace -- synchronized forever, period 1
@@ -916,7 +949,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | A3 | Pigeonhole: `k` steps ⟹ some drone turns ≥ `k/n` times | M | |
 | A4 | Assemble `NonZeno` | S | |
 | **B** | **Theorem 2.1** | | *the headline* |
-| B1 | Lemma 3.2 — the `BalanceNonneg` invariance | **L** | §3.13 does the rest |
+| B1 | Lemma 3.2 — rule out `BothLeftApart` | **L** | §3.13 reduces the whole lemma to this |
 | B2 | Lemmas 3.3, 3.4 — consequences of 3.2 | S | |
 | B3 | Lemma 3.5 — every pair has met by time 1 | **L** | makes the bound `n`-independent |
 | B4 | Lemma 3.6 — turn persistence | M | |

@@ -126,6 +126,104 @@ theorem leftEnd_le_pos_of_pairBalance {c : Config n} {i : Fin n}
   · linarith
   · linarith
 
+/-! ## What can drive the balance down
+
+The balance changes at `sign i + sign (i+1)`, so it can only *fall* when both
+drones head left. And when both head left while **co-located**, they are
+escorting — so the scheduler will not let the step run past their separation,
+which is exactly where the balance reaches zero. It stops there.
+
+That leaves one configuration class, and only one. -/
+
+/-- Both drones of the pair heading left while apart. **The only way the
+balance can go negative.** -/
+def BothLeftApart (c : Config n) (i : Fin n) (h : i.val + 1 < n) : Prop :=
+  c.dir i = Dir.left ∧ c.dir (nextIdx i h) = Dir.left ∧ ¬ c.CoLocated i h
+
+/-- An escorting pair's balance is exactly twice its separation deadline. So
+"the step does not overshoot the separation" and "the step does not drive the
+balance negative" are the *same statement*. -/
+theorem pairBalance_eq_two_mul_separationTime {c : Config n} {i : Fin n}
+    {h : i.val + 1 < n} (he : c.Escorting i h) (hd : c.dir i = Dir.left) :
+    c.pairBalance i h = 2 * c.separationTime i := by
+  have hco : c.gap i h = 0 := he.1
+  unfold gap at hco
+  unfold pairBalance separationTime
+  rw [hd, Dir.sign_left]
+  have hEq : c.pos (nextIdx i h) = c.pos i := by linarith
+  rw [hEq]
+  ring
+
+/-- **A step cannot drive the balance negative, except from the one bad class.** -/
+theorem pairBalance_nonneg_step {c : Config n} (hn : 0 < n) (hi : c.Invariant)
+    {i : Fin n} {h : i.val + 1 < n} (hb : 0 ≤ c.pairBalance i h)
+    (hnb : ¬ c.BothLeftApart i h) : 0 ≤ (c.step hn).pairBalance i h := by
+  have hdt : 0 ≤ c.timeToNextEvent hn :=
+    timeToNextEvent_nonneg hn hi.onPerimeter hi.adjOrdered hi.escortsCoherent
+  have hev : (c.step hn).pairBalance i h
+      = c.pairBalance i h
+        + ((c.dir i).sign + (c.dir (nextIdx i h)).sign) * c.timeToNextEvent hn :=
+    pairBalance_advance c _ i h
+  rw [hev]
+  rcases Dir.eq_left_or_right (c.dir i) with hL | hR
+  · rcases Dir.eq_left_or_right (c.dir (nextIdx i h)) with hL2 | hR2
+    · -- both heading left: they must be co-located, hence escorting, and the
+      -- scheduler stops them exactly at the boundary
+      have hco : c.CoLocated i h := by
+        by_contra hnc
+        exact hnb ⟨hL, hL2, hnc⟩
+      have he : c.Escorting i h := ⟨hco, by rw [hL, hL2]⟩
+      have hbal : c.pairBalance i h = 2 * c.separationTime i :=
+        pairBalance_eq_two_mul_separationTime he hL
+      have hbound : c.timeToNextEvent hn ≤ c.separationTime i :=
+        le_trans (timeToNextEvent_le hn i) (droneNextTime_le_separationTime he)
+      rw [hL, hL2, Dir.sign_left, hbal]
+      linarith
+    · -- opposite headings: the balance is untouched
+      rw [hL, hR2, Dir.sign_left, Dir.sign_right]
+      linarith
+  · rcases Dir.eq_left_or_right (c.dir (nextIdx i h)) with hL2 | hR2
+    · rw [hR, hL2, Dir.sign_left, Dir.sign_right]
+      linarith
+    · -- both heading right: the balance only grows
+      rw [hR, hR2, Dir.sign_right]
+      linarith
+
+/-! ## What left synchronization buys
+
+The timing argument behind Lemma 3.2 turns on knowing *exactly when* drone `j`
+turns around, not merely that it does. Left synchronization supplies that, and
+the paper says so in one line: *"Since it is left synchronized, we know it is at
+its left endpoint."*
+
+Here is that line, proved. -/
+
+/-- **A left-synchronized drone turns round exactly at its left endpoint.**
+
+Lemma 3.1 puts the turn at or *before* the endpoint; left synchronization
+forbids going beyond it. Together they pin it precisely — which is what makes
+the drone's turn time exactly `1/n` after it set off from the boundary, and
+hence no later than its right-hand neighbour's. -/
+theorem pos_eq_leftEnd_of_turnsRightAt_of_leftSync {c : Config n} (hn : 0 < n)
+    {i : Fin n} {k j : ℕ} (hsync : LeftSync c hn i k) (hkj : k ≤ j + 1)
+    (ht : TurnsRightAt c hn i j) :
+    (c.run hn (j + 1)).pos i = leftEnd i := by
+  have hle : (c.run hn (j + 1)).pos i ≤ leftEnd i :=
+    pos_le_leftEnd_of_turnsRightAt hn ht
+  have hge : leftEnd i ≤ (c.run hn (j + 1)).pos i := hsync (j + 1) hkj
+  linarith
+
+/-- Symmetrically, a right-synchronized drone turns round exactly at its right
+endpoint. -/
+theorem pos_eq_rightEnd_of_turnsLeftAt_of_rightSync {c : Config n} (hn : 0 < n)
+    {i : Fin n} {k j : ℕ} (hsync : RightSync c hn i k) (hkj : k ≤ j + 1)
+    (ht : TurnsLeftAt c hn i j) :
+    (c.run hn (j + 1)).pos i = rightEnd i := by
+  have hge : rightEnd i ≤ (c.run hn (j + 1)).pos i :=
+    rightEnd_le_pos_of_turnsLeftAt hn ht
+  have hle : (c.run hn (j + 1)).pos i ≤ rightEnd i := hsync (j + 1) hkj
+  linarith
+
 /-! ## The remaining obligation, stated
 
 Everything above is unconditional. What Lemma 3.2 additionally needs is that
@@ -141,6 +239,30 @@ paper's timing argument about how their turns interleave. -/
 def BalanceNonneg (c : Config n) (hn : 0 < n) (i : Fin n) (h : i.val + 1 < n)
     (k : ℕ) : Prop :=
   ∀ j, k ≤ j → 0 ≤ (c.run hn j).pairBalance i h
+
+/-- **The invariance, reduced to the one bad class.**
+
+If a pair with nonnegative balance is never both-heading-left-while-apart, its
+balance stays nonnegative forever. So all that remains of Lemma 3.2 is to rule
+out that single configuration — which is where drone `j`'s left
+synchronization finally earns its keep, by pinning down *when* `j` turns. -/
+theorem balanceNonneg_of_never_bothLeftApart {c : Config n} (hn : 0 < n)
+    (hi : c.Invariant) {i : Fin n} {h : i.val + 1 < n} {k : ℕ}
+    (hb0 : 0 ≤ (c.run hn k).pairBalance i h)
+    (hnever : ∀ j, k ≤ j → ¬ (c.run hn j).BothLeftApart i h) :
+    BalanceNonneg c hn i h k := by
+  have key : ∀ m : ℕ, 0 ≤ (c.run hn (k + m)).pairBalance i h := by
+    intro m
+    induction m with
+    | zero => exact hb0
+    | succ m ih =>
+      have hstep : c.run hn (k + (m + 1)) = (c.run hn (k + m)).step hn := rfl
+      rw [hstep]
+      exact pairBalance_nonneg_step hn (invariant_run hn hi (k + m)) ih
+        (hnever (k + m) (by omega))
+  intro j hj
+  obtain ⟨m, rfl⟩ : ∃ m, j = k + m := ⟨j - k, by omega⟩
+  exact key m
 
 /-- **Lemma 3.2, modulo the balance obligation.**
 
