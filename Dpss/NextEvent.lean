@@ -177,6 +177,99 @@ theorem univ_fin_nonempty (hn : 0 < n) :
     (Finset.univ : Finset (Fin n)).Nonempty :=
   ⟨⟨0, hn⟩, Finset.mem_univ _⟩
 
+/-! ### Spurious border deadlines are always dominated
+
+`borderTime` is computed for every drone, including interior ones for which no
+border event is actually reachable — a neighbour is in the way. The two lemmas
+below discharge the worry that such a number could become the minimum and make
+`timeToNextEvent` report a deadline with no event behind it.
+
+The content is local: **a leftward drone's border deadline is always at least
+its left neighbour's own deadline.** Chaining that down the line anchors every
+leftward border deadline at drone `0`, whose border event *is* genuine.
+Symmetrically on the right. -/
+
+theorem borderTime_of_left {c : Config n} {i : Fin n} (hd : c.dir i = Dir.left) :
+    c.borderTime i = c.pos i := by
+  unfold borderTime; rw [if_pos hd]
+
+theorem borderTime_of_right {c : Config n} {i : Fin n} (hd : c.dir i = Dir.right) :
+    c.borderTime i = 1 - c.pos i := by
+  unfold borderTime
+  rw [if_neg (by rw [hd]; exact fun hc => Dir.noConfusion hc)]
+
+theorem droneNextTime_le_borderTime (c : Config n) (i : Fin n) :
+    c.droneNextTime i ≤ c.borderTime i := by
+  unfold droneNextTime
+  split_ifs with h hA hE
+  · exact min_le_left _ _
+  · exact min_le_left _ _
+  · exact le_rfl
+  · exact le_rfl
+
+theorem droneNextTime_le_meetTime {c : Config n} {i : Fin n} {h : i.val + 1 < n}
+    (hA : c.Approaching i h) : c.droneNextTime i ≤ c.meetTime i h := by
+  unfold droneNextTime
+  rw [dif_pos h, if_pos hA]
+  exact min_le_right _ _
+
+/-- **A leftward drone's border deadline is dominated by its left neighbour's
+deadline.** Either the neighbour is closing on it, in which case they meet
+first; or the neighbour is also heading left, in which case it is nearer the
+border and gets there first. -/
+theorem droneNextTime_le_borderTime_of_next_left {c : Config n}
+    (hp : c.OnPerimeter) (ha : c.AdjOrdered) {i : Fin n} (h : i.val + 1 < n)
+    (hd : c.dir (nextIdx i h) = Dir.left) :
+    c.droneNextTime i ≤ c.borderTime (nextIdx i h) := by
+  rw [borderTime_of_left hd]
+  rcases Dir.eq_left_or_right (c.dir i) with hi | hi
+  · -- Neighbour also heads left: it is nearer the border, so it arrives first.
+    refine le_trans (droneNextTime_le_borderTime c i) ?_
+    rw [borderTime_of_left hi]
+    have := ha i h
+    unfold gap at this
+    linarith
+  · -- Neighbour closes on it: they meet before either reaches the border.
+    have hA : c.Approaching i h := ⟨hi, hd⟩
+    refine le_trans (droneNextTime_le_meetTime hA) ?_
+    unfold meetTime gap
+    have h0 : 0 ≤ c.pos i := (hp i).1
+    have h1 : 0 ≤ c.pos (nextIdx i h) := (hp (nextIdx i h)).1
+    linarith
+
+/-- Symmetrically on the right, **when the neighbour also heads right**: it is
+nearer the border and gets there first.
+
+The other case needs no domination lemma at all, and it is worth saying why.
+If the right neighbour heads *left* the pair is closing, so this drone's own
+deadline is the meet rather than its border — and a meet is a genuine event.
+That is `meetTime_le_borderTime_of_approaching` below. Note the asymmetry with
+the leftward lemma is real and not an oversight: `droneNextTime j` only ever
+consults the pair `(j, j+1)`, so a meet with the *left* neighbour is accounted
+for at `j-1`, never at `j`. -/
+theorem droneNextTime_le_borderTime_of_self_right {c : Config n}
+    (ha : c.AdjOrdered) {i : Fin n} (h : i.val + 1 < n)
+    (hd : c.dir i = Dir.right) (hj : c.dir (nextIdx i h) = Dir.right) :
+    c.droneNextTime (nextIdx i h) ≤ c.borderTime i := by
+  rw [borderTime_of_right hd]
+  refine le_trans (droneNextTime_le_borderTime c _) ?_
+  rw [borderTime_of_right hj]
+  have hg := ha i h
+  unfold gap at hg
+  linarith
+
+/-- When a pair is closing, the left drone's meet is no later than its own
+border deadline. So its `droneNextTime` is realised by the meet — a genuine
+event — and its rightward border deadline never becomes the spurious minimum. -/
+theorem meetTime_le_borderTime_of_approaching {c : Config n}
+    (hp : c.OnPerimeter) {i : Fin n} (h : i.val + 1 < n)
+    (hA : c.Approaching i h) : c.meetTime i h ≤ c.borderTime i := by
+  rw [borderTime_of_right hA.1]
+  unfold meetTime gap
+  have h1 : c.pos (nextIdx i h) ≤ 1 := (hp (nextIdx i h)).2
+  have hi1 : c.pos i ≤ 1 := (hp i).2
+  linarith
+
 /-- The time until *something* happens: the earliest deadline across the team. -/
 noncomputable def timeToNextEvent (c : Config n) (hn : 0 < n) : ℝ :=
   Finset.univ.inf' (univ_fin_nonempty hn) c.droneNextTime

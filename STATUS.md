@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `c12ef577ee2a`  
+**Commit at time of writing:** `b7f4b0fe3831`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -63,7 +63,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**79 theorems**, all `sorry`-free, across 5 files (`Basic.lean` 199 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 222 lines, `Schedule.lean` 215 lines).
+**86 theorems**, all `sorry`-free, across 5 files (`Basic.lean` 199 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 315 lines, `Schedule.lean` 215 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -355,6 +355,13 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.meetTime_pos_of_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.droneNextTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.univ_fin_nonempty' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.borderTime_of_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.borderTime_of_right' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.droneNextTime_le_borderTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.droneNextTime_le_meetTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.droneNextTime_le_borderTime_of_next_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.droneNextTime_le_borderTime_of_self_right' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetTime_le_borderTime_of_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.timeToNextEvent_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.timeToNextEvent_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.timeToNextEvent_le' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -375,7 +382,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**79/79 clean — `sorryAx` appears zero times.**
+**86/86 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -425,6 +432,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+b7f4b0f  2026-09-12  feat: time to the next event, proved strictly positive
 c12ef57  2026-09-12  feat: event scheduling, and make the status report self-refreshing
 bc5bef8  2026-09-12  feat: the three DPSS events, plus an auditable status report
 b5de469  2026-09-12  feat: motion between events, and the ordering invariant
