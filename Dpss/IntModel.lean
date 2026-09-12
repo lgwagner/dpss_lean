@@ -791,6 +791,8 @@ open IntConfig
 
 theorem hn3 : 0 < 3 := by norm_num
 
+theorem hn2 : 0 < 2 := by norm_num
+
 /-- The scaled image of `ThreeConverge.cfgS`, at resolution `K = 1`. -/
 def cfgSI : IntConfig 3 where
   time := 0
@@ -839,6 +841,54 @@ theorem cfgSI_run_4 :
 rather than by recomputing, which is the point of having one. -/
 theorem cfgSI_lattice_at_2 : (cfgSI.run 1 hn3 2).OnLattice :=
   onLattice_run cfgSI 1 hn3 cfgSI_onLattice 2
+
+/-! ### The second harness configuration
+
+`cfgSI` above is one of the two team runs `rust/traces.expected` records; this
+is the other. Both are now printed by `EmitTraces.lean` and compared against the
+binary by `scripts/check_traces.py`, so the rows below and the recorded file
+cannot drift apart silently. -/
+
+/-- The scaled image of `Examples.spread`, at resolution `K = 2`. Real positions
+`0` and `1/4` on a perimeter of `1`; the scale factor is `intPerimeter K n = 8`,
+so `0` and `2`. -/
+def spreadI : IntConfig 2 where
+  time := 0
+  pos := fun i => 2 * (i.val : ℤ)
+  dir := fun _ => Dir.right
+
+/-- It starts on the lattice: the single gap is `2`. -/
+theorem spreadI_onLattice : spreadI.OnLattice := by
+  intro i h
+  have hg : spreadI.gap i h = 2 := by
+    show 2 * ((Config.nextIdx i h).val : ℤ) - 2 * (i.val : ℤ) = 2
+    rw [Config.nextIdx_val]
+    push_cast
+    ring
+  exact ⟨1, by omega⟩
+
+/-- Step 1 — heading the same way and apart, neither has a pair event pending,
+so each runs for its own border and the right one arrives first. Real `t = 3/4`,
+positions `3/4, 1`; scaled, `t = 6` and `6, 8`. Compare `Examples.step_spread`. -/
+theorem spreadI_run_1 :
+    (spreadI.run 2 hn2 1).time = 6 ∧
+    (spreadI.run 2 hn2 1).pos = ![6, 8] ∧
+    (spreadI.run 2 hn2 1).dir = ![Dir.right, Dir.left] := by decide
+
+/-- Step 2 — they meet beyond their shared boundary and escort back to it. Real
+`t = 7/8`, both at `7/8`; scaled, `t = 7` and `7, 7`. Compare
+`Examples.escortBack`. -/
+theorem spreadI_run_2 :
+    (spreadI.run 2 hn2 2).time = 7 ∧
+    (spreadI.run 2 hn2 2).pos = ![7, 7] ∧
+    (spreadI.run 2 hn2 2).dir = ![Dir.left, Dir.left] := by decide
+
+/-- Step 3 — the left drone reaches `0`, turns, and the pair is in the steady
+state it alternates through forever. Scaled, `t = 10` and `4, 4`. -/
+theorem spreadI_run_3 :
+    (spreadI.run 2 hn2 3).time = 10 ∧
+    (spreadI.run 2 hn2 3).pos = ![4, 4] ∧
+    (spreadI.run 2 hn2 3).dir = ![Dir.left, Dir.right] := by decide
 
 end IntExamples
 

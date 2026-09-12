@@ -1,23 +1,29 @@
 #!/usr/bin/env bash
 # Run the verified binary and check its output against the recorded traces.
 #
-# EVERY BLOCK IS NOW CHECKED AGAINST LEAN. What that means differs a little
-# between them, and the differences are worth knowing.
+# EVERY BLOCK IS CHECKED AGAINST LEAN, BY THE SAME MECHANISM. `EmitTraces.lean`
+# prints all ten blocks from Lean definitions and `scripts/check_traces.py`
+# diffs them against the recorded file; this script diffs the verified binary
+# against that same file, so the binary and Lean meet on it.
 #
-# `cfgS` and `spread`: Lean proves those runs step by step (Dpss/IntModel.lean,
-# cfgSI_run_1 .. cfgSI_run_4, by `decide`), Verus proves the executable step
-# equals the generated specification, and the generator produces that
-# specification from the same Lean file. That closes the last link -- that the
-# specification is the algorithm.
+# Until S7 the two team blocks -- `cfgS` and `spread` -- were the exception.
+# They rested on a proof chain (Verus proves the executable step equals the
+# generated specification, and the generator produces that specification from
+# Lean) plus a hand-maintained match between the recorded rows and
+# `cfgSI_run_1` .. `_4`. The chain is strong where it reaches, but it does not
+# reach `advance`, `step`, `run` or `timeToNextEvent`: the generator refuses all
+# four, so they are hand-written on the Rust side, and these two blocks are the
+# only thing that exercises them. Nothing in CI would have noticed the recorded
+# rows drifting from Lean. Now `IntConfig.run` prints them and they are diffed
+# like everything else -- and the `decide`-proved theorems remain, so those rows
+# are attested twice over.
 #
 # The safety blocks -- `fence`, `separation`, `stale link`, `link` and the
-# contract violation -- are checked by `scripts/check_traces.py`, which runs
-# `EmitTraces.lean` and compares its output to the recorded file. The Lean side
-# is not a transcription of this harness: `Dpss/FenceTrace.lean` proves the
-# trajectory obeys the whole vehicle contract for any well-formed vehicle and
-# any margin (`Sim.trajOk`), proves the sufficient-margin blocks clear of the
-# fence by the fence theorem itself (`Sim.low_nonneg`), and `decide`-proves every
-# row. This script checks the binary against the same file, so the two meet.
+# contract violation -- were already checked this way. The Lean side is not a
+# transcription of this harness: `Dpss/FenceTrace.lean` proves the trajectory
+# obeys the whole vehicle contract for any well-formed vehicle and any margin
+# (`Sim.trajOk`), proves the sufficient-margin blocks clear of the fence by the
+# fence theorem itself (`Sim.low_nonneg`), and `decide`-proves every row.
 #
 # The `contract:` lines are the one thing Lean does not attest, because they are
 # a fact about the Rust: each is an executable function that Verus proved returns
