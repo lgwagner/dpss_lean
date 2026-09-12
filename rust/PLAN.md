@@ -16,8 +16,8 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 | **M2** | The generator | ✅ 24 spec fns, fail-loud, CI-checked |
 | **M3** | Verus spec and invariants | ✅ both invariants preserved, and along a run |
 | **M4** | Executable code and the key equivalence | ✅ `80 verified, 0 errors` |
-| **M5** | Differential testing | **next** |
-| **M6** | The controller, scoped not built | not started |
+| **M5** | Differential testing | ✅ two traces, CI-checked |
+| **M6** | The controller, scoped not built | **next** |
 
 **Toolchain, as pinned** (`rust/toolchain-versions.txt`, installed by
 `scripts/setup_verus.sh`):
@@ -48,6 +48,17 @@ so a bump or a restart does not rediscover them:
   `Finset.inf'`), the four standing conditions (quantifiers with a dependent proof
   argument), and `Dir` itself. None is arithmetic, which is where a transcription
   error would hide.
+- **The invariant proofs turned out to be a stronger filter than the traces.**
+  Corrupting the generated `escort_dir_left` to aim at the wrong boundary — and
+  corrupting the executable code to match, so that verification of the equivalence
+  would still succeed — was caught by `lemma_escorts_coherent_step` failing, not by
+  the traces. The proofs constrain the specification, not just the code. Trying and
+  failing to construct a corruption that passes every proof *and* changes a trace is
+  itself evidence about how tight the model is, and matches what
+  `Dpss/Priority.lean` found: the tie-breaks that look like choices are unreachable.
+- `#[verifier::external]` is not a proof hole and `no_proof_holes.py` does not flag
+  it: unlike `external_body` it gives the function no specification, so nothing
+  verified can depend on it. The trace harness uses it.
 - In an `ensures` that also mentions `old(e)`, the final value of a `&mut`
   parameter must be written `*final(e)` — plain `*e` is refused as ambiguous.
 - `=~=` is sequence extensionality, not struct equality. For a struct, assert the

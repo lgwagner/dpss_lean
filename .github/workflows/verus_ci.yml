@@ -40,6 +40,13 @@ jobs:
       - name: Verify the Rust half
         run: ./rust/verify.sh
 
+      # Verus proves the code equals the generated specification; the generator
+      # produces that specification from the Lean. This closes the last link --
+      # that the specification is the algorithm -- by running the verified stepper
+      # and checking it against traces Lean has already proved.
+      - name: The verified stepper reproduces the Lean traces
+        run: ./rust/traces.sh
+
       # Belt and braces, mirroring the Lean half: catch a proof hole directly.
       # `assume` and `external_body` in the proof path would silently weaken
       # everything downstream of them.
