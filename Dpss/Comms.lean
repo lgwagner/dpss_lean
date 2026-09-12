@@ -67,6 +67,12 @@ That also settles what the fallback should be, which was the open design
 question: **the safe degraded mode is "hold to your own segment"**, and it needs
 no new mechanism, because it is the steady state.
 
+And it is a fallback one can actually ship. `standoffLeftEnd_nonneg` and
+`standoffRightEnd_le_one` put the hold inside the fence; `gap_ge_of_hold` makes
+it separated; and `hold_covers` shows it **starves nobody** — every point of the
+perimeter is still covered, because the segments and the footprints tile it
+exactly. Those were the three properties the plan asked a fallback to have.
+
 ## What this does not claim
 
 * **Nothing here is about convergence.** A team that has lost coordination stays
@@ -330,6 +336,132 @@ theorem gap_ge_of_hold {d : ℝ} {n : ℕ} {c : Config n}
     (hold : ∀ i : Fin n, standoffLeftEnd d i ≤ c.pos i ∧ c.pos i ≤ standoffRightEnd d i)
     (i : Fin n) (h : i.val + 1 < n) : d ≤ c.gap i h :=
   separated_of_segments i h (hold i).2 (hold (nextIdx i h)).1
+
+/-! ## The fallback starves nobody
+
+`gap_ge_of_hold` says the fallback is *safe*. The plan asked for more: a hold
+that is inside the fence, separated, **and starves nobody** — no stretch of
+perimeter stops being visited.
+
+The respaced segments are a uniform partition. Writing
+
+    pitch = usable n d / n + d
+
+for the centre-to-centre spacing, segment `i` runs from `i · pitch` to
+`i · pitch + usable n d / n`, and the footprint of radius `d/2` extends it by
+`d/2` at each end — so drone `i` covers exactly `[i·pitch − d/2, (i+1)·pitch −
+d/2]`, and those tile the line with no overlap and no gap. `hold_covers` finds
+the drone for any point of the perimeter. -/
+
+/-- Centre-to-centre spacing of the respaced segments. -/
+noncomputable def pitch (n : ℕ) (d : ℝ) : ℝ := usable n d / (n : ℝ) + d
+
+theorem pitch_pos {d : ℝ} (hn : 0 < n) (hd : 0 ≤ d) (hL : 0 < usable n d) :
+    0 < pitch n d := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  unfold pitch
+  have : 0 < usable n d / (n : ℝ) := div_pos hL hn'
+  linarith
+
+theorem standoffLeftEnd_eq_pitch (d : ℝ) (i : Fin n) :
+    standoffLeftEnd d i = (i.val : ℝ) * pitch n d := by
+  unfold standoffLeftEnd leftEnd pitch
+  ring
+
+theorem standoffRightEnd_eq_pitch (d : ℝ) (i : Fin n) :
+    standoffRightEnd d i = ((i.val : ℝ) + 1) * pitch n d - d := by
+  unfold standoffRightEnd rightEnd pitch
+  ring
+
+/-- `n` segments and `n − 1` buffers account for the whole perimeter: the
+partition has total length `1 + d`, which is the perimeter plus the two
+half-footprints that overhang its ends. -/
+theorem n_mul_pitch {d : ℝ} (hn : 0 < n) : (n : ℝ) * pitch n d = 1 + d := by
+  have hn' : (n : ℝ) ≠ 0 := by
+    have : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+    exact ne_of_gt this
+  unfold pitch usable
+  field_simp
+  ring
+
+/-- **Every point of the perimeter is covered by some drone's hold.**
+
+So the degraded mode is not merely safe: the team keeps sweeping the whole
+perimeter, with each drone confined to its own segment and its footprint
+bridging the buffer to its neighbour's. -/
+theorem hold_covers {d : ℝ} (hn : 0 < n) (hd : 0 ≤ d) (hL : 0 < usable n d)
+    {y : ℝ} (hy0 : 0 ≤ y) (hy1 : y ≤ 1) :
+    ∃ i : Fin n, standoffLeftEnd d i - d / 2 ≤ y ∧ y ≤ standoffRightEnd d i + d / 2 := by
+  have hp : 0 < pitch n d := pitch_pos hn hd hL
+  set u : ℝ := y + d / 2 with hu
+  have hu0 : 0 ≤ u := by simp only [hu]; linarith
+  set m : ℕ := ⌊u / pitch n d⌋₊ with hm
+  refine ⟨⟨min m (n - 1), by omega⟩, ?_, ?_⟩
+  · -- the left end of the chosen segment is at or before `y`
+    rw [standoffLeftEnd_eq_pitch]
+    have hlow : ((min m (n - 1) : ℕ) : ℝ) ≤ u / pitch n d := by
+      rcases le_total (m : ℕ) (n - 1) with h | h
+      · have : min m (n - 1) = m := by omega
+        rw [this, hm]
+        exact Nat.floor_le (div_nonneg hu0 hp.le)
+      · have : min m (n - 1) = n - 1 := by omega
+        rw [this]
+        have h1 : ((n - 1 : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h
+        have h2 : (m : ℝ) ≤ u / pitch n d := by
+          rw [hm]; exact Nat.floor_le (div_nonneg hu0 hp.le)
+        linarith
+    rw [le_div_iff₀ hp] at hlow
+    simp only [hu] at hlow
+    linarith
+  · -- and the right end, footprint included, is at or after it
+    rw [standoffRightEnd_eq_pitch]
+    have hhigh : u ≤ (((min m (n - 1) : ℕ) : ℝ) + 1) * pitch n d := by
+      rcases le_total (m : ℕ) (n - 1) with h | h
+      · have hmin : min m (n - 1) = m := by omega
+        rw [hmin]
+        have := Nat.lt_floor_add_one (u / pitch n d)
+        rw [← hm] at this
+        rw [div_lt_iff₀ hp] at this
+        linarith
+      · have hmin : min m (n - 1) = n - 1 := by omega
+        rw [hmin]
+        have hcast : ((n - 1 : ℕ) : ℝ) + 1 = (n : ℝ) := by
+          have : ((n - 1 : ℕ) : ℝ) = (n : ℝ) - 1 := by
+            rw [Nat.cast_sub hn, Nat.cast_one]
+          rw [this]; ring
+        rw [hcast, n_mul_pitch hn]
+        simp only [hu]
+        linarith
+    simp only [hu] at hhigh
+    linarith
+
+/-- **And the hold is inside the fence.** No segment starts before the left wall. -/
+theorem standoffLeftEnd_nonneg {d : ℝ} (hd : 0 ≤ d) (hL : 0 < usable n d)
+    (i : Fin n) : 0 ≤ standoffLeftEnd d i := by
+  unfold standoffLeftEnd
+  have h1 : 0 ≤ leftEnd i := leftEnd_nonneg i
+  have h2 : 0 ≤ usable n d * leftEnd i := mul_nonneg hL.le h1
+  have h3 : 0 ≤ (i.val : ℝ) * d := mul_nonneg (Nat.cast_nonneg _) hd
+  linarith
+
+/-- Nor does one end after the right wall. -/
+theorem standoffRightEnd_le_one {d : ℝ} (hn : 0 < n) (hd : 0 ≤ d)
+    (hL : 0 < usable n d) (i : Fin n) : standoffRightEnd d i ≤ 1 := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hile : (i.val : ℝ) + 1 ≤ (n : ℝ) := by exact_mod_cast i.isLt
+  have hge : 0 ≤ (n : ℝ) - 1 - (i.val : ℝ) := by linarith
+  have hu : usable n d = 1 - ((n : ℝ) - 1) * d := rfl
+  unfold standoffRightEnd rightEnd
+  rw [← sub_nonneg]
+  have hkey : 1 - (usable n d * (((i.val : ℝ) + 1) / (n : ℝ)) + (i.val : ℝ) * d)
+      = usable n d * ((n : ℝ) - 1 - (i.val : ℝ)) / (n : ℝ)
+        + ((n : ℝ) - 1 - (i.val : ℝ)) * d := by
+    rw [hu]; field_simp; ring
+  rw [hkey]
+  have h1 : 0 ≤ usable n d * ((n : ℝ) - 1 - (i.val : ℝ)) / (n : ℝ) :=
+    div_nonneg (mul_nonneg hL.le hge) hn'.le
+  have h2 : 0 ≤ ((n : ℝ) - 1 - (i.val : ℝ)) * d := mul_nonneg hge hd
+  linarith
 
 end Config
 
