@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `fdb7427f87d3`  
+**Commit at time of writing:** `80c449082991`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -35,7 +35,7 @@ Target theorem, from Avigad–van Doorn (arXiv:2008.04262) Theorem 2.1:
 | Stage | Deliverable | State |
 |---|---|---|
 | 0 | Toolchain, Mathlib project, papers read, `[verify]` items resolved | **done** |
-| 1 | Definitional layer: state, events, runs, order invariant, non-Zeno | **in progress** — non-Zeno outstanding |
+| 1 | Definitional layer: state, events, runs, order invariant, non-Zeno | **done** |
 | 2 | `Synchronized` defined; Theorem 2.1 stated | **done** |
 | 3 | Sanity tests at `n = 2, 3` | both traced; the phase-1 refutation is out of scope, see gap 6 |
 | 4 | Close the `2 − 1/n` proof | Lemma 3.1 done; 3.2–3.8 not started |
@@ -63,14 +63,14 @@ Stage 1 broken down:
 | Full `n = 2` trace; synchronized forever; period 1 | done |
 | Converging `n = 2` trace, checked against the bound | done |
 | `n = 3` steady state; period `2/n`; simultaneous events | done |
-| **Non-Zeno proper (the counting step)** | **not started** |
+| **Non-Zeno** (`nonZeno`) | **done** |
 
 ---
 
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**293 theorems**, all `sorry`-free, across 15 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**298 theorems**, all `sorry`-free, across 16 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -514,81 +514,95 @@ least `k/n` times, and its turns are spaced — so the clock must have advanced
 by roughly `k/n²`, without bound. That is a pigeonhole over `Fin n` and nothing
 about DPSS.
 
+### 3.16 `Dpss/NonZenoProof.lean` — **non-Zeno, proved**
+
+> `nonZeno : ∀ T : ℝ, ∃ k, T < (c.run hn k).time`
+
+The system cannot pack infinitely many events into a finite stretch of time.
+Every instant is eventually passed.
+
+**This is the property the existing ACL2 mechanization could not establish.**
+Its event-stepper was admitted as a *partial* function and
+`(step-time-always-terminates)` is carried as an unproved hypothesis into its
+top-level convergence theorem. Avigad–van Doorn give an argument but never
+mechanize it.
+
+The argument here is **not the paper's**. Theirs rests on a claim about
+consecutive left turns propagating between neighbours that I could not
+reconstruct (§3.7). This one counts instead:
+
+1. **Every step turns at least one drone** — §3.14, unconditional.
+2. **Consecutive turns of one drone are `1/n` apart in time** — §3.15.
+3. So among any `n+1` consecutive steps some drone must turn **twice**, there
+   being only `n` drones — and those two turns cost `1/n` of clock.
+
+Hence `n+1` steps buy `1/n` of time, `m(n+1)` steps buy `m/n`, and `m` can be
+as large as we like. The only non-DPSS ingredient is the pigeonhole
+(`Fintype.exists_ne_map_eq_of_card_lt`).
+
+Supporting: `run_add` (stepping `k` then `j` is stepping `k+j`),
+`time_mono_run'` (the clock never runs backwards over any stretch), and
+`exists_first_turn_after` (a drone that turns has a *first* turn after any
+earlier index, with nothing in between — via `Nat.find`).
+
+#### What this does and does not claim
+
+It proves non-Zeno **for this Lean model of Algorithm A**, under the standing
+`Invariant` — which §3.10 proves is preserved and §3.11 proves is satisfiable.
+
+It does **not** literally discharge the ACL2 hypothesis: that would require
+their model, not this one. What it establishes is the property they had to
+assume, in a setting that is strictly more faithful in one respect — ACL2 has
+no reals, so their positions are rational, while these are `ℝ`.
+
+It also inherits this development's own restriction: `newDir` picks **one**
+resolution of the nondeterminism the paper leaves open when three or more
+drones converge (gap 6). A fully general result would quantify over all
+resolutions.
+
 ---
 
 ## 4. What is **not** proved — read this part
 
 This is the honest gap list, ordered by importance.
 
-1. **Non-Zeno: only the counting step is missing.** Both halves are now
-   proved. Every step turns at least one drone (§3.14, unconditional), and
-   consecutive turns of any one drone are at least `1/n` apart in time (§3.15).
+1. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for specific
+   `n = 2` and `n = 3` configurations. Lemma 3.1 is done and **Lemma 3.2 is
+   half done** (§3.13: everything but ruling out `BothLeftApart`). **Lemmas 3.3
+   through 3.8 are untouched.** Lemma 3.5 in particular ("every adjacent pair
+   has met by time 1") is the uniform timing result that makes the bound
+   `n`-independent, and nothing here approaches it. **This is now the main
+   outstanding item.**
 
-   What remains is a pigeonhole over `Fin n` and nothing about DPSS: `k` steps
-   force `k` turns spread over `n` drones, so some drone turns at least `k/n`
-   times, so the clock has advanced by roughly `k/n²` — without bound. **This
-   is the headline opportunity (§5) and it is close, but it is not finished,
-   and `NonZeno` is still only a definition.**
-
-2. ~~**The minimum might not be attained by a genuine event.**~~ **Closed.**
-   Kept here as a record of being wrong about my own model, twice.
-
-   The original worry: `timeToNextEvent` minimises over `borderTime` for *every*
-   drone, including interior ones where no border event looked reachable, so the
-   minimum might report a deadline with **no event behind it**. I spent a commit
-   proving local domination lemmas to contain it.
-
-   **First correction — the worry was unfounded.** Flying a drone for exactly
-   `borderTime` lands it on `0` or `1`; that is what the quantity *is*. So the
-   border event genuinely fires, whichever drone it belongs to. Ordering makes
-   it coherent: if an interior drone reaches `0`, every drone to its left is
-   already there and they all bounce together.
-
-   **Second correction — the residue was provable.** What remained was which
-   drone actually turns when a *cascade* makes several events due at once.
-   `someDroneTurns_of_meet_due` settles it by case analysis on which `newDir`
-   branch claims each drone, every branch closing by arithmetic on interval
-   endpoints. The domination lemmas proved earlier were not needed for any of
-   this.
-
-3. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for
-   specific `n = 2` and `n = 3` configurations. Lemma 3.1 is done and **Lemma
-   3.2 is half done** (§3.13: everything but the `BalanceNonneg` invariance).
-   **Lemmas 3.3 through 3.8 are untouched.** Lemma 3.5 in particular ("every
-   adjacent pair has met by time 1") is the uniform timing result that makes
-   the bound `n`-independent, and nothing here approaches it.
-
-4. **The `n = 3` work covers only the steady state.** §3.12 proves the
+2. **The `n = 3` work covers only the steady state.** §3.12 proves the
    three-drone cycle and its period, which exercises the middle-drone and
-   simultaneous-event machinery for the first time. But there is **no
-   converging `n = 3` trace** — nothing that starts out of position and settles
-   — and no configuration with three drones actually meeting at once, which is
-   where the nondeterminism of gap 6 would bite.
+   simultaneous-event machinery. But there is **no converging `n = 3` trace**
+   — nothing that starts out of position and settles.
 
-5. **The traces are single configurations, not the sharp worst case.** `spread`
+3. **The traces are single configurations, not the sharp worst case.** `spread`
    converges at `5/4` against a bound of `3/2`. Closing that last quarter needs
-   the drones started *arbitrarily* close together, i.e. a family parameterised
-   by `ε` rather than one fixed gap. That would demonstrate the bound is
-   **attained**, which the paper asserts and this development does not check.
+   the drones started *arbitrarily* close, i.e. a family parameterised by `ε`.
+   That would show the bound is **attained**, which the paper asserts and this
+   development does not check.
 
-6. **Stage 3's original headline goal is out of scope, and the plan was wrong
-   to list it.** `PLAN.md` §5.2 proposed formalizing the Davis et al.
-   counterexample to refute the false `3T` bound. That bound is about **phase
-   1** — the propagation of *estimates* — which is Algorithm B. This
-   development models Algorithm A, where estimates are correct by assumption
-   and absent from `Config` entirely. The refutation is therefore unreachable
-   here, not merely unfinished. Recording it as a planning error rather than
-   silently dropping it.
-
-7. **The nondeterminism is not modelled.** When three or more drones converge
+4. **The nondeterminism is not modelled.** When three or more drones converge
    the paper leaves open which neighbour the middle one escorts, and notes the
-   strongest bound quantifies over all resolutions. `newDir` picks one.
+   strongest bound quantifies over all resolutions. `newDir` picks one. Every
+   result here, non-Zeno included, inherits that restriction.
 
-8. **Unused definitions.** `Config.Together` is defined but unused, and
+5. **Stage 3's original headline goal is out of scope, and the plan was wrong
+   to list it.** `PLAN.md` §5.2 proposed refuting the false `3T` bound. That
+   bound is about **phase 1** — estimate propagation — which is Algorithm B.
+   This development models Algorithm A, where estimates are correct by
+   assumption and absent from `Config`. Unreachable here, not merely
+   unfinished. Recorded as a planning error.
+
+6. **Unused definitions.** `Config.Together` is defined but unused, and
    `Config.Valid` has been superseded by `Config.Invariant` without removal.
 
-9. **Algorithm B is entirely out of scope** — wrong estimates, changing
-   perimeter, drones joining or leaving.
+7. **Algorithm B is entirely out of scope** — wrong estimates, changing
+   perimeter, drones joining or leaving. That is where the original proof broke
+   and where the open problem lives.
 
 ### Known modelling risks
 
@@ -892,6 +906,11 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.pos_sub_eq_of_dirConst' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_advance_of_crossing' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_advance_of_crossing_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.run_add' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_mono_run'' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_first_turn_after' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_advance_of_steps' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.nonZeno' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_advance_of_opposite' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_eq_zero_of_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -955,7 +974,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**293/293 clean — `sorryAx` appears zero times.**
+**298/298 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1005,6 +1024,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+80c4490  2026-09-12  feat: A3 -- consecutive turns of one drone are 1/n apart in time
 fdb7427  2026-09-12  feat: A1 + A2 complete -- every step turns a drone, unconditionally
 fe8a002  2026-09-12  feat: border deadlines are never spurious -- gap 2 was overstated
 b3b3663  2026-09-12  feat: A1 -- every scheduled event turns a drone
@@ -1045,11 +1065,11 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 
 | # | Item | Size | Notes |
 |---|---|---|---|
-| **A** | **Non-Zeno** | | *the novel contribution — ACL2 assumes this* |
+| **A** | ~~**Non-Zeno**~~ | ✅ | **complete** — the contribution ACL2 had to assume |
 | A1 | ~~Every event turns at least one drone~~ | ✅ | `someDroneTurns_step`, unconditional |
 | A2 | ~~The minimum is attained by a genuine event~~ | ✅ | folded into A1; gap 2 closed |
-| A3 | Consecutive turns `1/n` apart ✅; the pigeonhole itself | S | §3.15; only the counting is left |
-| A4 | Assemble `NonZeno` | S | |
+| A3 | ~~Consecutive turns `1/n` apart~~ | ✅ | §3.15 |
+| A4 | ~~Assemble `NonZeno`~~ | ✅ | **§3.16 — done** |
 | **B** | **Theorem 2.1** | | *the headline* |
 | B1 | Lemma 3.2 — rule out `BothLeftApart` | **L** | §3.13 reduces the whole lemma to this |
 | B2 | Lemmas 3.3, 3.4 — consequences of 3.2 | S | |
