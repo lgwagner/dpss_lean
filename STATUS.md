@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `dbf6c4440f01`  
+**Commit at time of writing:** `0573e4d89008`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**313 theorems**, all `sorry`-free, across 17 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 168 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 437 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**319 theorems**, all `sorry`-free, across 18 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 437 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -632,6 +632,28 @@ immediate neighbour was what made their development tractable. `HaveMetBy` is
 the history-shaped one. If Lemma 3.5 or 3.7 becomes unwieldy, that is the first
 thing to change.
 
+### 3.18 `Dpss/TurnPersistence.lean` — **Lemma 3.6**, unconditionally
+
+> If the pair has not been together since step `a`, and drone `i` is heading
+> left at step `b`, then it has been heading left ever since `a`.
+
+Short here, because `PairBalance.lean` already proved the load-bearing step for
+its own reasons: **a drone that reverses to leftward is co-located with its
+right-hand neighbour**. Whatever can reverse a rightward drone — a meet, a
+separation, or the right border — leaves it on top of its neighbour.
+
+So over a stretch in which the pair is never together, the left drone never
+turns left (`not_turnsLeftAt_of_never_coLocated`); and a drone found heading
+left at the end of such a stretch must have been heading left throughout, since
+it cannot have turned left and had it turned right it would still be heading
+right (`dir_left_of_no_turnsLeft`).
+
+**No dependence on `BothLeftApart`** — this one is complete.
+
+The paper phrases `a` as "the last time before `t` that they bounced or
+separated"; here it is any step after which they have not been together, which
+is the property the proof actually uses and is easier to supply.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -975,6 +997,9 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.leftSync_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_pos_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_eq_zero_of_pinned' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_step_of_time_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_nonneg_step_of_pinned' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_of_start' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_of_meet_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1066,6 +1091,9 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.rightEnd_eq_one_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sync_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_turnsLeftAt_of_never_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_left_of_no_turnsLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_left_since_of_never_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.dir_const_of_no_turns' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_gap_of_consecutive_turns' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_meetLeft_of_dir_right' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1077,7 +1105,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**313/313 clean — `sorryAx` appears zero times.**
+**319/319 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1127,6 +1155,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+0573e4d  2026-09-12  feat: a pinned left-synchronized drone freezes the clock
+9cc4325  2026-09-12  feat: Lemmas 3.3 and 3.4, and the have-met predicate
 dbf6c44  2026-09-12  feat: the positional core of Lemma 3.2's last case
 55f60de  2026-09-12  docs: capture the key insights durably
 4d9e80d  2026-09-12  feat: two of the three routes to Lemma 3.2's obstruction are closed
@@ -1182,7 +1212,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | B1 | Lemma 3.2 — `BothLeftApart` case 3 only | **L** | §3.13; cases 1 and 2 now closed |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
 | B3 | Lemma 3.5 — every pair has met by time 1 | **L** | `HaveMetBy` now defined (§3.17); the proof is not |
-| B4 | Lemma 3.6 — turn persistence | M | |
+| B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` | S | |
 | **C** | **Fidelity** | | |

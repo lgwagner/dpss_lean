@@ -15,3 +15,4 @@ import Dpss.EventsTurn
 import Dpss.TurnSpacing
 import Dpss.NonZenoProof
 import Dpss.LeftSyncLemmas
+import Dpss.TurnPersistence
