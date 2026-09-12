@@ -114,9 +114,8 @@ does become due for *both* drones at once. -/
 theorem atSeparation_at_separationTime {c : Config n} {i : Fin n}
     {h : i.val + 1 < n} (he : c.Escorting i h) :
     (c.advance (c.separationTime i)).AtSeparation i h := by
-  refine ⟨⟨coLocated_advance_of_escorting he _, ?_⟩, ?_⟩
-  · simpa using he.2
-  · exact pos_eq_commonEnd_at_separationTime c i
+  exact ⟨coLocated_advance_of_escorting he _,
+    pos_eq_commonEnd_at_separationTime c i⟩
 
 /-- **Flying for `leftBorderTime` lands a leftward drone exactly on the border.** -/
 theorem atLeftBorder_at_leftBorderTime {c : Config n} {i : Fin n}

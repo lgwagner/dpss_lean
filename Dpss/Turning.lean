@@ -88,7 +88,7 @@ between their intervals. -/
 theorem pos_eq_leftEnd_of_sepLeft {c : Config n} {i : Fin n}
     (hs : c.SepLeft i) : c.pos i = leftEnd i := by
   obtain ⟨hpos, hsep⟩ := hs
-  have hco : c.gap (prevIdx i hpos) (prevIdx_lt i hpos) = 0 := hsep.1.1
+  have hco : c.gap (prevIdx i hpos) (prevIdx_lt i hpos) = 0 := hsep.1
   unfold gap at hco
   rw [nextIdx_prevIdx] at hco
   have hp : c.pos (prevIdx i hpos) = commonEnd (prevIdx i hpos) := hsep.2

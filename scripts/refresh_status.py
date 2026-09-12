@@ -71,6 +71,10 @@ def main():
             problems.append(f"{marker} block missing or duplicated")
     if "placeholder" in doc:
         problems.append("an unfilled 'placeholder' remains in the document")
+    if not ax:
+        problems.append("the audit block is empty -- the audit did not run")
+    if not passed:
+        problems.append("the axiom audit did not pass")
 
     print(f"STATUS.md refreshed: {len(ax)} theorems, audit {'PASS' if passed else 'FAIL'}")
     if problems:

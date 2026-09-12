@@ -8,3 +8,4 @@ import Dpss.Turning
 import Dpss.NonZeno
 import Dpss.Synchronization
 import Dpss.Coherence
+import Dpss.Examples

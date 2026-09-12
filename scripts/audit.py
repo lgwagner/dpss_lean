@@ -18,12 +18,36 @@ DECL = re.compile(r"^(?:@\[[^\]]*\]\s*)?theorem\s+([A-Za-z_][\w']*)")
 NS_OPEN = re.compile(r"^namespace\s+([A-Za-z_][\w.]*)")
 NS_CLOSE = re.compile(r"^end\s+([A-Za-z_][\w.]*)")
 
+def strip_comments(src: str) -> str:
+    """Blank out Lean comments, keeping line structure intact.
+
+    Without this, a doc comment whose text happens to wrap onto a line starting
+    with the word "theorem" is scanned as a declaration -- which happened, and
+    produced a lookup for a constant that does not exist, failing the audit and
+    writing "0 theorems" into STATUS.md. Lean block comments nest, so track depth.
+    """
+    out = []
+    i, depth = 0, 0
+    while i < len(src):
+        if src.startswith("/-", i):
+            depth += 1; i += 2; continue
+        if depth and src.startswith("-/", i):
+            depth -= 1; i += 2; continue
+        if depth == 0 and src.startswith("--", i):
+            j = src.find("\n", i)
+            i = len(src) if j < 0 else j
+            continue
+        out.append(src[i] if depth == 0 or src[i] == "\n" else " ")
+        i += 1
+    return "".join(out)
+
+
 def theorem_names():
     """Fully-qualified theorem names, tracking namespace nesting."""
     names = []
     for f in FILES:
         ns = []
-        for line in f.read_text(encoding="utf-8").splitlines():
+        for line in strip_comments(f.read_text(encoding="utf-8")).splitlines():
             st = line.strip()
             if (m := NS_OPEN.match(st)):
                 ns.append(m.group(1)); continue

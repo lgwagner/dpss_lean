@@ -128,7 +128,7 @@ theorem separationTime_pos_of_escorting {c : Config n} {i : Fin n}
   have hge : 0 ≤ c.separationTime i := hec i h he
   have hne : c.separationTime i ≠ 0 := by
     intro h0
-    exact hns ⟨he, (separationTime_eq_zero_iff c i).mp h0⟩
+    exact hns ⟨he.1, (separationTime_eq_zero_iff c i).mp h0⟩
   exact lt_of_le_of_ne hge (Ne.symm hne)
 
 /-- An approaching pair that is not yet co-located has strictly positive time

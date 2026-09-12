@@ -95,17 +95,31 @@ uniform speed. -/
 def Escorting (c : Config n) (i : Fin n) (h : i.val + 1 < n) : Prop :=
   c.CoLocated i h ∧ c.dir i = c.dir (nextIdx i h)
 
-/-- A separation is due: an escorting pair has arrived at their common endpoint. -/
+/-- A separation is due: the pair sits on the boundary between their intervals
+and must split, each returning to its own side.
+
+**This deliberately does not require the pair to be escorting.** An earlier
+version did, and it was wrong. Consider two drones approaching each other and
+meeting *exactly* on their shared boundary — the paper's **bounce**, a meet and
+a separation coinciding. Right up to the instant they meet their headings are
+*opposite*, so they are not escorting, so a separation predicate demanding
+`Escorting` is false and no separation fires. The meet branch then takes over
+and sends the right-hand drone the wrong way, out of its own interval.
+
+Co-location on the shared boundary is the real condition, however the pair got
+there — escorting and arrived, or met head-on. For a pair that has just
+separated and is still on the boundary this fires again and reinstates the
+headings they already have, which is harmless. -/
 def AtSeparation (c : Config n) (i : Fin n) (h : i.val + 1 < n) : Prop :=
-  c.Escorting i h ∧ c.pos i = commonEnd i
+  c.CoLocated i h ∧ c.pos i = commonEnd i
 
 /-! ## What each event does -/
 
 open Classical in
 /-- The heading an escorting pair adopts: whichever way points at their common
 endpoint. If they met exactly *on* the common endpoint the meet and the
-separation coincide — that is the paper's *bounce* — and `AtSeparation` fires
-instead. -/
+separation coincide — that is the paper's *bounce* — and `AtSeparation` takes
+priority, sending each drone back into its own interval. -/
 noncomputable def escortDir (c : Config n) (i : Fin n) : Dir :=
   if c.pos i < commonEnd i then Dir.right else Dir.left
 
