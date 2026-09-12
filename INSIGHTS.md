@@ -903,3 +903,58 @@ bad gap is at a later index, and the block had no row violating at index `0`.
 `unordered-at-0` exists because the experiment exposed that hole, not because
 anything failed.
 
+## 30. The sweep's coverage is over the traces, not over the proofs — and the
+gap it closes is team size
+
+§29 measured that the invariant proofs catch corruptions the traces do not, and
+concluded the standing-conditions block is defence in depth. The state-space
+sweep invites the same question, and the same discipline in answering it.
+
+Three corruptions, each of a hand-written definition, each with the executable
+half corrupted to match so the exec-versus-spec equivalence still holds:
+
+| corruption | 10 traces | 1816-configuration sweep | Verus |
+|---|---|---|---|
+| `adj_ordered`: `0 <= gap` → `-2 <= gap` | — | — | 7 errors |
+| `adj_ordered`: range `0 <= i` → `1 <= i` | — | — | 6 errors |
+| `min_deadline`: base `m <= 1` → `m <= 2` | **caught** | **caught** (1238 configs) | caught |
+| `min_deadline`: drone 3's deadline skipped | *invisible* | **caught** (48 configs) | caught |
+
+The last row is the one the sweep exists for. It is invisible to
+`rust/traces.expected` for a structural reason, not a lucky one: **every recorded
+trace has two or three drones**, so any error whose first manifestation needs a
+fourth cannot appear there at all. `Dpss/Counterexample.lean` already knew that
+four drones is where new phenomena start — it exhibits a four-drone
+configuration as the reason `ApartOnBoundaries` is not pointwise — and the
+traces had no four-drone case.
+
+So state the claim at the right altitude. The sweep does **not** find what the
+proofs miss; Verus caught all four. What it does is remove the traces' blind
+spots, and the biggest of those was team size, not trajectory length. A test
+suite of hand-chosen examples is blind in the dimensions nobody chose to vary,
+and the cheapest way to find out which those are is to vary all of them.
+
+**Two design choices did most of the work.**
+
+*Duplicate the enumeration; do not hand it over.* The obvious architecture has
+Lean emit the configurations and the Rust replay them. Then the Rust is tested
+only on inputs Lean chose, and the two implementations of the standing
+conditions — the thing S7b had just made executable — are never compared as
+*filters*. Enumerating independently on both sides means a disagreement about
+which configurations are valid changes the line count, and is reported before
+any trajectory is looked at.
+
+*Make the filter discharge the precondition.* `step_ex` requires `repr_ok` and
+`apart_on_boundaries`. A sweep cannot legitimately call it without establishing
+both, which is why S7b had to land first: the sweep is only possible because the
+standing conditions became executable. The dependency ran the opposite way from
+how it was planned.
+
+**And one number that decided the design.** `lake env lean --run` interprets,
+and the sweep does not finish that way — it was still running after ten minutes.
+Compiled via a `lean_exe` target it is 2m10s, against the Rust's 22ms. That
+1000× is why the recorded file exists at all: with a live Lean-versus-Rust diff
+the CI job would need both toolchains, and the present split — the Lean job
+checks the file, the Verus job checks the file, they meet on it — would have to
+go.
+

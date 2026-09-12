@@ -10,6 +10,64 @@ The long forms live elsewhere: `STATUS.md` for what is proved, `PLAN.md` for
 what is next, `INSIGHTS.md` for what the work taught, `GUIDE.md` for how to
 follow the convergence proof.
 
+## S7c — the sweep (2026-09-12)
+
+`STATUS.md` §11 named this as the next real strengthening, and it is done. Ten
+hand-chosen configurations became 1816 generated ones.
+
+For each of `(n,K) = (2,1) (2,2) (3,1) (3,2) (4,1)`: every position vector in
+`[0, 2Kn]^n` and every heading vector — 125,740 candidates — filtered to those
+satisfying the standing conditions and `ApartOnBoundaries`, run six steps, and
+reduced to one line carrying the final state plus a rolling digest of every
+intermediate one. Lean and the verified binary agreed byte for byte on the first
+run, and `rust/sweep.expected` records it.
+
+**What it buys, measured rather than asserted.** A `min_deadline` corruption that
+skips drone 3's deadline is invisible to all ten recorded traces and changes 48
+configurations in the sweep. The reason is structural: every recorded trace has
+two or three drones, so nothing needing a fourth could ever appear in one. Verus
+catches that corruption too, as it caught the three others tried — so the sweep's
+coverage is over the *traces*, not over the proofs. `INSIGHTS.md` §30 has the
+table and says so plainly.
+
+**Three things it was important not to do.**
+
+* *Do not hand Lean's configuration list to the Rust.* Both sides enumerate and
+  both filter with their own standing conditions, so a disagreement about which
+  configurations are valid changes the line count and is caught before any
+  trajectory is compared. Handing the list over would have tested less.
+* *Do not transcribe `ApartOnBoundaries`.* It is `step_ex`'s other precondition
+  and the sweep must filter on it, but Lean stated it only over the real-valued
+  `Config`. `IntConfig.ApartOnBoundaries` is now defined and
+  `embed_apartOnBoundaries` proves it *is* that condition — so the filter is not
+  a second definition nobody checks. This also closes §11's note that it had no
+  Lean counterpart.
+* *Do not put the sweep in `traces.expected`.* Two files: ten configurations a
+  human reads, and 1816 that only a diff reads. `dpss sweep` prints the second.
+
+**The dependency ran backwards from the plan.** S7b was written to close a gap in
+what was *checked*; it turned out to be the precondition for the sweep existing
+at all, because a sweep cannot legitimately call `step_ex` without executable
+`inv` and `apart_on_boundaries` to discharge its `requires`.
+
+### Cost, and the one number that shaped the design
+
+`lake env lean --run` interprets, and the sweep does not finish that way. It
+needed `lean_exe` targets in `lakefile.toml` — `emit_traces` had been advertised
+in a doc comment for a while with no such target — and compiled it is **2m10s**,
+against the Rust's **22ms**. That gap is why the sweep is a recorded file rather
+than a live Lean-versus-Rust diff: a live diff needs one CI job holding both
+toolchains, and the split where the Lean job checks the file, the Verus job
+checks the file, and the two meet on it would have to go.
+
+### What is still not swept
+
+Teams of five or more, resolutions past `K = 2`, and runs longer than six steps.
+The first is the one that matters — four drones was where the last blind spot
+was — and the cost is the enumeration, which grows as `(2Kn+1)^n · 2^n`.
+
+---
+
 ## S7 / S7b — the differential test covers what it claimed to (2026-09-12)
 
 Two gaps between the Lean specification and the Rust implementation, both of
