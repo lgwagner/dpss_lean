@@ -56,7 +56,7 @@ phase-1 result that this scope cannot reach by construction.
 
 | File | What it is |
 |---|---|
-| **`GUIDE.md`** | **Start here.** A reader's guide to the convergence proof: what it claims, how the pieces fit, what to read in what order, and how to check it. |
+| **`GUIDE.md`** | **Start here.** A guide to the whole work package — every item, what it claimed, how it was proved, and what it cost — with deep links into the source for each declaration named. |
 | **`STATUS.md`** | What is proved, what is **not**, and a full axiom audit. Written to be audited, not just read. §4 is the honest gap list. |
 | **`INSIGHTS.md`** | The non-obvious things learned. Read this before extending the work. |
 | **`PLAN.md`** | **Work yet to be done** — the roadmap. Start here to pick up the work. |
@@ -71,6 +71,7 @@ phase-1 result that this scope cannot reach by construction.
 lake build                        # Lean 4.33.1 + Mathlib v4.33.1
 python3 scripts/audit.py          # every theorem's axiom dependencies
 python3 scripts/refresh_status.py # regenerate STATUS.md's generated blocks
+python3 scripts/refresh_guide_links.py  # re-point GUIDE.md's deep links at the source
 ```
 
 `scripts/audit.py` fails if any theorem depends on `sorryAx`; it runs in CI.
