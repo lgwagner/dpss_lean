@@ -12,6 +12,60 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — session handoff: S6 complete, and nothing is scheduled  *(branch `safety`)*
+
+Four entries below are one session's work: S6a, S6b, S6c and S6d, which is the
+whole of S6. The item existed because `rust/traces.sh` said, correctly and in as
+many words, that six of its eight blocks were a regression test and not a
+differential one. It no longer says that.
+
+The four steps are not four attempts at the same thing. Each shrank a different
+part of what a reader has to check by hand:
+
+| | |
+|---|---|
+| S6a | the two halves now quantify over **the same integers** — the fence is over an ordered ring and `ℤ` is an instance |
+| S6b | the spec predicates **execute**, so a trace evaluates the specification rather than a transcription of it |
+| S6c | the safety traces are **derived from Lean**, not recorded from the binary |
+| S6d | the safety specifications are **generated from Lean**, not transcribed |
+
+**State at handoff.** 841 theorems, `sorry`-free; `121 verified, 0 errors`; every
+trace block checked against Lean; no proof holes; all three generated spec files
+current. The full suite is `lake build`, `scripts/audit.py`,
+`scripts/no_sorry.py`, `rust/verify.sh`, `rust/traces.sh`,
+`scripts/no_proof_holes.py`, `scripts/lean_to_verus.py --check`, and
+`scripts/check_traces.py` (which `rust/traces.sh` runs when `lake` is on the
+path). `lake` needs `PATH=$HOME/.elan/bin:$PATH`.
+
+**What is still a human read**, and no amount of further work on this track
+removes all of it: that `traj_ok` assembles `obs_ok`, `fence_dir` and `leg_ok`
+the way the Lean `trajOk` does; the two `link_ok` index clauses the generator
+refuses (`INSIGHTS.md` §27); and the two proof structures, which stay separate
+whatever the definitions do.
+
+**Nothing is scheduled next, and that is deliberate.** Track A is complete and
+so is S6. What remains in `PLAN.md` is four directions that differ in kind, so
+the next session should ask rather than pick:
+
+* **The `D` abstraction** — carry an overshoot allowance through Lemma 3.1,
+  `TurnSpacing` and non-Zeno, buying non-Zeno at `(1/n − 2D)/V` under the sharp
+  hypothesis `D < 1/(2n)`. Honest caveat: the events fire exactly in the current
+  model, so this proves nothing new today. It is an interface for a future
+  imperfect-turning model, and a statement of precisely what the non-Zeno
+  argument needs.
+* **Heterogeneous speeds** — a rewrite, not a margin, and deliberately deferred.
+  `INSIGHTS.md` §23 is the diagnostic that says why.
+* **The rest of S4** — instantiating the control-authority hypotheses against a
+  *specific* airframe. An engineering exercise, and it needs an airframe.
+* **Track B** — convergence under cooperation, whose central question is a
+  genuinely open research problem.
+
+Two documentation defects were fixed on the way, both predating this session:
+`rust/README.md` still described the `rust-verus` branch and told a reader to
+expect `80 verified`, and `PLAN.md`'s header still said 594 theorems.
+
+---
+
 ## 2026-09-12 — S6d: the safety specifications, generated  *(branch `safety`)*
 
 The step that removes the transcription. S6a put the two halves over the same

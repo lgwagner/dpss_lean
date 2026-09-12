@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `4a1515b057a2`  
+**Commit at time of writing:** `0361a874123a`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2271,6 +2271,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+0361a87  2026-09-12  plan: move S6 to Completed, as the plan's own convention asks
+c29bf57  2026-09-12  S6d: the pair and the link too, and one deliberate refusal
 4a1515b  2026-09-12  S6d: the fence specifications are generated, not transcribed
 545eed6  2026-09-12  plan: the theorem count and the S6 row were stale
 26069c7  2026-09-12  S6c: the safety traces, from Lean -- and the six blocks are one
