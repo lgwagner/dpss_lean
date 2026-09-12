@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `4d9e80d45208`  
+**Commit at time of writing:** `55f60deb180a`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**301 theorems**, all `sorry`-free, across 16 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 375 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**305 theorems**, all `sorry`-free, across 16 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 437 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -467,10 +467,21 @@ at or *before* `rightEnd (j+1)`. But Lemma 3.1 only permits it to reverse at or
 their endpoints, and the left drone must reverse as well — contradicting the
 premise of case 3.
 
-Formalizing that needs one extra invariant alongside `BalanceNonneg`: the
-balance is exactly zero whenever the pair heads in opposite directions with the
-left one going left. That is the remaining work, and it is why B1 is still the
-**L** in the work package.
+The **mathematical core of case 3 is now proved**:
+`pos_next_le_rightEnd_of_balance_zero` (with the balance at zero, left
+synchronization caps where the partner can be — at or *before* its own right
+endpoint) and **`pinned_of_balance_zero`** (so if the partner does turn, Lemma
+3.1's lower bound meets that upper bound exactly, pinning *both* drones to
+their endpoints).
+
+What is left is bookkeeping, not mathematics, and it is fiddlier than it looks
+for one reason: **a step can legitimately take zero time**, when an event is
+already due. So showing the left drone *turns* at its endpoint — rather than
+merely being entitled to — means ruling out an unbounded run of zero-length
+steps in which it sits there heading outward. `nonZeno` rules that out
+globally, so the ingredients exist; assembling them over run indices is the
+remaining work. Plus the invariant that the balance is exactly zero while the
+pair moves apart.
 
 ### 3.14 `Dpss/EventsTurn.lean` — **every step turns a drone**
 
@@ -965,6 +976,10 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.coLocated_step_of_both_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_leftEnd_of_turnsRightAt_of_leftSync' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_rightEnd_of_turnsLeftAt_of_rightSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightEnd_next_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftEnd_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_next_le_rightEnd_of_balance_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pinned_of_balance_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.balanceNonneg_of_never_bothLeftApart' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_balanceNonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1018,7 +1033,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**301/301 clean — `sorryAx` appears zero times.**
+**305/305 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1068,6 +1083,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+55f60de  2026-09-12  docs: capture the key insights durably
 4d9e80d  2026-09-12  feat: two of the three routes to Lemma 3.2's obstruction are closed
 2db5f0b  2026-09-12  docs: record non-Zeno as done in section 5
 c920cb3  2026-09-12  feat: non-Zeno, proved

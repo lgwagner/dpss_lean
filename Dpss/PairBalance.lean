@@ -316,6 +316,68 @@ theorem pos_eq_rightEnd_of_turnsLeftAt_of_rightSync {c : Config n} (hn : 0 < n)
   have hle : (c.run hn (j + 1)).pos i ≤ rightEnd i := hsync (j + 1) hkj
   linarith
 
+/-! ## The positional core of case 3
+
+The paper argues Lemma 3.2 by timing. These two lemmas replace that with
+arithmetic on interval endpoints, and they are the mathematical content of the
+one remaining case.
+
+The setting: the pair has separated and is moving apart, so the balance is
+constant and — starting from a separation — **zero**. The two drones are then
+displaced from their shared boundary by *equal* amounts. Left synchronization
+caps the left drone's displacement at `1/n`, and that caps its partner's at
+`1/n` too. But Lemma 3.1 lets the partner reverse only at or *beyond* that very
+point. The two constraints meet exactly, and pin both drones. -/
+
+/-- The right-hand drone's own right endpoint is `1/n` beyond the boundary the
+pair shares. -/
+theorem rightEnd_next_eq (i : Fin n) (h : i.val + 1 < n) :
+    rightEnd (nextIdx i h) = commonEnd i + 1 / (n : ℝ) := by
+  have h1 : rightEnd (nextIdx i h) - leftEnd (nextIdx i h) = 1 / (n : ℝ) :=
+    rightEnd_sub_leftEnd _
+  rw [leftEnd_next_eq_commonEnd i h] at h1
+  linarith
+
+/-- And the left-hand drone's own left endpoint is `1/n` before it. -/
+theorem leftEnd_eq (i : Fin n) :
+    leftEnd i = commonEnd i - 1 / (n : ℝ) := by
+  have h1 : rightEnd i - leftEnd i = 1 / (n : ℝ) := rightEnd_sub_leftEnd i
+  unfold commonEnd
+  linarith
+
+/-- **With the balance at zero, left synchronization of the left drone caps
+where its partner can be.**
+
+The partner cannot have got past its own right endpoint — which is exactly the
+only place Lemma 3.1 would let it turn around. -/
+theorem pos_next_le_rightEnd_of_balance_zero {c : Config n} {i : Fin n}
+    {h : i.val + 1 < n} (hbal : c.pairBalance i h = 0)
+    (hsync : leftEnd i ≤ c.pos i) :
+    c.pos (nextIdx i h) ≤ rightEnd (nextIdx i h) := by
+  unfold pairBalance at hbal
+  rw [rightEnd_next_eq i h]
+  rw [leftEnd_eq i] at hsync
+  linarith
+
+/-- **So if the partner does turn, both drones are pinned to their endpoints.**
+
+This is the crux. The partner may only reverse at or beyond its right endpoint
+(Lemma 3.1); the balance and left synchronization put it at or before. Equality
+follows, and with it the left drone sits exactly on *its* left endpoint — where
+it, too, must turn. That is what makes the pair turn together and never both
+head left while apart. -/
+theorem pinned_of_balance_zero {c : Config n} {i : Fin n} {h : i.val + 1 < n}
+    (hbal : c.pairBalance i h = 0) (hsync : leftEnd i ≤ c.pos i)
+    (hturn : rightEnd (nextIdx i h) ≤ c.pos (nextIdx i h)) :
+    c.pos (nextIdx i h) = rightEnd (nextIdx i h) ∧ c.pos i = leftEnd i := by
+  have hle := pos_next_le_rightEnd_of_balance_zero hbal hsync
+  have heq : c.pos (nextIdx i h) = rightEnd (nextIdx i h) := le_antisymm hle hturn
+  refine ⟨heq, ?_⟩
+  unfold pairBalance at hbal
+  rw [heq, rightEnd_next_eq i h] at hbal
+  rw [leftEnd_eq i]
+  linarith
+
 /-! ## The remaining obligation, stated
 
 Everything above is unconditional. What Lemma 3.2 additionally needs is that

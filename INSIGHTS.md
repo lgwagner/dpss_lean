@@ -98,6 +98,27 @@ for two drones. It does not:
 
 A statement about *who turned first* became arithmetic on interval endpoints.
 
+### 4a. …but zero-length steps complicate it
+
+A wrinkle found while trying to finish the argument, and the reason case 3 is
+still open.
+
+A step can legitimately take **zero** time: when an event is already due, the
+step fires it without advancing the clock. That breaks the tidy story "the
+balance falls at rate 2, so bound the step by the remaining budget", because a
+zero-length step changes headings without consuming any budget at all.
+
+Concretely, the pinning argument above shows both drones arrive at their
+endpoints *simultaneously* — but showing the left drone then **turns**, rather
+than merely being entitled to, needs to rule out an unbounded run of
+zero-length steps in which it sits at its endpoint heading outward. Non-Zeno
+rules that out globally (`nonZeno`), so the ingredients exist; assembling them
+is bookkeeping over run indices rather than new mathematics.
+
+> **Lesson.** In an event-driven model, "time advances each step" is an
+> assumption worth checking before any argument leans on it. Here it is false,
+> and the false version is very natural to assume.
+
 ---
 
 ## 5. Non-Zeno by counting, not by the paper's propagation claim
