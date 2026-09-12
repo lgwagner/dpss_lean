@@ -116,6 +116,16 @@ fn main() {
     link_trace("link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50)",
                10, 3, 2, 5, 2, 50, 52, 4);
 
+    // S7b, the team's standing conditions. `on_perimeter`, `adj_ordered`,
+    // `escorts_coherent` and `on_lattice` are hand-written transcriptions of
+    // Dpss/IntModel.lean -- the generator refuses them -- and until S7b they
+    // never executed, so nothing checked them against the Lean at all. Most of
+    // these rows violate one condition apiece, which is the point: on a valid
+    // state a wrong transcription and a right one both answer `true`, and what
+    // separates them is which states they reject. `EmitTraces.lean` prints the
+    // same block from the Lean twins and scripts/check_traces.py compares them.
+    standing_conditions();
+
     // The negative control for all of the above. A contract check that never
     // says no is not a check, so here is a drone that breaks the contract: its
     // reversal loses ground, which `leg_ok`'s `hold_leg` clause forbids. The
@@ -123,6 +133,62 @@ fn main() {
     // sample where the controller commands the reversal.
     fence_violation("fence, vehicle contract violated (a reversal that loses ground)",
                     10, 3, 2, 15, 44, 6);
+}
+
+/// `T`/`F`, as the harness prints a verdict.
+#[verifier::external]
+fn tf(b: bool) -> &'static str { if b { "T" } else { "F" } }
+
+/// One configuration, with each standing condition evaluated on it.
+///
+/// The order is forced by the contracts, not by taste: `on_perimeter_ex` needs
+/// only `repr_wf`, and the other three need `repr_bounded` — the position bounds
+/// are what stop the gap subtraction from overflowing. So when the perimeter
+/// check fails there is nothing further this may legitimately call, and the row
+/// prints `-`. `EmitTraces.lean` mirrors the gate so the outputs compare.
+///
+/// Returns `apart_on_boundaries`, which is reported separately: it is stated in
+/// Lean over the real-valued `Config`, not over `IntConfig`, so Lean has nothing
+/// to compare and it goes on a `contract:` line.
+#[verifier::external]
+fn cond_row(label: &str, k: i64, pos: Vec<i64>, dir: Vec<crate::dir::Dir>) -> Option<bool> {
+    use crate::exec::{Ensemble, on_perimeter_ex, adj_ordered_ex, escorts_coherent_ex,
+                      on_lattice_ex, inv_ex, apart_on_boundaries_ex};
+    let e = Ensemble { k, pos, dir, time: Ghost::assume_new() };
+    if !on_perimeter_ex(&e) {
+        println!("c={} perim=F ord=- esc=- lat=- inv=F", label);
+        return None;
+    }
+    println!("c={} perim=T ord={} esc={} lat={} inv={}", label,
+             tf(adj_ordered_ex(&e)), tf(escorts_coherent_ex(&e)),
+             tf(on_lattice_ex(&e)), tf(inv_ex(&e)));
+    Some(apart_on_boundaries_ex(&e))
+}
+
+/// The standing-conditions block. Same rows, same order, as `condBlock` in
+/// `EmitTraces.lean`.
+#[verifier::external]
+fn standing_conditions() {
+    use crate::dir::Dir::{Left, Right};
+    println!("--- standing conditions ---");
+    let rows: Vec<(&str, i64, Vec<i64>, Vec<crate::dir::Dir>)> = vec![
+        ("cfgS@0",            1, vec![0, 2, 4], vec![Right, Right, Right]),
+        ("cfgS@2",            1, vec![3, 5, 5], vec![Right, Left,  Left ]),
+        ("spread@1",          2, vec![6, 8],    vec![Right, Left ]),
+        ("off-perimeter",     1, vec![0, 2, 8], vec![Right, Right, Right]),
+        ("unordered",         1, vec![0, 4, 2], vec![Right, Right, Right]),
+        ("off-lattice",       1, vec![0, 1, 4], vec![Right, Right, Right]),
+        ("escort-incoherent", 1, vec![4, 4, 4], vec![Right, Right, Right]),
+        ("inv-but-not-apart", 1, vec![3, 3, 5], vec![Left,  Right, Right]),
+    ];
+    let mut apart = String::new();
+    for (label, k, pos, dir) in rows {
+        match cond_row(label, k, pos, dir) {
+            Some(a) => apart.push_str(&format!(" {}={}", label, tf(a))),
+            None => apart.push_str(&format!(" {}=-", label)),
+        }
+    }
+    println!("contract: apart_on_boundaries{}", apart);
 }
 
 /// The negative control for the `contract:` lines. Same vehicle, same

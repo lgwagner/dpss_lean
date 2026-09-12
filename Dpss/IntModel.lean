@@ -281,6 +281,95 @@ structure Invariant (K : ℕ) : Prop where
   escortsCoherent : c.EscortsCoherent K
   onLattice : c.OnLattice
 
+/-! ### Deciding the standing conditions
+
+Three of the four quantify over `Fin n` with a **dependent proof argument** —
+`∀ (i : Fin n) (h : i.val + 1 < n), …`. That shape is why
+`scripts/lean_to_verus.py` refuses to translate them, why they have no
+`Decidable` instance out of the box, and why their Rust transcriptions were
+checked by nothing at all: the generator will not produce them, and a Verus
+`spec fn` never executes, so no trace could exercise them either.
+
+Each therefore gets a `Bool` twin and a theorem that the twin **is** the
+condition. The twin is not a second definition to keep in step — the `_iff`
+theorem is what makes it the same one, decided. `EmitTraces.lean` evaluates the
+twins on every state of every recorded run, `rust/src/exec.rs` has `*_ex`
+counterparts that Verus proves equal to the Rust `spec fn`s, and
+`scripts/check_traces.py` compares the two sides row by row.
+-/
+
+/-- `OnPerimeter`, decided. -/
+def onPerimeterB (K : ℕ) : Bool :=
+  (List.finRange n).all fun i => decide (0 ≤ c.pos i ∧ c.pos i ≤ intPerimeter K n)
+
+theorem onPerimeterB_iff (K : ℕ) : c.onPerimeterB K = true ↔ c.OnPerimeter K := by
+  simp [onPerimeterB, OnPerimeter]
+
+/-- `AdjOrdered`, decided. The `dite` is what carries the dependent proof
+argument through a `List.all`. -/
+def adjOrderedB : Bool :=
+  (List.finRange n).all fun i =>
+    if h : i.val + 1 < n then decide (0 ≤ c.gap i h) else true
+
+theorem adjOrderedB_iff : c.adjOrderedB = true ↔ c.AdjOrdered := by
+  simp only [adjOrderedB, List.all_eq_true, List.mem_finRange, AdjOrdered, forall_const]
+  constructor
+  · intro h i hi
+    have := h i
+    simpa [hi] using this
+  · intro h i
+    split
+    · simpa using h i ‹_›
+    · rfl
+
+/-- `EscortsCoherent`, decided. -/
+def escortsCoherentB (K : ℕ) : Bool :=
+  (List.finRange n).all fun i =>
+    if h : i.val + 1 < n then
+      decide (c.Escorting i h = true → 0 ≤ c.separationTime K i)
+    else true
+
+theorem escortsCoherentB_iff (K : ℕ) :
+    c.escortsCoherentB K = true ↔ c.EscortsCoherent K := by
+  simp only [escortsCoherentB, List.all_eq_true, List.mem_finRange, EscortsCoherent,
+    forall_const]
+  constructor
+  · intro h i hi
+    have hd := h i
+    rw [dif_pos hi] at hd
+    exact of_decide_eq_true hd
+  · intro h i
+    split
+    · exact decide_eq_true (h i ‹_›)
+    · rfl
+
+/-- `OnLattice`, decided. -/
+def onLatticeB : Bool :=
+  (List.finRange n).all fun i =>
+    if h : i.val + 1 < n then decide (2 ∣ c.gap i h) else true
+
+theorem onLatticeB_iff : c.onLatticeB = true ↔ c.OnLattice := by
+  simp only [onLatticeB, List.all_eq_true, List.mem_finRange, OnLattice, forall_const]
+  constructor
+  · intro h i hi
+    have := h i
+    simpa [hi] using this
+  · intro h i
+    split
+    · simpa using h i ‹_›
+    · rfl
+
+/-- The whole standing invariant, decided. -/
+def invariantB (K : ℕ) : Bool :=
+  c.onPerimeterB K && c.adjOrderedB && c.escortsCoherentB K && c.onLatticeB
+
+theorem invariantB_iff (K : ℕ) : c.invariantB K = true ↔ c.Invariant K := by
+  simp only [invariantB, Bool.and_eq_true, onPerimeterB_iff, adjOrderedB_iff,
+    escortsCoherentB_iff, onLatticeB_iff]
+  constructor
+  · rintro ⟨⟨⟨hp, ha⟩, he⟩, hl⟩; exact ⟨hp, ha, he, hl⟩
+  · rintro ⟨hp, ha, he, hl⟩; exact ⟨⟨⟨hp, ha⟩, he⟩, hl⟩
+
 
 /-! ## The lattice is closed under a step
 

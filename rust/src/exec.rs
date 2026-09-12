@@ -447,4 +447,244 @@ pub fn run_ex(e: &mut Ensemble, steps: usize)
     }
 }
 
+// ---------------------------------------------------------------------------
+// The standing conditions, executed (S7b)
+//
+// `on_perimeter`, `adj_ordered`, `escorts_coherent` and `on_lattice` are the
+// four definitions `scripts/lean_to_verus.py` refuses to translate -- they
+// quantify over `Fin n` with a dependent proof argument -- so they are
+// hand-written transcriptions of `Dpss/IntModel.lean`. Being `spec fn`s they
+// never execute, so no trace could exercise them either, and nothing checked
+// them against the Lean at all. That is the same hole S6b closed for the fence
+// and the link, and these close it for the team.
+//
+// The point of these is that they must be evaluable on states that *violate*
+// them. So none may require `repr_ok`: `repr_ok` contains `inv`, which would
+// make the answer `true` by assumption and the whole exercise vacuous. They
+// require only as much as their arithmetic needs -- `repr_wf` to compute a
+// perimeter, and the position bounds to subtract two positions without
+// overflowing, which `on_perimeter_ex` itself is what establishes.
+// ---------------------------------------------------------------------------
+
+/// The representation alone: faithful and non-overflowing, with **nothing**
+/// assumed about the standing conditions. `repr_ok` is exactly this plus `inv`.
+pub open spec fn repr_wf(e: Ensemble) -> bool {
+    &&& e.pos.len() == e.dir.len()
+    &&& e.k > 0
+    &&& fits(view_of(e))
+}
+
+/// `repr_wf` plus the position bounds — what `on_perimeter_ex` establishes, and
+/// exactly what the other three need to form a gap without overflowing.
+pub open spec fn repr_bounded(e: Ensemble) -> bool {
+    &&& repr_wf(e)
+    &&& on_perimeter(view_of(e))
+}
+
+/// The perimeter, from a merely well-formed ensemble. `perimeter_ex` needs
+/// `repr_ok`; this one cannot.
+pub fn perimeter_wf_ex(e: &Ensemble) -> (r: i64)
+    requires repr_wf(*e)
+    ensures r as int == perimeter(view_of(*e)), 0 <= r <= 1_000_000_000
+{
+    2 * e.k * (e.pos.len() as i64)
+}
+
+/// `on_perimeter`, computed.
+pub fn on_perimeter_ex(e: &Ensemble) -> (r: bool)
+    requires repr_wf(*e)
+    ensures r == on_perimeter(view_of(*e))
+{
+    let n = e.pos.len();
+    let perim = perimeter_wf_ex(e);
+    let mut j: usize = 0;
+    let mut ok: bool = true;
+    while j < n
+        invariant
+            0 <= j <= n,
+            n == e.pos.len(),
+            repr_wf(*e),
+            perim as int == perimeter(view_of(*e)),
+            ok == (forall|i: int| 0 <= i < j ==>
+                0 <= #[trigger] view_of(*e).pos[i] <= perimeter(view_of(*e))),
+        decreases n - j
+    {
+        proof { lemma_view_pos(*e, j as int); }
+        if e.pos[j] < 0 || e.pos[j] > perim {
+            ok = false;
+        }
+        j = j + 1;
+    }
+    ok
+}
+
+/// `adj_ordered`, computed.
+pub fn adj_ordered_ex(e: &Ensemble) -> (r: bool)
+    requires repr_bounded(*e)
+    ensures r == adj_ordered(view_of(*e))
+{
+    let n = e.pos.len();
+    let mut j: usize = 0;
+    let mut ok: bool = true;
+    while j + 1 < n
+        invariant
+            0 <= j < n,
+            n == e.pos.len(),
+            repr_bounded(*e),
+            ok == (forall|i: int| 0 <= i < j ==> 0 <= #[trigger] gap(view_of(*e), i)),
+        decreases n - j
+    {
+        proof {
+            lemma_view_pos(*e, j as int);
+            lemma_view_pos(*e, j as int + 1);
+        }
+        assert(0 <= view_of(*e).pos[j as int] <= perimeter(view_of(*e)));
+        assert(0 <= view_of(*e).pos[j as int + 1] <= perimeter(view_of(*e)));
+        let g: i64 = e.pos[j + 1] - e.pos[j];
+        assert(g as int == gap(view_of(*e), j as int));
+        if g < 0 {
+            ok = false;
+        }
+        j = j + 1;
+    }
+    ok
+}
+
+/// `on_lattice`, computed.
+///
+/// The parity is read off the two positions rather than off the gap, because
+/// both positions are nonnegative and Rust's truncating `%` agrees with the
+/// specification's Euclidean one there. On the gap, which may be negative, they
+/// would not agree, and the check would be wrong for exactly the states it is
+/// meant to reject.
+pub fn on_lattice_ex(e: &Ensemble) -> (r: bool)
+    requires repr_bounded(*e)
+    ensures r == on_lattice(view_of(*e))
+{
+    let n = e.pos.len();
+    let mut j: usize = 0;
+    let mut ok: bool = true;
+    while j + 1 < n
+        invariant
+            0 <= j < n,
+            n == e.pos.len(),
+            repr_bounded(*e),
+            ok == (forall|i: int| 0 <= i < j ==> #[trigger] gap(view_of(*e), i) % 2 == 0),
+        decreases n - j
+    {
+        proof {
+            lemma_view_pos(*e, j as int);
+            lemma_view_pos(*e, j as int + 1);
+        }
+        assert(0 <= view_of(*e).pos[j as int] <= perimeter(view_of(*e)));
+        assert(0 <= view_of(*e).pos[j as int + 1] <= perimeter(view_of(*e)));
+        assert((view_of(*e).pos[j as int + 1] - view_of(*e).pos[j as int]) % 2 == 0
+            <==> view_of(*e).pos[j as int] % 2 == view_of(*e).pos[j as int + 1] % 2);
+        let even: bool = e.pos[j] % 2 == e.pos[j + 1] % 2;
+        assert(even == (gap(view_of(*e), j as int) % 2 == 0));
+        if !even {
+            ok = false;
+        }
+        j = j + 1;
+    }
+    ok
+}
+
+/// `escorts_coherent`, computed.
+pub fn escorts_coherent_ex(e: &Ensemble) -> (r: bool)
+    requires repr_bounded(*e)
+    ensures r == escorts_coherent(view_of(*e))
+{
+    let n = e.pos.len();
+    let mut j: usize = 0;
+    let mut ok: bool = true;
+    while j + 1 < n
+        invariant
+            0 <= j < n,
+            n == e.pos.len(),
+            repr_bounded(*e),
+            ok == (forall|i: int| 0 <= i && i < j && #[trigger] escorting(view_of(*e), i)
+                ==> 0 <= separation_time(view_of(*e), i)),
+        decreases n - j
+    {
+        proof {
+            lemma_view_pos(*e, j as int);
+            lemma_view_pos(*e, j as int + 1);
+            crate::geometry::lemma_common_le_perimeter(view_of(*e), j as int);
+        }
+        assert(0 <= view_of(*e).pos[j as int] <= perimeter(view_of(*e)));
+        assert(0 <= view_of(*e).pos[j as int + 1] <= perimeter(view_of(*e)));
+        let ce: i64 = 2 * e.k * ((j as i64) + 1);
+        assert(ce as int == common_end(view_of(*e), j as int));
+        let esc: bool = e.pos[j + 1] - e.pos[j] == 0 && e.dir[j] == e.dir[j + 1];
+        assert(esc == escorting(view_of(*e), j as int));
+        // the match, not an `if`, so that Verus case-splits `isign` on the variant
+        let st: i64 = match e.dir[j] {
+            Dir::Left => e.pos[j] - ce,
+            Dir::Right => ce - e.pos[j],
+        };
+        assert(st as int == separation_time(view_of(*e), j as int));
+        if esc && st < 0 {
+            ok = false;
+        }
+        j = j + 1;
+    }
+    ok
+}
+
+/// The whole standing invariant, computed.
+///
+/// The order is not cosmetic: `on_perimeter` is checked first because the other
+/// three need its bounds before they may subtract two positions.
+pub fn inv_ex(e: &Ensemble) -> (r: bool)
+    requires repr_wf(*e)
+    ensures r == inv(view_of(*e))
+{
+    if !on_perimeter_ex(e) {
+        return false;
+    }
+    adj_ordered_ex(e) && escorts_coherent_ex(e) && on_lattice_ex(e)
+}
+
+/// `apart_on_boundaries`, computed — the reachability invariant carried
+/// alongside `inv`, and the other half of `step_ex`'s precondition.
+pub fn apart_on_boundaries_ex(e: &Ensemble) -> (r: bool)
+    requires repr_bounded(*e)
+    ensures r == apart_on_boundaries(view_of(*e))
+{
+    let n = e.pos.len();
+    let mut j: usize = 0;
+    let mut ok: bool = true;
+    while j + 1 < n
+        invariant
+            0 <= j < n,
+            n == e.pos.len(),
+            repr_bounded(*e),
+            ok == (forall|i: int| 0 <= i && i < j && #[trigger] co_located(view_of(*e), i)
+                && view_of(*e).dir[i] == Dir::Left && view_of(*e).dir[i + 1] == Dir::Right
+                ==> view_of(*e).pos[i] == common_end(view_of(*e), i)),
+        decreases n - j
+    {
+        proof {
+            lemma_view_pos(*e, j as int);
+            lemma_view_pos(*e, j as int + 1);
+            crate::geometry::lemma_common_le_perimeter(view_of(*e), j as int);
+        }
+        assert(0 <= view_of(*e).pos[j as int] <= perimeter(view_of(*e)));
+        assert(0 <= view_of(*e).pos[j as int + 1] <= perimeter(view_of(*e)));
+        let ce: i64 = 2 * e.k * ((j as i64) + 1);
+        assert(ce as int == common_end(view_of(*e), j as int));
+        let bad: bool = e.pos[j + 1] - e.pos[j] == 0
+            && e.dir[j] == Dir::Left && e.dir[j + 1] == Dir::Right;
+        assert(bad == (co_located(view_of(*e), j as int)
+            && view_of(*e).dir[j as int] == Dir::Left
+            && view_of(*e).dir[j as int + 1] == Dir::Right));
+        if bad && e.pos[j] != ce {
+            ok = false;
+        }
+        j = j + 1;
+    }
+    ok
+}
+
 } // verus!

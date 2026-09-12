@@ -61,6 +61,62 @@ def teamBlock {n : ℕ} (name : String) (c : IntConfig n) (K : ℕ) (hn : 0 < n)
     (steps : ℕ) : List String :=
   hdr name :: (List.range (steps + 1)).map fun k => render (c.run K hn k)
 
+/-! ### The standing conditions
+
+`OnPerimeter`, `AdjOrdered`, `EscortsCoherent` and `OnLattice` are the four
+definitions `scripts/lean_to_verus.py` refuses to translate, so the Rust holds
+hand-written transcriptions of them; and being Verus `spec fn`s they never
+executed, so nothing exercised them either. S7b gave both sides an executable
+form — `Dpss/IntModel.lean`'s `Bool` twins here, `rust/src/exec.rs`'s `*_ex`
+functions there — and this block is where the two are compared.
+
+Most of the rows below **violate** something on purpose. A block of states that
+all satisfy the conditions would not test the transcriptions at all: `repr_ok`
+asserts `inv`, so on a valid state a wrong transcription and a right one both
+answer `true`. What separates them is which states they reject.
+
+`ord`, `esc` and `lat` print as `-` when `perim` is false. That is not
+squeamishness: the Rust may not evaluate the other three until the position
+bounds are known, because those bounds are what stop the gap subtraction from
+overflowing (`repr_bounded` in `rust/src/exec.rs`). Lean could evaluate them
+anyway, and mirrors the gate instead so the two outputs are comparable.
+
+`ApartOnBoundaries` is *not* here. It is stated in `Dpss/InductionStep.lean`
+over the real-valued `Config`, not over `IntConfig`, so Lean has nothing to
+evaluate; the Rust reports its own on a `contract:` line, which is dropped
+before comparison. -/
+
+def tf : Bool → String
+  | true => "T"
+  | false => "F"
+
+/-- A configuration from literal positions and headings, as the harness builds
+one. -/
+def mkI (n : ℕ) (ps : List ℤ) (ds : List Dir) : IntConfig n where
+  time := 0
+  pos := fun i => ps.getD i.val 0
+  dir := fun i => ds.getD i.val Dir.right
+
+def condRow (label : String) (n K : ℕ) (ps : List ℤ) (ds : List Dir) : String :=
+  let c : IntConfig n := mkI n ps ds
+  if c.onPerimeterB K then
+    s!"c={label} perim=T ord={tf c.adjOrderedB} esc={tf (c.escortsCoherentB K)} " ++
+      s!"lat={tf c.onLatticeB} inv={tf (c.invariantB K)}"
+  else
+    s!"c={label} perim=F ord=- esc=- lat=- inv=F"
+
+open Dir in
+def condBlock : List String :=
+  hdr "standing conditions" ::
+  [ condRow "cfgS@0"            3 1 [0, 2, 4] [right, right, right]
+  , condRow "cfgS@2"            3 1 [3, 5, 5] [right, left,  left ]
+  , condRow "spread@1"          2 2 [6, 8]    [right, left ]
+  , condRow "off-perimeter"     3 1 [0, 2, 8] [right, right, right]
+  , condRow "unordered"         3 1 [0, 4, 2] [right, right, right]
+  , condRow "off-lattice"       3 1 [0, 1, 4] [right, right, right]
+  , condRow "escort-incoherent" 3 1 [4, 4, 4] [right, right, right]
+  , condRow "inv-but-not-apart" 3 1 [3, 3, 5] [left,  right, right] ]
+
 /-- A fence block: position, observation, heading, low-water mark. -/
 def fenceBlock (name : String) (S : Sim) (n : ℕ) : List String :=
   let rows := (List.range n).map fun k =>
@@ -103,6 +159,7 @@ def blocks : List String :=
   pairBlock "stale link on the fresh margin (margin=30 < 2*(10+3+2) + 2*10)"
     linkShort traceD 4 ++
   linkBlock "link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50)" 2 4 ++
+  condBlock ++
   badBlock "fence, vehicle contract violated (a reversal that loses ground)" 6
 
 def main : IO Unit := blocks.forM IO.println
