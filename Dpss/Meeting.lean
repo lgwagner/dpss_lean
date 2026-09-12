@@ -263,8 +263,65 @@ theorem exists_firstLeft {c : Config n} (hn : 0 < n) (hi : c.Invariant)
       rw [hR, Dir.sign_right, one_mul] at hk
       linarith
 
+/-! ## How a gap evolves under fixed headings
+
+One equation covering every phase: while both headings are fixed, the gap
+changes at the *difference* of the two velocities. Growing at 2 when the pair
+heads apart, constant when they head the same way, shrinking at 2 when they
+approach. -/
+
+theorem gap_sub_eq_of_dirsConst {c : Config n} (hn : 0 < n) (i : Fin n)
+    (h : i.val + 1 < n) (a m : ℕ)
+    (h1 : ∀ p, a ≤ p → p < a + m → (c.run hn p).dir i = (c.run hn a).dir i)
+    (h2 : ∀ p, a ≤ p → p < a + m →
+      (c.run hn p).dir (nextIdx i h) = (c.run hn a).dir (nextIdx i h)) :
+    (c.run hn (a + m)).gap i h - (c.run hn a).gap i h
+      = (((c.run hn a).dir (nextIdx i h)).sign - ((c.run hn a).dir i).sign)
+        * ((c.run hn (a + m)).time - (c.run hn a).time) := by
+  have p1 := pos_sub_eq_of_dirConst hn i a m h1
+  have p2 := pos_sub_eq_of_dirConst hn (nextIdx i h) a m h2
+  unfold gap
+  linarith
+
+/-- A pair heading apart grows its gap at rate 2. -/
+theorem gap_of_separating {c : Config n} (hn : 0 < n) (i : Fin n)
+    (h : i.val + 1 < n) (a m : ℕ)
+    (h1 : ∀ p, a ≤ p → p < a + m → (c.run hn p).dir i = Dir.left)
+    (h2 : ∀ p, a ≤ p → p < a + m →
+      (c.run hn p).dir (nextIdx i h) = Dir.right) :
+    (c.run hn (a + m)).gap i h
+      = (c.run hn a).gap i h
+        + 2 * ((c.run hn (a + m)).time - (c.run hn a).time) := by
+  rcases Nat.eq_zero_or_pos m with hm | hm
+  · subst hm; simp
+  have ha1 : (c.run hn a).dir i = Dir.left := h1 a le_rfl (by omega)
+  have ha2 : (c.run hn a).dir (nextIdx i h) = Dir.right := h2 a le_rfl (by omega)
+  have hk := gap_sub_eq_of_dirsConst hn i h a m
+    (fun p hp1 hp2 => by rw [h1 p hp1 hp2, ha1])
+    (fun p hp1 hp2 => by rw [h2 p hp1 hp2, ha2])
+  rw [ha1, ha2, Dir.sign_left, Dir.sign_right] at hk
+  linarith
+
+/-- A pair heading the same way holds its gap fixed. -/
+theorem gap_of_parallel {c : Config n} (hn : 0 < n) (i : Fin n)
+    (h : i.val + 1 < n) (a m : ℕ) (d : Dir)
+    (h1 : ∀ p, a ≤ p → p < a + m → (c.run hn p).dir i = d)
+    (h2 : ∀ p, a ≤ p → p < a + m → (c.run hn p).dir (nextIdx i h) = d) :
+    (c.run hn (a + m)).gap i h = (c.run hn a).gap i h := by
+  rcases Nat.eq_zero_or_pos m with hm | hm
+  · subst hm; simp
+  have ha1 : (c.run hn a).dir i = d := h1 a le_rfl (by omega)
+  have ha2 : (c.run hn a).dir (nextIdx i h) = d := h2 a le_rfl (by omega)
+  have hk := gap_sub_eq_of_dirsConst hn i h a m
+    (fun p hp1 hp2 => by rw [h1 p hp1 hp2, ha1])
+    (fun p hp1 hp2 => by rw [h2 p hp1 hp2, ha2])
+  rw [ha1, ha2] at hk
+  simp at hk
+  linarith
+
 end Config
 
 end DPSS
+
 
 
