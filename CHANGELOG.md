@@ -12,6 +12,56 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 (later) — the work package, closed
+
+The two items the Theorem 2.1 entry below left open are done. **Every item in
+the work package is complete.** 594 theorems, all `sorry`-free.
+
+### What landed
+
+| | |
+|---|---|
+| **C3′** Sharpness at every `n` | `bound_sharp_general` — no `B < 2 − 1/n` is correct, for any `n ≥ 2` |
+| **C1′** Nondeterminism as a relation | `convergesBy_of_isRun` — Theorem 2.1 for every trajectory of `StepRel` |
+
+### Both were re-sized, and then shrank again
+
+The entry below re-sized C1′ from `M` to `L` and kept C3′ at `M`, in each case
+budgeting for the construction the paper describes. Both estimates were wrong,
+and wrong the same way.
+
+**C3′** was sized for the paper's `n`-drone cascade — `2(n−1)` phases, each a
+configuration given by a formula in the phase index. None of it was needed. The
+theorem does not ask where every drone is at every moment; it asks that one
+drone be outside its interval at one late instant. On a ladder every gap stays
+`d` while all drones head right, so a drone that turned left would have to be
+co-located with its right-hand neighbour — impossible unless it has none. That
+pins the first turn, and Lemma 3.1 does the rest. No configuration in the
+cascade is ever written down.
+
+**C1′** was sized for re-proving the development over an arbitrary trajectory,
+reaching all 31 files. Re-reading the paper made that unnecessary: the passage
+that flags the ambiguity ends *"Neither of these issues bears on the results
+reported below, since our upper bound only concerns phase 2, where these issues
+do not arise."* That is a claim about reachable states, and it is provable. The
+two escort headings differ exactly when the meeting point lies strictly inside
+the middle drone's interval — word for word the paper's own description of the
+open case — and that configuration cannot arise. So the relation collapses to
+the function, and every theorem in the development is already a theorem about
+every resolution.
+
+`ExamplesThree.triple` guards against the obvious failure mode: it exhibits a
+configuration where the open clause genuinely admits two headings, so the
+uniqueness theorem is not a theorem about our own definition.
+
+### What is left
+
+Nothing from the work package. `PLAN.md` now carries a backlog instead: **E1**,
+a Rust implementation of Algorithm A verified against this specification in
+Verus, with the discretization problem named up front.
+
+---
+
 ## 2026-09-12 — Theorem 2.1
 
 **The `2 − 1/n` bound is proved.** The work package is complete except for two

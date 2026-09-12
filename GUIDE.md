@@ -312,45 +312,64 @@ cascade and is `C3′` in `PLAN.md`.
 ## 8. What is honestly not done
 
 `STATUS.md` §4 is the authoritative list and is deliberately longer than the
-list of things that are. The two live items:
+list of things that are. **The work package is complete** — every item in it,
+including the two that were re-sized along the way. What follows is what sits
+outside it.
 
-**The nondeterminism is still resolved one way.** The paper deliberately leaves
-open which neighbour a middle drone escorts when three or more converge, and
-notes that the strongest bound would quantify over all resolutions.
+**Algorithm B is out of scope**, and always was: wrong estimates, a changing
+perimeter, drones joining or leaving. That is where the original 2008 proof
+broke and where the open problem still lives.
 
-This gap used to be described as being about `newDir`'s priority order —
-`border > separation > meet > unchanged`. `Dpss/Priority.lean` checked that
-description and it was seven-eighths wrong. For every pair of events that can
-be due at one drone at one instant, compute both answers and compare: two
-combinations are impossible, five agree (a separating drone is standing on a
-boundary, and from a boundary the escort heading is forced), and exactly one
-differs — the paper's *bounce*, where the alternative resolution provably walks
-a drone off its own left endpoint — which is precisely the bug a concrete
-`n = 2` trace caught back when `AtSeparation` was first written, and the reason
-it does not require the pair to be escorting.
+**The phase-1 refutation the original plan listed is unreachable here**, not
+merely unfinished. It concerns estimate propagation, which is Algorithm B; this
+development models Algorithm A, where estimates are correct by assumption and
+absent from `Config`. Recorded as a planning error rather than a gap.
 
-So the residual gap is not the priority order. It is the **definition of a
-meet**: here `MeetRight i` requires the pair to be *approaching*, so a drone
-co-located with both neighbours has at most one meet due and its own heading
-decides which; the paper treats meeting as positional. Closing it means making
-`step` a relation and re-proving the development over an arbitrary trajectory —
-roughly thirty primitive lemmas re-derived from a specification instead of a
-definition, and every statement in all 31 files gaining a parameter. That is
-`C1′`, and it is `L`.
+**And a backlog item, not a gap:** `PLAN.md` E1 proposes a Rust implementation
+verified against this specification in Verus. The interesting difficulty is
+named there — Lean's model is over `ℝ`, Verus reasons about executable code —
+and proving the *invariant* alone (drones stay on the perimeter, never overtake)
+would already be worth having.
 
-**Sharpness is checked at `n = 2`, not for every `n`** — `C3′`.
+### The nondeterminism, since it was the last thing standing
 
-And, unchanged from the start: **Algorithm B is out of scope.** Wrong
-estimates, a changing perimeter, drones joining or leaving. That is where the
-original 2008 proof broke and where the open problem still lives.
+The paper deliberately leaves open which neighbour a middle drone escorts when
+three or more converge. Two files close it.
 
----
+`Dpss/Priority.lean` measured the event-priority order: for every pair of
+events that can be due at one drone at one instant, two combinations are
+impossible, five agree, and exactly one differs — the paper's *bounce*, where
+the alternative provably walks a drone off its own left endpoint.
+
+`Dpss/Nondeterminism.lean` then models the rest as a **relation**. `LegitDir`
+admits every legitimate heading update, with the paper's open case genuinely
+open; `StepRel` is one step of the relation and `IsRun` a trajectory. And then:
+
+```lean
+theorem isRun_eq_run … : IsRun c hn f → ∀ k, f k = c.run hn k
+theorem convergesBy_of_isRun … -- Theorem 2.1, for every trajectory
+```
+
+The relation collapses to the function. The two escort headings differ exactly
+when the meeting point lies strictly inside the middle drone's interval —
+word for word the paper's "three of them are within the middle drone's
+interval" — and `not_strictly_inside_of_grouped` shows that configuration
+cannot arise: the right-hand pair forces the drone to head right, and then the
+left-hand pair contradicts every case.
+
+Which is exactly what the paper asserts and does not prove: *"our upper bound
+only concerns phase 2, where these issues do not arise."*
+
+`ExamplesThree.triple` keeps it honest — a configuration where the open clause
+really does admit two headings, so the uniqueness theorem is not a theorem
+about our own definition.
 
 ## 9. The session, commit by commit
 
-Eight commits took the project from "Theorem 2.1 is stated but proved only at
-`n = 1`" to "Theorem 2.1 is proved and shown sharp". Each is self-contained and
-builds clean.
+Twelve commits took the project from "Theorem 2.1 is stated but proved only at
+`n = 1`" to "Theorem 2.1 is proved, sharp at every `n`, and independent of the
+resolution of the paper's nondeterminism". Each is self-contained and builds
+clean.
 
 | commit | what landed |
 |---|---|
@@ -362,8 +381,12 @@ builds clean.
 | `8fe6e93` | `Dpss/ThreeConverge.lean` — three drones that start out of position and settle, via a genuine three-way meeting |
 | `e969f31` | `Dpss/Priority.lean` — measuring the nondeterminism (§8) |
 | `0ae43be` | `STATUS.md`, `PLAN.md`, `INSIGHTS.md`, `README.md` brought up to date |
+| `be1079a` | this guide |
+| `e2ad74f` | `CHANGELOG.md` |
+| `e97593b` | `Dpss/SharpnessGeneral.lean` — **C3′**, the bound attained at every `n` |
+| `ff6a26c` | `Dpss/Nondeterminism.lean` — **C1′**, the step relation and its collapse |
 
-`565 theorems`, all `sorry`-free, across 31 files.
+`594 theorems`, all `sorry`-free, across 33 files.
 
 ---
 
