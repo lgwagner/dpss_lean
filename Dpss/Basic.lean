@@ -129,6 +129,19 @@ other to after meeting, and the point at which they separate. Defined as drone
 `i+1`'s left endpoint. -/
 noncomputable def commonEnd (i : Fin n) : ℝ := rightEnd i
 
+/-- Assigned intervals sit inside the perimeter: no left endpoint is negative. -/
+theorem leftEnd_nonneg (i : Fin n) : 0 ≤ leftEnd i := by
+  unfold leftEnd; positivity
+
+/-- And no right endpoint exceeds 1. -/
+theorem rightEnd_le_one (i : Fin n) : rightEnd i ≤ 1 := by
+  have hn : 0 < n := lt_of_le_of_lt (Nat.zero_le i.val) i.isLt
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  unfold rightEnd
+  rw [div_le_one hn']
+  have h : i.val + 1 ≤ n := i.isLt
+  exact_mod_cast h
+
 /-- The leftmost drone's interval starts at the left border of the perimeter. -/
 @[simp] theorem leftEnd_zero (hn : 0 < n) : leftEnd (⟨0, hn⟩ : Fin n) = 0 := by
   unfold leftEnd; simp
