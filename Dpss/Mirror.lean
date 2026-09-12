@@ -339,6 +339,16 @@ theorem escorting_congr (c : Config n) {i i' : Fin n} (h : i.val + 1 < n)
     c.Escorting i h ↔ c.Escorting i' h' := by
   subst hii; exact Iff.rfl
 
+theorem coLocated_congr (c : Config n) {i i' : Fin n} (h : i.val + 1 < n)
+    (h' : i'.val + 1 < n) (hii : i = i') :
+    c.CoLocated i h ↔ c.CoLocated i' h' := by
+  subst hii; exact Iff.rfl
+
+theorem atSeparation_congr (c : Config n) {i i' : Fin n} (h : i.val + 1 < n)
+    (h' : i'.val + 1 < n) (hii : i = i') :
+    c.AtSeparation i h ↔ c.AtSeparation i' h' := by
+  subst hii; exact Iff.rfl
+
 theorem mirror_pair_idx (j : Fin n) (hj : j.val + 1 < n) :
     mirrorIdx (nextIdx (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj)) = j := by
   rw [nextIdx_mirrorIdx_next, mirrorIdx_mirrorIdx]
@@ -400,6 +410,89 @@ theorem timeToNextEvent_mirror (c : Config n) (hn : 0 < n) :
   refine le_antisymm (timeToNextEvent_mirror_le c hn) ?_
   have h := timeToNextEvent_mirror_le c.mirror hn
   rwa [mirror_mirror] at h
+
+/-! ## Reflected events
+
+Under reflection `SepRight` becomes `SepLeft`, `MeetRight` becomes `MeetLeft`,
+and each border event becomes the other. -/
+
+theorem mirrorIdx_pos_iff (i : Fin n) : 0 < (mirrorIdx i).val ↔ i.val + 1 < n := by
+  have := i.isLt
+  simp only [mirrorIdx_val]
+  omega
+
+/-- The drone to the left of the reflected drone is the reflection of the drone
+to its right. -/
+theorem prevIdx_mirrorIdx (i : Fin n) (h : i.val + 1 < n) :
+    prevIdx (mirrorIdx i) ((mirrorIdx_pos_iff i).mpr h) = mirrorIdx (nextIdx i h) := by
+  apply Fin.ext
+  have := i.isLt
+  simp only [prevIdx_val, mirrorIdx_val, nextIdx_val]
+  omega
+
+/-- A separation in the mirrored world is a separation here. -/
+theorem atSeparation_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.AtSeparation i h
+      ↔ c.AtSeparation (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  have hce : commonEnd (mirrorIdx (nextIdx i h)) = 1 - commonEnd i := by
+    unfold commonEnd
+    rw [rightEnd_mirrorIdx, rightEnd_eq_leftEnd_succ i h]
+    rfl
+  constructor
+  · rintro ⟨hco, hp⟩
+    have hco' := (coLocated_mirror c i h).mp hco
+    have hsame : c.pos (mirrorIdx i) = c.pos (mirrorIdx (nextIdx i h)) := by
+      have hx := hco'
+      unfold CoLocated gap at hx
+      rw [nextIdx_mirrorIdx_next i h] at hx
+      linarith
+    refine ⟨hco', ?_⟩
+    simp only [mirror_pos] at hp
+    rw [hce, ← hsame]
+    linarith
+  · rintro ⟨hco', hp⟩
+    have hsame : c.pos (mirrorIdx i) = c.pos (mirrorIdx (nextIdx i h)) := by
+      have hx := hco'
+      unfold CoLocated gap at hx
+      rw [nextIdx_mirrorIdx_next i h] at hx
+      linarith
+    rw [hce] at hp
+    refine ⟨(coLocated_mirror c i h).mpr hco', ?_⟩
+    simp only [mirror_pos]
+    linarith
+
+/-- Separating from the right becomes separating from the left. -/
+theorem sepRight_mirror (c : Config n) (i : Fin n) :
+    c.mirror.SepRight i ↔ c.SepLeft (mirrorIdx i) := by
+  unfold SepRight SepLeft
+  constructor
+  · rintro ⟨h, hs⟩
+    refine ⟨(mirrorIdx_pos_iff i).mpr h, ?_⟩
+    exact (atSeparation_congr c _ _ (prevIdx_mirrorIdx i h)).mpr
+      ((atSeparation_mirror c i h).mp hs)
+  · rintro ⟨hp, hs⟩
+    have h : i.val + 1 < n := (mirrorIdx_pos_iff i).mp hp
+    refine ⟨h, (atSeparation_mirror c i h).mpr ?_⟩
+    exact (atSeparation_congr c _ _ (prevIdx_mirrorIdx i h)).mp hs
+
+/-- Meeting the right neighbour becomes meeting the left one. -/
+theorem meetRight_mirror (c : Config n) (i : Fin n) :
+    c.mirror.MeetRight i ↔ c.MeetLeft (mirrorIdx i) := by
+  unfold MeetRight MeetLeft
+  constructor
+  · rintro ⟨h, hco, hA⟩
+    refine ⟨(mirrorIdx_pos_iff i).mpr h, ?_, ?_⟩
+    · exact (coLocated_congr c _ _ (prevIdx_mirrorIdx i h)).mpr
+        ((coLocated_mirror c i h).mp hco)
+    · exact (approaching_congr c _ _ (prevIdx_mirrorIdx i h)).mpr
+        ((approaching_mirror c i h).mp hA)
+  · rintro ⟨hp, hco, hA⟩
+    have h : i.val + 1 < n := (mirrorIdx_pos_iff i).mp hp
+    refine ⟨h, ?_, ?_⟩
+    · exact (coLocated_mirror c i h).mpr
+        ((coLocated_congr c _ _ (prevIdx_mirrorIdx i h)).mp hco)
+    · exact (approaching_mirror c i h).mpr
+        ((approaching_congr c _ _ (prevIdx_mirrorIdx i h)).mp hA)
 
 end Config
 

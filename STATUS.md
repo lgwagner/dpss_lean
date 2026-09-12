@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `28d112c3fece`  
+**Commit at time of writing:** `9cdd78166dc0`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**366 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 145 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**399 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 499 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -797,12 +797,36 @@ Done here:
   staying at or beyond your *left* endpoint in the mirrored world is staying at
   or before your *right* endpoint in this one.
 
-**What remains (part 2):** that mirroring and running **commute** —
-`step (mirror c) = mirror (step c)`. That needs every ingredient of a step to be
-shown to reflect: gaps, separation rates, all three deadlines, and each event
-predicate, with `SepRight` ↔ `SepLeft`, `MeetRight` ↔ `MeetLeft`,
-`AtLeftBorder` ↔ `AtRightBorder` and `escortDir` ↔ `escortDirLeft` swapping. The
-index bookkeeping is the fiddly part: `nextIdx (mirrorIdx i) = mirrorIdx (prevIdx i)`.
+**Part 2, done so far:** every local ingredient of a step now has its
+reflection law.
+
+- Index identities, including the one everything rests on:
+  `nextIdx (mirrorIdx (nextIdx i h)) = mirrorIdx i`.
+- `gap_mirror`, `sepRate_mirror`, `coLocated_mirror`, `approaching_mirror`,
+  `escorting_mirror`.
+- `atLeftBorder_mirror` / `atRightBorder_mirror` — the two border events swap.
+- `borderTime_mirror` — a drone's time to its border is **unchanged**: which
+  border it heads for swaps, and so does its distance to it.
+- `meetTime_mirror`, `separationTime_mirror`.
+- **`timeToNextEvent_mirror`** — the global deadline is invariant. This one
+  could *not* be done per-drone: `droneNextTime i` consults the pair to `i`'s
+  right while its reflection consults the pair to the reflected drone's *left*,
+  so per-drone deadlines genuinely do not correspond. What corresponds is the
+  candidate *sets*, so the minima agree; the proof bounds each side by the
+  other and gets the second direction from the involution.
+- `atSeparation_mirror`, `sepRight_mirror`, `meetRight_mirror` — `SepRight`
+  becomes `SepLeft` and `MeetRight` becomes `MeetLeft`.
+
+**What remains:** `newDir` under reflection, then the commutation itself. One
+subtlety already visible: `escortDir` and `escortDirLeft` reflect into each
+other **except exactly on the shared boundary**, where the two tie-break
+oppositely. That case is unreachable — a separation outranks a meet there — but
+the proof will have to say so.
+
+A recurring obstacle worth noting: these predicates carry the index inside a
+*proof argument*, which blocks `rw` with "motive is not type correct". Four
+congruence lemmas (`approaching_congr` and friends) exist purely to substitute
+the index first and close by proof irrelevance.
 
 ---
 
@@ -1207,6 +1231,39 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.ordered_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftEnd_le_mirror_pos_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.mirror_pos_le_rightEnd_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirrorIdx_pos' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.mirrorIdx_lt' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.mirror_next_lt' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.nextIdx_mirrorIdx_next' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.gap_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepRate_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.coLocated_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.approaching_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escorting_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.flip_eq_left_iff' depends on axioms: [propext]
+'DPSS.Config.flip_eq_right_iff' depends on axioms: [propext]
+'DPSS.Config.atLeftBorder_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atRightBorder_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.borderTime_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetTime_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_mirror_pair' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.approaching_congr' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escorting_congr' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.coLocated_congr' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atSeparation_congr' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirror_pair_idx' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.approaching_mirror_pair' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escorting_mirror_pair' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetTime_mirror_pair' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_mirror_pair' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_mirror_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirrorIdx_pos_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.prevIdx_mirrorIdx' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atSeparation_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepRight_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetRight_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1317,7 +1374,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**366/366 clean — `sorryAx` appears zero times.**
+**399/399 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1367,6 +1424,9 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+9cdd781  2026-09-12  feat: the global deadline is invariant under reflection (B7, part 2b)
+97067a2  2026-09-12  feat: reflected quantities and events (B7, part 2a)
+92eb248  2026-09-12  feat: the perimeter reflected (B7, part 1)
 28d112c  2026-09-12  feat: every drone eventually turns, and how soon
 d0aaa02  2026-09-12  docs: record the symmetric half as a work item -- I had not counted it
 49bac2d  2026-09-12  feat: the invariant the counterexample called for
