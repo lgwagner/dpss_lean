@@ -27,3 +27,4 @@ import Dpss.RealTime
 import Dpss.InductionStep
 import Dpss.Convergence
 import Dpss.Sharpness
+import Dpss.ThreeConverge
