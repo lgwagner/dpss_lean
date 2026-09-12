@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `d9e7f2fde864`  
+**Commit at time of writing:** `beb1ee8ce590`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -63,7 +63,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**86 theorems**, all `sorry`-free, across 5 files (`Basic.lean` 199 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 315 lines, `Schedule.lean` 215 lines).
+**126 theorems**, all `sorry`-free, across 9 files (`Basic.lean` 212 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 215 lines, `Step.lean` 227 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -325,6 +325,8 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.rightEnd_sub_leftEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.leftEnd_lt_rightEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.rightEnd_eq_leftEnd_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.leftEnd_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.rightEnd_le_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.leftEnd_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.rightEnd_last' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.together_refl' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -384,6 +386,13 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.timeToNextEvent_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.timeToNextEvent_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.timeToNextEvent_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.advance_newDir_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_le_leftEnd_of_turnsRightAt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightEnd_le_pos_of_turnsLeftAt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_sub_eq_of_dirConst' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_advance_of_crossing' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_advance_of_crossing_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -399,9 +408,40 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.meetTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_nonneg_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.prevIdx_val' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.prevIdx_lt' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.nextIdx_prevIdx' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.newDir_of_noEvent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDir_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDir_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_le_meetTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.adjOrdered_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ordered_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_time_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_time_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.run_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.run_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.onPerimeter_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSync_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sync_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftEnd_eq_zero_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightEnd_eq_one_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sync_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.convergesBy_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_meetLeft_of_dir_right' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_meetRight_of_dir_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_leftEnd_of_sepLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_rightEnd_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightEnd_le_pos_of_turnsLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_le_leftEnd_of_turnsRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**86/86 clean — `sorryAx` appears zero times.**
+**126/126 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -451,6 +491,10 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+beb1ee8  2026-09-12  feat: crossing an interval costs at least 1/n of time
+8213bd8  2026-09-12  feat: Lemma 3.1 -- where a drone is allowed to turn
+f07504a  2026-09-12  feat: step function and runs
+27bfd34  2026-09-12  docs: repair STATUS.md gap list, which the previous commit did not update
 d9e7f2f  2026-09-12  feat: spurious border deadlines are dominated (and Lean caught a false lemma)
 b7f4b0f  2026-09-12  feat: time to the next event, proved strictly positive
 c12ef57  2026-09-12  feat: event scheduling, and make the status report self-refreshing
