@@ -58,115 +58,10 @@ scheduled*.
 
 **Track A is complete.** A drone-level controller with fencing and separation
 guarantees exists, in Lean and in Verus, against a vehicle described by
-measurable numbers and a network described by a bound on message age.
-
-### S6 — raise the safety traces to a real differential test  ⟨M⟩  ✅ done
-
-**The known weakness in what Track A ships.** `rust/traces.sh` runs two kinds of
-block. `cfgS` and `spread` are a genuine differential test: Lean proves those
-runs by `decide`, the generator produces the spec Verus proves the executable
-step equals, and the binary must reproduce them. The six `fence` / `separation` /
-`stale link` blocks are **only a regression test** — they were recorded from the
-binary, because `Fence.Traj` and friends are structures over `ℕ → ℝ` and do not
-execute. They guard against the Rust changing; they do not check it against Lean.
-
-Four steps, in the order they pay:
-
-* **S6a — generalize the fence over an ordered ring, instantiate at `ℤ`.** ⟨S⟩
-  ✅ **done.** `Dpss/Fence.lean`, `Dpss/Separation.lean` and `Dpss/Comms.lean`
-  are now stated over an arbitrary ordered ring; `margin_sharp` stays over `ℝ`
-  as expected, since it halves the deficiency to build its witness.
-  `Dpss/FenceInt.lean` is the `ℤ` instantiation, written in the Rust's own
-  packaging — unbundled `Vehicle` with a separate `wf` — so that it can be read
-  beside `rust/src/fence.rs` a definition at a time.
-
-  Two things came out of it that were not in the sizing. First,
-  `Dpss/Fence.lean` now has the Rust's **shape**: the per-leg content is a layer
-  of its own (`LegOk`, `ObsOk`, `turn_le_next`, `low_nonneg_leg`, `safe_step`)
-  and the trajectory theorems iterate it, which is how `rust/src/fence.rs` was
-  already organized — so the correspondence is node for node instead of
-  structure-against-predicate, and three of the old proofs collapsed to one
-  line. Second, the fence definitions are **computable** now that no real
-  division is involved, which is what S6c needs; `FenceInt.trace_breach` is
-  already a `decide`-proved integer breach at the numbers
-  `rust/traces.expected` records.
-* **S6b — exec mirrors of the spec predicates.** ⟨S⟩ ✅ **done.** Eleven `_ex`
-  functions across `rust/src/fence.rs`, `separation.rs` and `comms.rs`, each
-  with `ensures result == <the spec predicate>`, and every trace block now
-  carries a `contract:` line that is the specification evaluated on it sample by
-  sample. `121 verified, 0 errors`.
-
-  The quantified predicates needed one thing the sizing did not mention: no
-  executable function computes `traj_ok`, which quantifies over every sample. So
-  `traj_ok_iff_steps` proves `traj_ok` is exactly `traj_step_ok` at every sample
-  and the `_ex` function computes *that*, which makes "checked on a prefix" a
-  precise statement rather than an apology. `pair_traj_ok_iff_steps` and
-  `link_ok_iff_steps` do the same; `comms_ok_implies_steps` runs one way only,
-  because a trace records the gap and its estimate and those do not determine the
-  two positions behind them.
-
-  And a negative control, because a check that cannot fail is not a check: the
-  last trace block is a drone whose reversal loses ground, which `leg_ok`'s
-  `hold_leg` clause forbids, and the same executable specification rejects it —
-  `FAILS first at k=4`.
-* **S6c — `decide`-proved integer traces in Lean.** ⟨M⟩ ✅ **done.**
-  `Dpss/FenceTrace.lean` defines the adversary, `EmitTraces.lean` prints the
-  blocks, and `scripts/check_traces.py` compares them with the recorded file —
-  run by `rust/traces.sh` locally and by Lean CI, since the Verus job has no
-  Lean toolchain.
-
-  The sizing said "the worst-case simulator". There is only **one**: the six
-  safety blocks are the same trajectory, and what differs between them is the
-  *vehicle*, not the adversary. The separation blocks are the fence blocks in
-  the excess-separation coordinate with the doubled vehicle, and the stale-link
-  blocks are those again with `age · dmax` folded into its sensing term — which
-  is what `Dpss/Separation.lean` and `Dpss/Comms.lean` proved in the first
-  place, showing up in the traces. Six blocks, six lines of definition, one
-  theorem (`Sim.trajOk`, for any well-formed vehicle and any margin), and the
-  sufficient-margin blocks are clear of the fence by `Sim.low_nonneg` rather
-  than by evaluation.
-* **S6d — extend the generator to the safety specs.** ⟨M, higher risk⟩ ✅
-  **done, with one deliberate refusal.** Fourteen `spec fn`s across
-  `rust/src/spec/fence_model.rs` and `separation_model.rs` are now generated
-  from `Dpss/FenceInt.lean` and `Dpss/SeparationInt.lean`, so the predicates a
-  wrong transcription would hide in are not transcribed at all.
-
-  The grammar extensions the sizing predicted were needed, and one it did not.
-  The predicted ones: propositional connectives (`∧ ∨ ¬ →`, the last
-  right-associative), explicit binders, Lean's dot notation, and the anonymous
-  constructor `⟨a, b, c⟩`. The one it did not: **a second shape**. The team
-  model's definitions are functions of the configuration; the safety ones take
-  their arguments explicitly. That is a parameter-passing convention, not a
-  grammar, and keeping it as a source attribute left `model.rs` byte-identical.
-
-  **The refusal is the interesting part.** `link_ok`'s two index clauses
-  subtract sample numbers, which is ℕ subtraction in Lean and `int` subtraction
-  in Verus — truncating in one, not in the other. They agree under the
-  `src k ≤ k` the predicate itself states, so a translator *could* be talked
-  into it; this one refuses, and the two clauses stay hand-written with the Lean
-  beside them. `INSIGHTS.md` §27.
-
-  Checked live rather than assumed: reversing `hold_leg` in the Lean fence turns
-  `121 verified` into `117 verified, 4 errors`, and forgetting the doubling in
-  the Lean pair costs one more.
-
-**Done when** `traces.sh` can truthfully say all blocks are checked against
-Lean. ✅ It now does, and `scripts/check_traces.py` is the other half of that
-sentence: `traces.sh` checks the binary against the recorded file, the script
-checks the recorded file against Lean.
-
-The one thing Lean does not attest is the `contract:` lines, and it should not:
-they are the Rust's own executable specifications evaluated on the trace, which
-is a fact about the Rust. The script drops them before comparing and says so.
-
-**What this still does not establish.** The four steps do not prove the Lean
-theorem and the Verus theorem are the same theorem, and nothing here was ever
-going to. What they did was shrink what a reader has to check by hand, in four
-different ways: same integers (S6a), the specifications evaluated rather than
-inspected (S6b), the traces derived from Lean rather than recorded (S6c), and
-the specifications themselves generated rather than transcribed (S6d). What is
-left is the `traj_ok`-shaped quantifiers, the two `link_ok` index clauses, and
-the proof structures, which stay separate regardless.
+measurable numbers and a network described by a bound on message age. **S6 is
+complete too** — the four steps that raised the safety traces to a differential
+test and the safety specifications to generated ones are recorded under
+*Completed* below, and `STATUS.md` §10 carries the detail.
 
 ---
 
@@ -209,6 +104,36 @@ uniform across drones and bounded, and the work roughly halves.
 ---
 
 ## Completed on this branch
+
+**S6 — the correspondence, four ways.** `Dpss/FenceInt.lean`,
+`Dpss/FenceTrace.lean`, `Dpss/SeparationInt.lean`, `EmitTraces.lean`,
+`scripts/check_traces.py`, and the second and third shapes of
+`scripts/lean_to_verus.py`. The item began as *raise the six safety trace blocks
+from a regression test to a differential one*, and `rust/traces.sh` can now
+truthfully say every block is checked against Lean. Each step shrank the part a
+reader has to check by hand, and each shrank a different part:
+
+| | |
+|---|---|
+| **S6a** | the fence over an ordered ring, instantiated at `ℤ` — the two halves quantify over the same integers, and `Dpss/Fence.lean` was given the Rust's per-leg shape so the comparison is like with like |
+| **S6b** | the spec predicates made executable (`ensures result == leg_ok(..)`), so a `contract:` line in a trace is the specification itself, evaluated |
+| **S6c** | the traces derived from Lean rather than recorded from the binary, with a negative control on both sides |
+| **S6d** | the specifications generated rather than transcribed — 14 `spec fn`s, plus the 24 the team model already had |
+
+*Insights, three of them.* **A correspondence gap can be deleted rather than
+tested** — ask which hypotheses a proof actually uses, and if what is left is
+common to both settings, instantiate one at the other (`INSIGHTS.md` §25).
+**The transfers show up in the traces**: the six safety blocks are one
+trajectory against three vehicles, which is `PairTraj.toFence` turning up where
+nobody was looking for it, so prove the contract in general and leave evaluation
+with nothing but the digits (§26). **A translator earns its keep where it says
+no**: `link_ok`'s index clauses are ℕ subtraction in Lean and `int` subtraction
+in Verus, agreeing only under a hypothesis the predicate itself states — which
+is exactly the argument a generator must not be allowed to make (§27).
+
+*What is left, and it is a read.* That `traj_ok` assembles its three parts the
+way the Lean does; the two refused `link_ok` clauses; and the proof structures,
+which stay separate whatever the definitions do.
 
 **S5 — safety when the network degrades.** `Dpss/Comms.lean`,
 `rust/src/comms.rs`. Staleness is sensing error, at one `Dmax` of margin per
