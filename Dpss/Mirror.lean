@@ -494,6 +494,60 @@ theorem meetRight_mirror (c : Config n) (i : Fin n) :
     · exact (approaching_mirror c i h).mpr
         ((approaching_congr c _ _ (prevIdx_mirrorIdx i h)).mp hA)
 
+/-- The mirror images of the previous two, obtained from them by reflecting
+the configuration rather than reproving anything. -/
+theorem sepLeft_mirror (c : Config n) (i : Fin n) :
+    c.mirror.SepLeft i ↔ c.SepRight (mirrorIdx i) := by
+  have h := sepRight_mirror c.mirror (mirrorIdx i)
+  rw [mirror_mirror, mirrorIdx_mirrorIdx] at h
+  exact h.symm
+
+theorem meetLeft_mirror (c : Config n) (i : Fin n) :
+    c.mirror.MeetLeft i ↔ c.MeetRight (mirrorIdx i) := by
+  have h := meetRight_mirror c.mirror (mirrorIdx i)
+  rw [mirror_mirror, mirrorIdx_mirrorIdx] at h
+  exact h.symm
+
+/-! ## Reflected escort headings
+
+`escortDir` and `escortDirLeft` reflect into each other — **except exactly on
+the shared boundary**, where they tie-break oppositely. That case never arises
+where it is used: a meet is only consulted once a separation has been ruled
+out, and for a co-located pair a separation is *precisely* being on the
+boundary. Both lemmas therefore carry that disequality. -/
+
+theorem escortDir_mirror (c : Config n) (i : Fin n)
+    (hne : c.mirror.pos i ≠ commonEnd i) :
+    c.mirror.escortDir i = (c.escortDirLeft (mirrorIdx i)).flip := by
+  have hle : leftEnd (mirrorIdx i) = 1 - commonEnd i := by
+    unfold commonEnd; exact leftEnd_mirrorIdx i
+  have hpos : c.mirror.pos i = 1 - c.pos (mirrorIdx i) := rfl
+  unfold escortDir escortDirLeft
+  rcases lt_trichotomy (c.pos (mirrorIdx i)) (leftEnd (mirrorIdx i)) with hx | hx | hx
+  · rw [hle] at hx
+    rw [if_neg (by rw [hpos, not_lt]; linarith), if_pos (by rw [hle]; exact hx)]
+    rfl
+  · exact absurd (by rw [hpos, hx, hle]; ring) hne
+  · rw [hle] at hx
+    rw [if_pos (by rw [hpos]; linarith), if_neg (by rw [hle, not_lt]; linarith)]
+    rfl
+
+theorem escortDirLeft_mirror (c : Config n) (i : Fin n)
+    (hne : c.mirror.pos i ≠ leftEnd i) :
+    c.mirror.escortDirLeft i = (c.escortDir (mirrorIdx i)).flip := by
+  have hce : commonEnd (mirrorIdx i) = 1 - leftEnd i := by
+    unfold commonEnd; exact rightEnd_mirrorIdx i
+  have hpos : c.mirror.pos i = 1 - c.pos (mirrorIdx i) := rfl
+  unfold escortDir escortDirLeft
+  rcases lt_trichotomy (c.pos (mirrorIdx i)) (commonEnd (mirrorIdx i)) with hx | hx | hx
+  · rw [hce] at hx
+    rw [if_neg (by rw [hpos, not_lt]; linarith), if_pos (by rw [hce]; exact hx)]
+    rfl
+  · exact absurd (by rw [hpos, hx, hce]; ring) hne
+  · rw [hce] at hx
+    rw [if_pos (by rw [hpos]; linarith), if_neg (by rw [hce, not_lt]; linarith)]
+    rfl
+
 end Config
 
 end DPSS
