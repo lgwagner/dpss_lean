@@ -12,6 +12,56 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S6c: the safety traces, from Lean; S6 done  *(branch `safety`)*
+
+`rust/traces.sh` has said since they were written that six of its eight blocks
+were a regression test and not a differential one. It no longer has to.
+
+**The six safety blocks are one trajectory.** That is the finding, and it was not
+in the plan's sizing, which said "define the worst-case simulator" — singular by
+accident rather than by insight. A drone against a wall, a pair closing, a pair
+across a stale link: the same adversary, flying at the fence with the sensor
+reading high by the whole sensing allowance. What differs is the **vehicle**. The
+separation blocks are the fence blocks in the excess-separation coordinate under
+the doubled vehicle; the stale-link blocks are those again with `age · dmax`
+folded into its sensing term. Which is exactly what `Dpss/Separation.lean` and
+`Dpss/Comms.lean` proved — the two transfers turning up in the traces.
+
+So `Dpss/FenceTrace.lean` is short. `Sim.trajOk` proves the adversary obeys the
+whole vehicle contract for any well-formed vehicle and any margin — not a fact
+about the recorded numbers, so changing them cannot make it vacuous — and
+`Sim.low_nonneg` proves the three sufficient-margin blocks clear of the fence by
+the fence theorem rather than by evaluation. Only the rows are `decide`.
+
+**Two scripts meet on one file.** `EmitTraces.lean` prints the blocks from those
+definitions; `scripts/check_traces.py` compares its output with
+`rust/traces.expected`; `rust/traces.sh` compares the same file with the verified
+binary. The Lean check runs from `traces.sh` when `lake` is on the path, and is a
+step of its own in Lean CI — the Verus job pins Verus, Rust and Z3 and has no
+Lean toolchain, which is deliberate and stays that way.
+
+**The `contract:` lines are excluded, and should be.** They are the Rust's own
+executable specifications (S6b) evaluated on the trace, which is a fact about the
+Rust. The script drops them and says so.
+
+**The negative control is on both sides now.** The reversal that loses ground is
+rejected by the executable specification at `k=4`, and `bad_not_trajOk` proves no
+`trajOk` holds of it.
+
+826 theorems, `sorry`-free; `121 verified, 0 errors`; every trace block checked
+against Lean.
+
+### S6 is done, and S6d is not
+
+* **S6d — extending the generator to the safety specs — was optional and is not
+  done.** It is the only step that would remove part of the human read, and the
+  read it would remove is the one S6a already made short.
+* **What none of this establishes** is that the Verus `leg_ok` and the Lean
+  `LegOk` are the same predicate. Same integers, same shape, same names, same
+  order, same evaluated traces — and still a human read.
+
+---
+
 ## 2026-09-12 — S6b: the specifications, executed  *(branch `safety`)*
 
 The step the plan calls the one that matters most, and the reason is that a

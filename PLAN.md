@@ -58,7 +58,7 @@ scheduled*.
 guarantees exists, in Lean and in Verus, against a vehicle described by
 measurable numbers and a network described by a bound on message age.
 
-### S6 — raise the safety traces to a real differential test  ⟨M⟩  ◐ S6a, S6b done
+### S6 — raise the safety traces to a real differential test  ⟨M⟩  ✅ S6a–S6c done
 
 **The known weakness in what Track A ships.** `rust/traces.sh` runs two kinds of
 block. `cfgS` and `spread` are a genuine differential test: Lean proves those
@@ -107,17 +107,35 @@ Four steps, in the order they pay:
   last trace block is a drone whose reversal loses ground, which `leg_ok`'s
   `hold_leg` clause forbids, and the same executable specification rejects it —
   `FAILS first at k=4`.
-* **S6c — `decide`-proved integer traces in Lean.** ⟨M⟩ Define the worst-case
-  simulator as a computable `ℤ`-valued function, `decide` its trace, and build a
-  `Traj` from it so the theorem applies — the shape of `Sharp.traj` and
-  `Flight.toTraj`, done twice already. `traces.expected` is then emitted from
-  Lean theorems and the six blocks become genuine differential tests.
+* **S6c — `decide`-proved integer traces in Lean.** ⟨M⟩ ✅ **done.**
+  `Dpss/FenceTrace.lean` defines the adversary, `EmitTraces.lean` prints the
+  blocks, and `scripts/check_traces.py` compares them with the recorded file —
+  run by `rust/traces.sh` locally and by Lean CI, since the Verus job has no
+  Lean toolchain.
+
+  The sizing said "the worst-case simulator". There is only **one**: the six
+  safety blocks are the same trajectory, and what differs between them is the
+  *vehicle*, not the adversary. The separation blocks are the fence blocks in
+  the excess-separation coordinate with the doubled vehicle, and the stale-link
+  blocks are those again with `age · dmax` folded into its sensing term — which
+  is what `Dpss/Separation.lean` and `Dpss/Comms.lean` proved in the first
+  place, showing up in the traces. Six blocks, six lines of definition, one
+  theorem (`Sim.trajOk`, for any well-formed vehicle and any margin), and the
+  sufficient-margin blocks are clear of the fence by `Sim.low_nonneg` rather
+  than by evaluation.
 * **S6d — extend the generator to the safety specs.** ⟨M, higher risk⟩ Optional.
   Correspondence by construction for the generated part; needs grammar
   extensions (`Dir`-valued `if`, structure fields), and `INSIGHTS.md` records
   that every E1 extension was a deliberate fix to a refusal.
 
-**Done when** `traces.sh` can truthfully say all blocks are checked against Lean.
+**Done when** `traces.sh` can truthfully say all blocks are checked against
+Lean. ✅ It now does, and `scripts/check_traces.py` is the other half of that
+sentence: `traces.sh` checks the binary against the recorded file, the script
+checks the recorded file against Lean.
+
+The one thing Lean does not attest is the `contract:` lines, and it should not:
+they are the Rust's own executable specifications evaluated on the trace, which
+is a fact about the Rust. The script drops them before comparing and says so.
 
 **What this still will not establish.** Even all four do not prove the Lean
 theorem and the Verus theorem are the same theorem. They make the remaining

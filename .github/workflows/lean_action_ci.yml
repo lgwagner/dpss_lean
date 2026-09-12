@@ -31,6 +31,13 @@ jobs:
       - name: No `sorry` in sources
         run: python3 scripts/no_sorry.py
 
+      # The six safety blocks of rust/traces.expected are checked against Lean
+      # here rather than in the Verus job, because this is the job with a Lean
+      # toolchain. rust/traces.sh checks the same file against the verified
+      # binary, so the two meet on it. See STATUS.md §10, S6c.
+      - name: The recorded safety traces agree with Lean
+        run: python3 scripts/check_traces.py
+
       # STATUS.md's generated blocks and GUIDE.md's deep links both claim to
       # describe the code. Both scripts self-check and fail if they no longer do.
       - name: Generated documentation is current

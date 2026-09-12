@@ -733,3 +733,51 @@ it, which is the one that needs to evaluate things.
 > one at the other and the correspondence problem disappears instead of becoming
 > a test suite. And when two proofs must be compared by eye, spend the small
 > amount it costs to give them the same shape.
+
+---
+
+## 26. The transfers show up in the traces
+
+S6c set out to replace six recorded trace blocks — a drone against a wall, a
+pair closing on each other, a pair across a degraded link, each twice for a
+sufficient and a deficient margin — with traces derived from Lean. The plan
+sized it as "define the worst-case simulator, `decide` its trace", and the
+implicit expectation was three simulators in three vocabularies.
+
+There is one. The six blocks are the *same trajectory*: fly at the fence, spend
+the whole displacement allowance every leg, read the sensor high by the whole
+sensing allowance, ask to keep going, and reverse without gaining ground. What
+differs between the blocks is not the adversary but the **vehicle** — doubled
+for a pair, and doubled with `age · dmax` in its sensing term for a stale link.
+
+That is not a coincidence and it is not cleverness. It is `INSIGHTS.md` §22 —
+*transfer both ways* — arriving somewhere nobody was looking for it.
+`PairTraj.toFence` and `CommsPair.toFence` were built to avoid re-proving the
+separation guarantee, and their content is precisely that a pair under a doubled
+vehicle **is** a drone at a fence. A worst case for one is therefore a worst case
+for the other, in the coordinates the map supplies. The test artifacts collapse
+for the same reason the proofs did.
+
+Two things follow that are worth carrying elsewhere.
+
+**A transfer predicts what the tests should look like.** If two results are
+related by a map, their worst cases are related by the same map, and building
+them separately is duplicating work the map already did. The six-blocks-to-one
+collapse was visible in `Dpss/Separation.lean` from the day it was written; it
+took until the traces needed generating to be noticed. Worth asking, whenever a
+transfer is proved: *what else in the repository is now redundant?*
+
+**Prove the contract in general; evaluate only the numbers.** `Sim.trajOk` says
+the adversary satisfies the vehicle contract for every well-formed vehicle and
+every margin. It mentions no recorded number, so no change to the traces can
+quietly make it vacuous, and the three blocks with a sufficient margin come out
+clear of the fence by the fence theorem rather than by evaluating anything. Only
+the printed rows are `decide`. A generated test suite is only as good as the
+general statement standing behind it, and that statement is usually cheaper to
+prove than the instances are to check.
+
+> **Lesson.** When two parts of a development are connected by a transfer, their
+> *tests* are connected by it too. Look for the collapse before writing the
+> second test harness — and prove the contract the harness is supposed to
+> exercise as a general theorem, so that evaluation is left with nothing to
+> decide but the digits.

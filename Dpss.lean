@@ -34,6 +34,7 @@ import Dpss.Nondeterminism
 import Dpss.IntModel
 import Dpss.Fence
 import Dpss.FenceInt
+import Dpss.FenceTrace
 import Dpss.Standoff
 import Dpss.Separation
 import Dpss.Kinematics

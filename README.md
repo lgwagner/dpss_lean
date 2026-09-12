@@ -146,6 +146,7 @@ phase-1 result that this scope cannot reach by construction.
 | `rust/README.md` | **E1** — the executable Rust implementation verified with Verus. `rust/PLAN.md` is its build plan, `rust/REFINEMENT.md` the obligations it does *not* discharge. |
 | `Dpss/Fence.lean` | **S2** — the margined fence: the one guarantee that needs no coordination. Stated over an ordered ring, so `ℤ` is an instance. |
 | `Dpss/FenceInt.lean` | **S6a** — that fence at `ℤ`, in the shape `rust/src/fence.rs` has. Read the two side by side. |
+| `Dpss/FenceTrace.lean` | **S6c** — the adversary the trace harness flies, proved to obey the vehicle contract. One `Sim` covers all six safety blocks. |
 | `Dpss/Standoff.lean` | **S0/S3** — the standoff change of coordinates, the scheduler correspondence, and Theorem 2.1 under standoff. |
 | `Dpss/Separation.lean` | **S3** — margined separation at the controller: the fence theorem, instantiated. |
 | `Dpss/Kinematics.lean` | **S1** — bounded speed as a change of clock, and why `vmin > 0` is required. |
@@ -160,6 +161,7 @@ phase-1 result that this scope cannot reach by construction.
 ```bash
 lake build                        # Lean 4.33.1 + Mathlib v4.33.1
 python3 scripts/audit.py          # every theorem's axiom dependencies
+python3 scripts/check_traces.py   # rust/traces.expected, checked against Lean
 python3 scripts/refresh_status.py # regenerate STATUS.md's generated blocks
 python3 scripts/refresh_guide_links.py  # re-point GUIDE.md's deep links at the source
 ```
@@ -170,7 +172,7 @@ The Rust half needs the pinned Verus toolchain (`scripts/setup_verus.sh`):
 
 ```bash
 ./rust/verify.sh                  # expect "0 errors"
-./rust/traces.sh                  # expect "traces agree with Lean"
+./rust/traces.sh                  # expect "traces agree with Lean" (runs the check above)
 python3 scripts/no_proof_holes.py # no assume/admit/external_body
 ```
 

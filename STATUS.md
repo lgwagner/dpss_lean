@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `bedfc710f27f`  
+**Commit at time of writing:** `c273ad99b58b`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**795 theorems**, all `sorry`-free, across 41 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 265 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**826 theorems**, all `sorry`-free, across 42 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 265 lines, `FenceTrace.lean` 348 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1719,6 +1719,37 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.FenceInt.low_nonneg_at' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.FenceInt.traceVehicle_wf' does not depend on any axioms
 'DPSS.FenceInt.trace_breach' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.Sim.obs_eq' does not depend on any axioms
+'DPSS.FenceInt.Sim.dir_eq' does not depend on any axioms
+'DPSS.FenceInt.Sim.p_succ' does not depend on any axioms
+'DPSS.FenceInt.Sim.not_left_of_right' does not depend on any axioms
+'DPSS.FenceInt.Sim.low_of_left' does not depend on any axioms
+'DPSS.FenceInt.Sim.low_of_right' does not depend on any axioms
+'DPSS.FenceInt.Sim.p_succ_of_left' does not depend on any axioms
+'DPSS.FenceInt.Sim.p_succ_of_right' does not depend on any axioms
+'DPSS.FenceInt.Sim.trajOk' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.Sim.low_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.traceV_wf' does not depend on any axioms
+'DPSS.FenceInt.tracePairV_wf' does not depend on any axioms
+'DPSS.FenceInt.traceCommsV_wf' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.fenceOk_clear' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.sepOk_clear' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.linkOk_clear' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.fenceShort_breach' does not depend on any axioms
+'DPSS.FenceInt.sepShort_breach' does not depend on any axioms
+'DPSS.FenceInt.linkShort_breach' does not depend on any axioms
+'DPSS.FenceInt.fenceOk_rows' does not depend on any axioms
+'DPSS.FenceInt.fenceShort_rows' does not depend on any axioms
+'DPSS.FenceInt.sepOk_rows' does not depend on any axioms
+'DPSS.FenceInt.sepShort_rows' does not depend on any axioms
+'DPSS.FenceInt.linkOk_rows' does not depend on any axioms
+'DPSS.FenceInt.linkShort_rows' does not depend on any axioms
+'DPSS.FenceInt.link_rows' does not depend on any axioms
+'DPSS.FenceInt.link_step_ok_rows' does not depend on any axioms
+'DPSS.FenceInt.link_drift_rows' does not depend on any axioms
+'DPSS.FenceInt.bad_rows' does not depend on any axioms
+'DPSS.FenceInt.bad_leg_4' does not depend on any axioms
+'DPSS.FenceInt.bad_not_trajOk' does not depend on any axioms
 'DPSS.Config.exists_greatest_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apartOnBoundaries_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apartOnBoundaries_of_not_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2175,7 +2206,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**795/795 clean — `sorryAx` appears zero times.**
+**826/826 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2225,6 +2256,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+c273ad9  2026-09-12  S6b: the specifications, executed
 bedfc71  2026-09-12  S6a: the fence at ℤ, in the shape the Rust has
 d44c013  2026-09-12  S6a: the fence was never about the reals
 a753e1c  2026-09-12  plan: S6 -- raise the safety traces to a real differential test
@@ -2494,7 +2526,7 @@ not scheduled.
 | **S1** | ~~Kinematics: bounded motion into the *team* model~~ | M | ✅ **uniform speeds** — `Dpss/Kinematics.lean`. Heterogeneous speeds recorded as a rewrite, not attempted |
 | **S4** | The continuous layer | XL | ◐ **core done** — `Dmax = V·Δt` derived, `Dpss/Continuous.lean`. See the non-claims |
 | **S5** | ~~Decentralized safety under a comms model~~ | L | ✅ **done** — `Dpss/Comms.lean`, `rust/src/comms.rs` |
-| **S6** | Raise the safety traces to a real differential test | M | ◐ **S6a and S6b done** — the fence is over an ordered ring and instantiated at `ℤ` (`Dpss/FenceInt.lean`), and the spec predicates now execute (`121 verified, 0 errors`). S6c–S6d open |
+| **S6** | ~~Raise the safety traces to a real differential test~~ | M | ✅ **S6a–S6c done** — `traces.sh` can now truthfully say every block is checked against Lean. S6d was optional and is not done |
 
 ### S2 — what is actually guaranteed
 
@@ -2800,6 +2832,51 @@ test: their columns are still recorded from the binary rather than derived from
 Lean. That is S6c, and `rust/traces.sh` still says so. Nor does it establish that
 the Verus `leg_ok` and the Lean `LegOk` are the same predicate — S6a made that
 read short, and it is still a read.
+
+### S6c — the safety traces, from Lean
+
+`rust/traces.sh` checks the verified binary against `rust/traces.expected`. That
+makes the file a *regression* test — it says the Rust has not changed. For the
+`cfgS` and `spread` blocks the other side was already closed, because Lean
+proves those runs by `decide`; for the six safety blocks it was not, because
+`Fence.Traj` was a structure over `ℕ → ℝ` and did not execute. S6a removed that
+obstruction, and this is what it bought.
+
+**One adversary, six blocks.** The six looked like three experiments in three
+vocabularies, twice over for the sufficient and the deficient margin. They are
+one trajectory:
+
+> fly at the fence, full displacement every leg, the sensor reading high by the
+> whole sensing allowance, the algorithm asking to keep going, and a reversal
+> that holds station and no more.
+
+`FenceTrace.Sim` is that. The separation blocks are it in the excess-separation
+coordinate under the **doubled** vehicle, and the stale-link blocks are it again
+with `age · dmax` folded into that vehicle's sensing term — which is exactly what
+`Dpss/Separation.lean` and `Dpss/Comms.lean` proved, turning up in the traces.
+What differs between the blocks is the vehicle, not the adversary.
+
+**What is proved, and what is evaluated.** `Sim.trajOk` proves the adversary
+obeys the whole vehicle contract for **any** well-formed vehicle and **any**
+margin, so it cannot be invalidated by changing the recorded numbers;
+`Sim.low_nonneg` then proves the three sufficient-margin blocks clear of the
+fence by the fence theorem rather than by evaluation. Only the rows themselves
+are `decide`.
+
+**The loop is closed by two scripts that meet on one file.** `EmitTraces.lean`
+prints the blocks from those definitions; `scripts/check_traces.py` compares its
+output with `rust/traces.expected`; `rust/traces.sh` compares the same file with
+the binary. It runs the Lean check when `lake` is on the path and leaves it to
+Lean CI otherwise, because the Verus CI job pins Verus, Rust and Z3 and has no
+Lean toolchain.
+
+**The `contract:` lines are excluded, deliberately.** They report the Rust's own
+executable specifications (S6b) evaluated on the trace, which is a fact about the
+Rust; Lean has nothing to say about them. The script drops them and says so.
+
+**And the negative control is on both sides.** The last block is a drone whose
+reversal loses ground: the executable specification rejects it at the sample
+where it happens, and `FenceTrace.bad_not_trajOk` proves no `trajOk` holds of it.
 
 ### What Track A does not claim
 
