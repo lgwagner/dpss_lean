@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `57dd848d94a6`  
+**Commit at time of writing:** `239b59977c43`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**413 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**416 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 207 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1352,6 +1352,9 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.meeting_pair_agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apart_transfer' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_apart_of_meet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_left_of_newDir_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_right_of_newDir_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apartOnBoundary_step' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1406,7 +1409,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**413/413 clean — `sorryAx` appears zero times.**
+**416/416 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1456,6 +1459,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+239b599  2026-09-12  feat: ApartOnBoundary is preserved by a step
+4a98d33  2026-09-12  feat: B7 complete -- "by symmetry" made honest
 57dd848  2026-09-12  feat: escort headings under reflection, and the tie-break that nearly bites
 0aa2894  2026-09-12  feat: events swap under reflection (B7, part 2c)
 9cdd781  2026-09-12  feat: the global deadline is invariant under reflection (B7, part 2b)
@@ -1507,6 +1512,72 @@ bcdb11f  2026-09-11  Create README.md
 971617b  2026-09-11  Initial commit
 ```
 <!-- END:COMMITS -->
+
+---
+
+## 8a. B1, derived rather than guessed
+
+I reached for three invariants before deriving the right one, and two were
+wrong. Writing the derivation down so the fourth attempt is not a fourth guess.
+
+### What has to be proved
+
+`BalanceNonneg` — the pair's balance never goes negative — because
+`leftSync_of_balanceNonneg` turns that into Lemma 3.2, and §3.17 turns Lemma
+3.2 into 3.3 and 3.4 as well.
+
+### Why the earlier attempts failed
+
+1. *"A co-located pair heading apart is on its boundary"*, pointwise. **False**
+   — §3.20 builds the counterexample.
+2. `ApartOnBoundary`, the same statement as a run invariant. **True and proved**
+   (§3.21), but it is conditioned on **co-location**, and the case that blocks
+   Lemma 3.2 is the one where the pair is **apart**. Right theorem, wrong shape.
+
+### The invariant
+
+Three conjuncts, each earning its place:
+
+| | Clause | Why |
+|---|---|---|
+| **(i)** | `0 ≤ balance` | what `leftSync_of_balanceNonneg` consumes |
+| **(ii)** | pair heading `(left, right)` ⟹ `balance = 0` | supplies (i) when the pair separates, and drives the pinning argument |
+| **(iii)** | `BothLeftApart` ⟹ `pos i = leftEnd i` | the only configuration that can drive the balance down |
+
+### Why each clause is preserved
+
+**(ii).** While the pair heads `(left, right)` the balance rate is
+`sign(left) + sign(right) = 0`, so it is **constant** — note this is the *sum*,
+unlike the gap, which uses the difference and grows at rate 2. So it suffices
+that the pair can only *enter* that state with balance zero. Two cases:
+
+- **Pair apart.** Then every event that could deliver `left` to one and `right`
+  to the other is excluded, because each of `SepRight`, `MeetRight`,
+  `SepLeft(next)`, `MeetLeft(next)` needs this pair co-located, and either
+  border event forces co-location by ordering. So the pair was *already*
+  `(left, right)` and the balance carries over.
+- **Pair co-located.** Either a separation fired — which zeroes the balance
+  outright — or, by §3.21's enumeration, the pair was already heading apart.
+
+**(iii).** If the pair is `(left, left)` and apart, the preceding state was
+`(left, right)`, so by (ii) the balance was zero; the positional core
+(`pinned_of_balance_zero`, §3.13) then pins the left drone to `leftEnd i`.
+
+**(i).** Falls out. The balance only decreases when both head left. Co-located,
+that is an escort and the scheduler stops it exactly at zero
+(`pairBalance_nonneg_step`). Apart, clause (iii) pins the left drone at its
+left endpoint, where left synchronization freezes the clock
+(`timeToNextEvent_eq_zero_of_pinned`) — so the balance does not move at all.
+
+### What is already built
+
+`pairBalance_advance`, `pairBalance_eq_zero_of_atSeparation`,
+`pairBalance_eq_two_mul_separationTime`, `pairBalance_nonneg_step`,
+`pinned_of_balance_zero`, `timeToNextEvent_eq_zero_of_pinned`,
+`apart_transfer`, `coLocated_of_turnsLeft` / `_turnsRight`,
+`newDir_left_cases` / `_right_cases`, `dir_left_of_newDir_apart` and its
+partner. **Every ingredient above exists.** What is missing is the statement of
+the three-clause invariant and its preservation proof, assembled from them.
 
 ---
 
