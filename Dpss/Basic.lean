@@ -199,19 +199,14 @@ def Ordered : Prop := ∀ i j : Fin n, i ≤ j → c.pos i ≤ c.pos j
 /-- Every drone is somewhere on the perimeter. -/
 def OnPerimeter : Prop := ∀ i : Fin n, 0 ≤ c.pos i ∧ c.pos i ≤ 1
 
-/-- Two drones are *together* when they occupy the same position. Because all
-drones move at the same speed, two drones that are together and heading the same
-way stay together — which is exactly what an escort is. -/
-def Together (i j : Fin n) : Prop := c.pos i = c.pos j
+/-! Two definitions that lived here and have been removed (**D1**).
 
-theorem together_refl (i : Fin n) : c.Together i i := rfl
-
-theorem together_symm {i j : Fin n} (h : c.Together i j) : c.Together j i := h.symm
-
-/-- A configuration fit to reason about: drones ordered, and on the perimeter. -/
-structure Valid : Prop where
-  ordered : c.Ordered
-  onPerimeter : c.OnPerimeter
+`Together i j := pos i = pos j` was superseded by `CoLocated`, which is stated
+on an *adjacent* pair via the gap and is what every later result actually
+quotes. `Valid` — ordered and on the perimeter — was superseded by `Invariant`,
+which adds escort coherence and is what is proved preserved by a step. Neither
+had a single use left; carrying them would invite a reader to prove something
+about the wrong predicate. -/
 
 end Config
 
