@@ -17,8 +17,8 @@ the finished mathematics. The baseline is elsewhere and is not disturbed:
 |---|---|
 | tag **`v1.0-lean-baseline`** | the Lean formalization of Avigad–van Doorn with extensions, and nothing else. **Start here** if you want the mathematics without the engineering. |
 | branch `main` | that baseline, as it continues |
-| branch `rust-verus` | **E1**, complete: an executable implementation in Rust with Verus proving key equivalence to the Lean specification — `87 verified, 0 errors` |
-| branch **`safety`** (here) | **Track A**: fencing and separation guarantees for a real vehicle. `rust-verus` plus `Dpss/Fence.lean`, `Dpss/Standoff.lean` and `rust/src/fence.rs` |
+| branch `rust-verus` | **E1**, complete: an executable implementation in Rust with Verus proving key equivalence to the Lean specification — `91 verified, 0 errors` |
+| branch **`safety`** (here) | **Track A**: fencing and separation guarantees for a real vehicle. `rust-verus` plus `Dpss/Fence.lean`, `Dpss/Standoff.lean`, `Dpss/Separation.lean` and the matching Verus modules |
 
 ## Status
 
@@ -78,13 +78,24 @@ conforming trajectory that crosses. Both fences; the right one by an explicit
 reflection. The same theorem is in Verus (`rust/src/fence.rs`), and the verified
 controller drives a trace that breaches exactly when the margin is short.
 
-**Margined separation is a change of constants, not a rewrite.**
-`Dpss/Standoff.lean` proves the shear `yᵢ = xᵢ − i·d` turns the separation
-requirement into the ordering invariant the whole development already rests on,
-that the dynamics commute under it (`toPoint_advance`), and that the assigned
-segments respace consistently — each narrowing by `1 − (n−1)d`, with a buffer of
-exactly `d` that two neighbouring drones cover precisely when the standoff is
-two half-footprints.
+**Margined separation is proved, at the model and at the controller.** The shear
+`yᵢ = xᵢ − i·d` turns the separation requirement into the ordering invariant the
+whole development already rests on, and `toPoint`/`fromPoint` are mutually
+inverse — so the standoff model *is* the point model in other coordinates, with
+the segments respaced (each narrowing by `1 − (n−1)d`, with a buffer of exactly
+`d` that two neighbouring drones cover precisely when the standoff is two
+half-footprints). Hence Theorem 2.1 under standoff:
+
+```lean
+theorem sConvergesBy (hL : 0 < usable n d) (hsi : c.SInvariant d hn)
+    (hab : c.SApartOnBoundaries d) : c.SConvergesBy d hn
+```
+
+— every drone inside its own respaced segment from `(2 − 1/n)·(1 − (n−1)d)` on,
+*sooner* than the point bound, because the team has less ground to cover. And at
+the controller, a pair under sampled sensing holds `d ≤ gap` at every instant,
+which is the fence theorem applied to the excess separation with the vehicle
+doubled.
 
 **What is not done** is in `STATUS.md` §4, which is written to be read. The
 work package is complete; what remains outside it is Algorithm B, and a
@@ -101,7 +112,8 @@ phase-1 result that this scope cannot reach by construction.
 | `CHANGELOG.md` | What changed and when, newest first — including what each session did **not** finish. |
 | `rust/README.md` | **E1** — the executable Rust implementation verified with Verus. `rust/PLAN.md` is its build plan, `rust/REFINEMENT.md` the obligations it does *not* discharge. |
 | `Dpss/Fence.lean` | **S2** — the margined fence: the one guarantee that needs no coordination. |
-| `Dpss/Standoff.lean` | **S0** — the standoff shear, and the verdict that margined separation is a change of constants. |
+| `Dpss/Standoff.lean` | **S0/S3** — the standoff change of coordinates, the scheduler correspondence, and Theorem 2.1 under standoff. |
+| `Dpss/Separation.lean` | **S3** — margined separation at the controller: the fence theorem, instantiated. |
 | `PLAN-original.md` | The original scoping plan, including one recorded planning error. |
 | `dpss-perimeter-surveillance-brief.md` | Literature brief, with corrections from the primary sources. |
 | `Dpss/` | The development. Each file opens with prose explaining the mathematics. |

@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `dbb1ca2c3466`  
+**Commit at time of writing:** `1b9331f54722`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**703 theorems**, all `sorry`-free, across 36 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 352 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**733 theorems**, all `sorry`-free, across 37 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 232 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1947,6 +1947,13 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.meetTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_nonneg_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.PairTraj.safe_iff_fence' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.PairTraj.le_low' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.PairTraj.le_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.pair_margin_sharp' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2002,6 +2009,29 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.coverage_exact' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_add_le_of_separated' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.toPoint_onPerimeter' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.fromPoint_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.fromPoint_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.fromPoint_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.fromPoint_toPoint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.toPoint_fromPoint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sRun_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sRun_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.toPoint_sStep' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.toPoint_sRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sStep_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sStep_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sBorderTime_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sMeetTime_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sSeparationTime_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sEscorting_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sDroneNextTime_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sTimeToNextEvent_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.toPoint_leftEnd_le_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.toPoint_le_rightEnd_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sEscortsCoherent_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sApartOnBoundaries_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sInvariant_toPoint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sConvergesBy' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.prevIdx_val' depends on axioms: [propext, Quot.sound]
 'DPSS.Config.prevIdx_lt' depends on axioms: [propext, Quot.sound]
 'DPSS.Config.nextIdx_prevIdx' depends on axioms: [propext, Quot.sound]
@@ -2083,7 +2113,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**703/703 clean — `sorryAx` appears zero times.**
+**733/733 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2133,6 +2163,10 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+1b9331f  2026-09-12  S3: the separation controller in Verus, with its own runtime negative control
+dadbdd7  2026-09-12  S3(b): the scheduler correspondence, and the bound under standoff
+9509ddf  2026-09-12  S3(a): margined separation at the controller — the fence, instantiated
+7210ae9  2026-09-12  S2: the right fence, and the repo brought up to date
 dbb1ca2  2026-09-12  S0: the standoff shear is exact — S3 is a change of constants
 43ed9a0  2026-09-12  S2: the fence in Verus, and a runtime negative control
 0e388b8  2026-09-12  S2: the margined fence, proved and proved sharp
@@ -2382,8 +2416,8 @@ not scheduled.
 |---|---|---|---|
 | **S0** | ~~Does the standoff shear hold?~~ | S | ✅ **yes, exactly** — `Dpss/Standoff.lean` |
 | **S2** | ~~The margined fence~~ | M | ✅ **proved, sharp, and executable** — `Dpss/Fence.lean`, `rust/src/fence.rs` |
+| **S3** | ~~Margined separation~~ | S | ✅ **both halves** — `Dpss/Separation.lean`, `Dpss/Standoff.lean`, `rust/src/separation.rs` |
 | S1 | Kinematics: bounded motion into the *team* model | M | open |
-| S3 | Margined separation | S | open — S0 makes it a change of constants |
 | S4 | The continuous layer: derive `Dmax` rather than assume it | XL | open |
 | S5 | Decentralized safety under a comms model | L | open |
 
@@ -2454,18 +2488,62 @@ buffer of exactly `d` between consecutive ones — and `coverage_exact` says the
 respacing loses nothing: with `d = 2r` the two neighbouring drones cover the
 buffer between them precisely, no gap and no overlap.
 
-**Predicted, not yet proved:** the convergence bound under standoff should be
-`(2 − 1/n)·(1 − (n−1)d)`, *better* than the point bound, because the drones have
-less ground to cover. Establishing that is S3's job, and requires the piece S0
-deliberately did not do — the scheduler-level correspondence for
-`timeToNextEvent`, `newDir` and `step`. Since every deadline is a time and times
-scale by one positive constant, that is arithmetic rather than a new idea, but
-it is **not done and not claimed**.
+The convergence bound under standoff was S0's prediction and is now S3's
+theorem — see below.
+
+### S3 — margined separation, in two halves
+
+**The model half.** `toPoint` has an inverse, so the standoff and point models
+are two coordinate systems on one thing rather than two models with a map
+between them. The standoff step is *defined* as the point step read in standoff
+coordinates, which makes the commuting square trivial and puts the content where
+it belongs — in the theorems saying the pullback has the form an engineer would
+have written:
+
+| | |
+|---|---|
+| `sStep_pos` | **drones still move at unit speed** in standoff coordinates — the shear is by a constant per drone, so it changes where a drone is, never how fast |
+| `sTimeToNextEvent_eq` | the step's duration is the minimum over drones of deadlines computed in standoff terms: `sBorderTime`, `sMeetTime` (still half the *excess* gap, since a pair still closes at rate two), `sSeparationTime` to the respaced boundary |
+| `sInvariant_toPoint` | the standing conditions correspond, so the invariant is stated about the standoff system rather than its image |
+| **`sConvergesBy`** | **Theorem 2.1 under standoff** |
+
+```
+every drone is inside its own respaced segment from
+(2 − 1/n)·(1 − (n−1)·d) onwards.
+```
+
+That constant is *smaller* than `2 − 1/n`: a team holding a standoff has less
+ground between the walls to cover, so it converges sooner. The standoff is paid
+for in **coverage**, not in time — each drone patrols a shorter segment, and
+`(n−1)·d` of the perimeter is buffer that `coverage_exact` already showed the
+footprints account for exactly.
+
+**The controller half.** `Dpss/Separation.lean`. At a wall a drone must never
+arrive; between drones the pair is *supposed* to close, so the guarantee is
+`d ≤ gap` with equality permitted — the fence's `0 ≤ p` shifted by the standoff.
+Writing `g − d` for the excess separation, every vehicle quantity doubles
+(both drones move, both turn, both are sensed) and **nothing else changes**, so
+
+```lean
+theorem PairTraj.le_low (hM : 2 * (V.Dmax + V.turn + V.eps) ≤ M)
+    (h0 : P.Safe 0) (k : ℕ) : d ≤ P.low k
+```
+
+is `Fence.Traj.low_nonneg` read through `PairTraj.toFence` — no second
+induction. `pair_margin_sharp` transfers backwards through `Traj.toPair`, so the
+doubled margin is exactly tight too, for free.
+
+`rust/src/separation.rs` is the same in Verus (`91 verified, 0 errors`), with two
+more traces driven by the verified controller: margin `30 = 2·(10+3+2)` stays
+clear at `low = 6` against a standoff of `5`; margin `26`, short by `2·eps`,
+breaches at `low = 2`.
 
 ### What Track A does not claim
 
-* **Nothing here is a convergence result.** S2 and S0 are about safety. Safety
-  under degraded cooperation would still say nothing about the team converging.
+* **The convergence result here is Theorem 2.1 transported, not a new one.**
+  `sConvergesBy` is the point theorem in standoff coordinates. It says nothing
+  about Algorithm B, about estimate propagation, or about phase 1 — those are
+  Track B, and the phase-1 bound is a genuinely open research problem.
 * **`Dmax` is a hypothesis.** Deriving it from a vehicle dynamics model is S4,
   and keeping it a hypothesis is exactly what made S2 cheap. The honest
   interface is that the guarantee is conditional on a number someone else

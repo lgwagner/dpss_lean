@@ -49,18 +49,15 @@ scheduled*.
 |---|---|---|---|
 | S0 | Does the standoff shear hold? | S | ✅ done — yes, exactly |
 | S2 | The margined fence | M | ✅ done — proved, sharp, executable |
+| S3 | Margined separation | S | ✅ done — both halves, in Lean and Verus |
 | **S1** | Kinematics: bounded motion into the team model | M | **next** |
-| **S3** | Margined separation | S | **next** — S0 made it a change of constants |
 | S4 | The continuous layer: derive `Dmax` rather than assume it | XL | open |
 | S5 | Decentralized safety under a comms model | L | open |
 
-Take **S3 before S1**. S0 turned it from a re-derivation into a change of
-constants, and it finishes the scheduler-level correspondence that S0
-deliberately left — `timeToNextEvent`, `newDir`, `step` under `toPoint`. Every
-deadline is a time and times scale by one positive constant, so it is arithmetic
-rather than a new idea. **Done when** `step` commutes with `toPoint` and the
-standoff convergence bound `(2 − 1/n)·(1 − (n−1)d)` is proved rather than
-predicted.
+**S1 is next, and it is the first item on this track that is genuinely hard.**
+S0, S2 and S3 all turned out to be changes of coordinates or instantiations of
+one another. S1 is not: it touches the timing arguments rather than the
+invariants, and the survey below says which ones and how badly.
 
 **S1 carries a correction to its own sizing.** A survey of the development found
 that bounding speed from *above* is not enough: a lower bound `v_min > 0` is
@@ -88,6 +85,20 @@ uniform across drones and bounded, and the work roughly halves.
 ---
 
 ## Completed on this branch
+
+**S3 — margined separation, both halves.** The model half in
+`Dpss/Standoff.lean`: `toPoint` gains an inverse, the standoff step is the point
+step read in standoff coordinates, and `sTimeToNextEvent_eq` shows the duration
+is the minimum of deadlines an engineer would have written. `sConvergesBy` is
+Theorem 2.1 under standoff, at `(2 − 1/n)·(1 − (n−1)d)` — *better* than the
+point bound. The controller half in `Dpss/Separation.lean` and
+`rust/src/separation.rs`: the pair guarantee is the fence guarantee on the
+excess separation with the vehicle doubled.
+
+*Insight:* build the transfer as a **map between the two structures, in both
+directions**, rather than proving the target theorem again under new hypotheses.
+The forward map gives the guarantee with no second induction; the backward map
+gives sharpness for free. `INSIGHTS.md` §22.
 
 **S2 — the margined fence.** `Dpss/Fence.lean` and `rust/src/fence.rs`. One
 drone, one wall, a sampled controller; three idealizations removed at once.

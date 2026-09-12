@@ -558,3 +558,42 @@ habit, and the proof did not use it.
 
 > **Lesson.** When a plan item is sized "S if X, else L", the first thing to
 > build is X. Not a prototype of the S branch, and certainly not the L one.
+
+---
+
+## 22. Transfer both ways, and sharpness is free
+
+Three items on the safety track — the standoff model, the separation controller,
+and the right-hand fence — each looked like "prove the existing theorem again
+under weaker hypotheses". None of them was. Each turned out to be a **map
+between two structures**, and building the map cost less than one re-proof.
+
+* `Dpss/Standoff.lean`: `toPoint` and `fromPoint` are mutually inverse, so the
+  standoff model and the point model are two coordinate systems on one thing.
+  The standoff step is the point step read in standoff coordinates, and
+  `sConvergesBy` — Theorem 2.1 with the bound `(2 − 1/n)·(1 − (n−1)d)` — is the
+  point theorem with the clock rescaled.
+* `Dpss/Separation.lean`: `PairTraj.toFence` sends a pair to the fence
+  trajectory of its excess separation with the vehicle doubled. `le_low` is
+  `Fence.Traj.low_nonneg` composed with that map.
+* `Dpss/Fence.lean`: `TrajR.mirror` sends a right-fence trajectory to a
+  left-fence one, positions to `L - ·` and low-water marks to high-water marks.
+
+The part worth extracting is what the *second* direction buys. Writing
+`Traj.toPair` as well as `PairTraj.toFence` took a dozen lines and made
+`pair_margin_sharp` a four-line corollary of `margin_sharp` — a sharpness
+theorem for the separation margin, obtained without constructing a single
+witness. A transfer proved in one direction gives you the guarantee; proved in
+both, it gives you the guarantee *and* the proof that it cannot be improved.
+
+The failure mode this avoids is the one the plan had budgeted for: restating
+every theorem with `d ≤ gap` in place of `0 ≤ gap` and repairing the proofs. That
+would have been a quarter's work and would have produced two parallel
+developments to keep in step. Note also what the map makes *visible* — S0's real
+finding was not that the shear works but that **the segments do not shear, they
+respace**, which a hypothesis-weakening rewrite would have quietly hidden inside
+a hundred adjusted arithmetic steps.
+
+> **Lesson.** Before weakening a hypothesis throughout a development, look for a
+> map to the development you already have. If you find one, build its inverse
+> too — the round trip is where sharpness comes from.

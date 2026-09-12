@@ -12,6 +12,64 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S3: margined separation, both halves  *(branch `safety`)*
+
+The safety track's third item, and the last one that turned out to be a change
+of coordinates rather than new work.
+
+### The model half — `Dpss/Standoff.lean`
+
+S0 left the scheduler open and the standoff convergence bound as a prediction.
+Both are closed. `toPoint` gains an inverse, so the standoff and point models
+are two coordinate systems on one thing; the standoff step is *defined* as the
+point step read in standoff coordinates, which makes the commuting square
+trivial and puts the content in the theorems saying the pullback has the form an
+engineer would have written:
+
+  sStep_pos            drones still move at unit speed in standoff coordinates
+  sTimeToNextEvent_eq  the duration is the min over drones of deadlines written
+                       in standoff terms
+  sInvariant_toPoint   the standing conditions correspond
+  sConvergesBy         Theorem 2.1 under standoff
+
+    every drone is inside its own respaced segment from
+    (2 − 1/n)·(1 − (n−1)·d) onwards
+
+*smaller* than `2 − 1/n`, because a team holding a standoff has less ground
+between the walls to cover. The standoff is paid for in **coverage**, not in
+time.
+
+### The controller half — `Dpss/Separation.lean`, `rust/src/separation.rs`
+
+At a wall a drone must never arrive; between drones the pair is *supposed* to
+close, so the guarantee is `d ≤ gap` with equality permitted. Writing `g − d` for
+the excess separation, every vehicle quantity doubles — both drones move, both
+turn, both are sensed — and nothing else changes. So `PairTraj.le_low` is
+`Fence.Traj.low_nonneg` read through `PairTraj.toFence`, with no second
+induction, and `pair_margin_sharp` transfers backwards through `Traj.toPair`,
+making the doubled margin sharp for free.
+
+`91 verified, 0 errors`, and two more traces driven by the verified controller:
+margin `30 = 2·(10+3+2)` clears a standoff of 5 at `low = 6`; margin `26`, short
+by `2·eps`, breaches at `low = 2`.
+
+### What this session did **not** finish
+
+* **S1 is next and is the first genuinely hard item on this track.** S0, S2 and
+  S3 were all changes of coordinates or instantiations of one another. S1 is
+  not: it touches the *timing* arguments rather than the invariants. The
+  standing correction remains — a lower bound `v_min > 0` is required, not
+  optional.
+* **`Dmax` is still a hypothesis** (S4), and there is still no comms model (S5).
+* **Nothing on this branch is a Track B result.** `sConvergesBy` is Theorem 2.1
+  transported, not a new convergence theorem; Algorithm B and the phase-1 bound
+  are untouched, and the latter is an open research problem.
+
+733 theorems, `sorry`-free; `91 verified, 0 errors`; traces agree with Lean.
+`INSIGHTS.md` §22.
+
+---
+
 ## 2026-09-12 — Track A: the fence, and the standoff verdict  *(branch `safety`)*
 
 The mathematics was finished and neither half was a thing you could fly. This
