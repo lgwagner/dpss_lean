@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `e969f317a652`  
+**Commit at time of writing:** `ff6a26c22a36`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -45,6 +45,7 @@ Target theorem, from Avigad–van Doorn (arXiv:2008.04262) Theorem 2.1:
 | 3 | Sanity tests at `n = 2, 3` | both traced, converging and steady; the phase-1 refutation is out of scope, see gap 6 |
 | 4 | Close the `2 − 1/n` proof | **done** — `convergesBy`, §3.29. Lemmas 3.1–3.7 all proved |
 | 5 | Phase-1 upper bound (open problem) | explicitly out of scope |
+| — | **The whole work package** | **complete** — §9 |
 
 Stage 1 broken down:
 
@@ -79,7 +80,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**565 theorems**, all `sorry`-free, across 31 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 551 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**594 theorems**, all `sorry`-free, across 33 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 551 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1124,6 +1125,89 @@ pair with either neighbour whatever it was doing before.
 
 ---
 
+### 3.32 `Dpss/SharpnessGeneral.lean` — **C3′: sharp at every `n`**
+
+Gap 9 closed. §3.30 shows the bound attained at `n = 2` by tracing four
+configurations. `PLAN.md` sized the general case as the paper's `n`-drone
+cascade: `2(n−1)` phases, each a configuration given by a formula in the phase
+index, each needing a minimum over `Fin n` computed by hand.
+
+**The trace is never computed.** Two observations about Lemma 3.1 replace it.
+
+Start the drones on a **ladder** — drone `i` at `i·d`, all heading right. No
+pair is co-located, so while all head right every gap stays exactly `d`. Now
+suppose some drone turns left: `coLocated_of_turnsLeft` says it is co-located
+with its right-hand neighbour, so its gap is zero, and the gap is `d`.
+Contradiction — *unless the drone has no right-hand neighbour*. So the first
+drone to turn is `n−1`, and Lemma 3.1 puts its turn at `rightEnd (n−1) = 1`.
+Positions track time exactly while headings are fixed, so **nothing turns
+before time `1 − (n−1)d`** (`ladder_state`).
+
+Drone `0` therefore heads right past `1/n` until at least that time, and Lemma
+3.1's other half — a leftward drone reverses only at or before its left
+endpoint — sends it all the way back to `0` without stopping. It re-enters
+`[0, 1/n]` only at `2w − 1/n ≥ 2 − 2(n−1)d − 1/n`, which tends to `2 − 1/n`.
+
+> `bound_sharp_general (hn2 : 2 ≤ n) (B : ℝ) (hB : B < 2 − 1/n)` — some
+> well-formed configuration has a drone outside its own interval at an instant
+> at or after `B`.
+
+At `n = 1` the statement is false and must be: a single drone's interval is the
+whole perimeter, so it is synchronized from the start and `2 − 1/1 = 1` is not
+attained.
+
+---
+
+### 3.33 `Dpss/Nondeterminism.lean` — **C1′: the relation, and its collapse**
+
+What is left of gap 5, closed — and closed by proving the caveat away rather
+than by paying for it.
+
+`StepRel` is the step as a **relation**: fly to the next event, then let the
+headings be any legitimate resolution of what is due. `IsRun` is a trajectory
+of it. `LegitDir` specifies the legitimate resolutions, with the paper's own
+open case left genuinely open:
+
+> it does not specify what happens when a group of three or more drones come
+> together and determine that three of them are within the middle drone's
+> interval; in that case, **the middle drone can escort either neighbor to
+> their common border**. — Avigad–van Doorn §2
+
+`PLAN.md` sized this as re-proving the development over an arbitrary
+trajectory. **That is not what the file does**, because the same passage of the
+paper says why it is unnecessary:
+
+> Neither of these issues bears on the results reported below, since our upper
+> bound only concerns **phase 2, where these issues do not arise**.
+
+That is a claim about reachable states, and it is provable.
+
+**The collapse.** The two escort headings differ exactly when the meeting point
+lies strictly inside the middle drone's own interval — which is precisely "three
+of them are within the middle drone's interval".
+`not_strictly_inside_of_grouped` shows that cannot happen. Suppose it does, at
+`p` with `leftEnd i < p < rightEnd i`, no border or separation due. The pair
+`(i, i+1)` is together at `p < commonEnd i`: heading apart puts them *on*
+`commonEnd i` by `ApartOnBoundary`, and escorting points them at `commonEnd i`,
+which is to the right — so drone `i` heads right. Then the pair `(i−1, i)` is
+together at `p > commonEnd (i−1)`: heading apart puts them on `commonEnd (i−1)`,
+escorting points them left, and `i−1` right with `i` left needs `i` heading
+left. Every case closes.
+
+So `legitDir_unique` — the specification has exactly **one** solution — and
+`isRun_eq_run`: every trajectory of the relation *is* the run of the function.
+`convergesBy_of_isRun` and `nonZeno_of_isRun` follow, and with them every
+theorem in the development becomes a theorem about every resolution.
+
+**The freedom is real off the reachable set.** `ExamplesThree.triple` is a
+three-drone configuration where the middle drone is together with both
+neighbours and the two escort headings genuinely differ, so `LegitDir` really is
+wider than `newDir` and the collapse theorem is not vacuous.
+`triple_not_reachable` then records what the collapse implies about it: the
+algorithm never builds one.
+
+---
+
 ## 4. What is **not** proved — read this part
 
 This is the honest gap list, ordered by importance. It is much shorter than it
@@ -1162,22 +1246,19 @@ through so that a reader can see what changed rather than having to diff.
    correct bound, via an `ε`-family. The general-`n` version needs an `n`-drone
    cascade and is not done.
 
-5. **The nondeterminism is still not fully modelled** — but the gap is
-   narrower than it was. §3.31 proves that `newDir`'s **priority order** is
-   forced in seven of its eight competing cases, and that the eighth is the
-   paper's bounce, where the alternative resolution provably walks a drone out
-   of its own interval. What remains is the definition of a *meet*: here it
-   requires the pair to be **approaching**, so a drone co-located with both
-   neighbours has at most one meet due and its own heading decides which; the
-   paper treats meeting as positional and lets a middle drone pair with either
-   neighbour and escort to either endpoint.
+5. ~~**The nondeterminism is not modelled.**~~ **Closed** — §3.31 and §3.33.
+   §3.31 measured the freedom: `newDir`'s priority order is forced in seven of
+   its eight competing cases, and the eighth is the paper's bounce, where the
+   alternative resolution provably walks a drone out of its own interval.
+   §3.33 then models what remains as a **relation** — `StepRel`, admitting
+   every legitimate heading update including the paper's open choice for a
+   middle drone — and proves that on any configuration satisfying the standing
+   conditions the choice collapses: the relation has exactly one successor, so
+   every trajectory is the run, and `convergesBy_of_isRun` holds for all of
+   them.
 
-   Closing that means making `step` a **relation** and re-proving the
-   development over an arbitrary trajectory of it. That is not an `M`-sized
-   item: roughly thirty primitive lemmas unfold `newDir` and would have to be
-   re-derived from a specification instead, and every statement in the
-   development would gain the trajectory as a parameter. Every result here,
-   non-Zeno and Theorem 2.1 included, is a result about *this* resolution.
+   This is what the paper itself asserts — *"our upper bound only concerns
+   phase 2, where these issues do not arise"* — now proved rather than quoted.
 
 6. **Stage 3's original headline goal is out of scope, and the plan was wrong
    to list it.** `PLAN-original.md` §5.2 proposed refuting the false `3T`
@@ -1194,10 +1275,13 @@ through so that a reader can see what changed rather than having to diff.
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
 
-9. **Sharpness for general `n` is not checked.** §3.30 does `n = 2`. The
-   paper's construction — all `n` drones released together at the left border,
-   peeling off the returning group one at a time — would show the bound
-   attained for every `n`.
+9. ~~**Sharpness for general `n` is not checked.**~~ **Closed** — §3.32.
+   `bound_sharp_general` shows no `B < 2 − 1/n` is a correct bound, for every
+   `n ≥ 2`, without tracing the paper's `n`-drone cascade.
+
+**What remains open is item 6 and item 8**: the phase-1 refutation, which is
+unreachable in this scope by construction, and Algorithm B, which was never in
+it. Everything the work package listed is done.
 
 ### Known modelling risks
 
@@ -1668,6 +1752,26 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.exists_first_turn_after' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_advance_of_steps' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.nonZeno' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.groupedRight_of_meetRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.groupedLeft_of_meetLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.legitDir_newDir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_strictly_inside_of_grouped' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDir_eq_escortDirLeft_of_grouped' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.legitDir_unique' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.stepRel_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortsCoherent_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.invariant_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apartOnBoundaries_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.stepRel_eq_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.isRun_eq_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.convergesBy_of_isRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.nonZeno_of_isRun' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.triple_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.triple_dir_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.triple_dir_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.triple_dir_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.triple_ambiguous' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.triple_not_reachable' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_advance_of_opposite' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_eq_zero_of_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1771,6 +1875,15 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Examples.run_spreadE_3' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_outside' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.bound_sharp' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_apartOnBoundaries' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_state' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ladder_outside' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.bound_sharp_general' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.prevIdx_val' depends on axioms: [propext, Quot.sound]
 'DPSS.Config.prevIdx_lt' depends on axioms: [propext, Quot.sound]
 'DPSS.Config.nextIdx_prevIdx' depends on axioms: [propext, Quot.sound]
@@ -1852,7 +1965,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**565/565 clean — `sorryAx` appears zero times.**
+**594/594 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1902,6 +2015,11 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+ff6a26c  2026-09-12  feat: C1' -- the nondeterminism, as a relation, proved to collapse
+e97593b  2026-09-12  feat: C3' -- the bound is attained for every n, with no cascade traced
+e2ad74f  2026-09-12  docs: CHANGELOG.md -- the account you want after a git pull
+be1079a  2026-09-12  docs: GUIDE.md -- how to follow the convergence proof
+0ae43be  2026-09-12  docs: the record catches up with the proofs
 e969f31  2026-09-12  feat: C1 -- measuring the nondeterminism instead of assuming it
 8fe6e93  2026-09-12  feat: C2 -- three drones that start out of position and settle
 b48f409  2026-09-12  feat: C3 -- the 2 - 1/n bound is attained, not merely proved
@@ -2042,40 +2160,55 @@ the three-clause invariant and its preservation proof, assembled from them.
 
 ## 9. The work package
 
-> **The actionable roadmap lives in `PLAN.md`** — target, ingredients, approach
-> and a checkable *done-when* for each item. The table below is the summary.
+> **The actionable roadmap lives in `PLAN.md`.** The table below is the
+> summary.
 
-**Everything on the critical path is done.** Theorem 2.1 is proved, the bound
-is shown attained, and the remaining items are fidelity work that does not
-block it.
+**The work package is complete.** Every item is done, including the two that
+were re-sized along the way.
 
 | # | Item | Size | Notes |
 |---|---|---|---|
-| **A** | ~~**Non-Zeno**~~ | ✅ | **complete** — the contribution ACL2 had to assume |
+| **A** | ~~**Non-Zeno**~~ | ✅ | the contribution ACL2 had to assume |
 | A1 | ~~Every event turns at least one drone~~ | ✅ | `someDroneTurns_step`, unconditional |
 | A2 | ~~The minimum is attained by a genuine event~~ | ✅ | folded into A1; gap 2 closed |
 | A3 | ~~Consecutive turns `1/n` apart~~ | ✅ | §3.15 |
 | A4 | ~~Assemble `NonZeno`~~ | ✅ | §3.16 |
 | **B** | ~~**Theorem 2.1**~~ | ✅ | **the headline, and it is proved** |
-| **B1** | ~~Lemma 3.2~~ | ✅ | §3.24 — `leftSync_of_separation`, unconditional |
+| B1 | ~~Lemma 3.2~~ | ✅ | §3.24 — `leftSync_of_separation`, unconditional |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17, §3.24 |
-| **B3** | ~~Lemma 3.5~~ | ✅ | §3.25 — `exists_coLocated_within_one` |
+| B3 | ~~Lemma 3.5~~ | ✅ | §3.25 — `exists_coLocated_within_one` |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
-| **B5** | ~~Lemma 3.7 — the `+1/n` inductive step~~ | ✅ | §3.27 — `leftSyncAt_next`, on the real-time layer §3.26 |
+| B5 | ~~Lemma 3.7 — the `+1/n` inductive step~~ | ✅ | §3.27 — `leftSyncAt_next`, on the real-time layer §3.26 |
 | **B6** | ~~Assemble `2 − 1/n`~~ | ✅ | **§3.28 — `convergesBy`** |
-| **B7** | ~~The symmetric half~~ | ✅ | §3.23 — `rightSync_iff_leftSync_mirror` |
+| B7 | ~~The symmetric half~~ | ✅ | §3.23 — `rightSync_iff_leftSync_mirror` |
 | **C** | **Fidelity** | | |
 | C1 | ~~Nondeterminism: measure it~~ | ✅ | §3.31 — the priority order is forced in 7 of 8 cases |
-| C1′ | Nondeterminism: `step` as a **relation** | **L** | what is left of gap 5; see §4 item 5 for why it is not M |
+| **C1′** | ~~Nondeterminism: `step` as a **relation**~~ | ✅ | **§3.33 — `convergesBy_of_isRun`.** The relation collapses to the function on reachable states |
 | C2 | ~~Converging `n = 3` trace; a genuine three-way meeting~~ | ✅ | §3.29 |
 | C3 | ~~An `ε`-family showing the bound is *attained*~~ | ✅ | §3.30, at `n = 2` |
-| C3′ | Sharpness for general `n` | M | gap 9 |
+| **C3′** | ~~Sharpness for general `n`~~ | ✅ | **§3.32 — `bound_sharp_general`**, with no cascade traced |
 | **D** | **Cleanup** | | |
 | D1 | ~~Remove unused definitions~~ | ✅ | `Config.Together`, `Config.Valid` gone |
 | D2 | ~~Make `HaveMetBy` locally checkable~~ | ✅ | **not needed** — B3 and B5 both went through with the history-shaped definition; see below |
 
 Sizes are relative: **S** is a sitting, **M** is a session, **L** is the kind of
 argument the paper spends a figure on and the ACL2 team spent 11K lines around.
+
+### Two items that were re-sized, and then shrank again
+
+**C1′ was listed as `M`, re-sized to `L`, and closed in a sitting.** The `L`
+estimate was for the obvious route — make `step` a relation and re-prove the
+development over an arbitrary trajectory, which reaches every file. What made
+that unnecessary was re-reading the paper: the passage that flags the ambiguity
+ends *"Neither of these issues bears on the results reported below, since our
+upper bound only concerns phase 2, where these issues do not arise."* That is a
+claim about reachable states, and proving it (§3.33) collapses the relation to
+the function instead of carrying it through 31 files.
+
+**C3′ was listed as `M` for an `n`-drone cascade** and closed without tracing
+one (§3.32). Both re-sizings came from looking for the argument rather than
+from executing the plan, which is the general lesson recorded in `INSIGHTS.md`
+§17.
 
 ### D2, resolved by not doing it
 

@@ -416,3 +416,78 @@ was the first.
 
 > **Lesson.** The parts of a paper proof that a formalization has to *add* are
 > not the hard steps. They are the sentences the author did not write.
+
+---
+
+## 17. Size the item from the statement, not from the construction
+
+Two of the last three items were budgeted for the obvious route and both fell
+to a short argument instead.
+
+**C3′ — sharpness for every `n`.** The plan sized it as the paper's `n`-drone
+cascade: `2(n−1)` phases, each a configuration given by a formula in the phase
+index, each needing a minimum over `Fin n` computed by hand. But the *theorem*
+does not ask where every drone is at every moment; it asks that **one** drone be
+outside its interval at **one** late instant. That needs a lower bound on when
+drone 0 can return, and the bound comes from Lemma 3.1 plus one observation —
+on a ladder every gap is `d` and stays `d` while all drones head right, so a
+drone that turns left would have to be co-located with its right-hand
+neighbour, so the first drone to turn is the one that has none. No
+configuration in the cascade is ever written down.
+
+**C1′ — the nondeterminism as a relation.** Sized at `L` for "re-prove the
+development over an arbitrary trajectory". The actual proof is one theorem: the
+relation has exactly one successor on reachable states.
+
+The error in both cases was estimating from the *construction the source
+describes* rather than from the *statement to be proved*. A construction is a
+witness; a witness is usually not the cheapest evidence.
+
+> **Lesson.** Before budgeting for the machinery, spend an hour looking for the
+> argument. The plan's estimate is a hypothesis about the proof, and like any
+> hypothesis it is worth testing before acting on it.
+
+---
+
+## 18. Re-read the source before executing the plan item
+
+C1′'s `L` estimate was written from the Lean side — counting the lemmas that
+unfold `newDir`, and the files that would gain a parameter. It was never
+checked against the paragraph of Avigad–van Doorn that defines the problem.
+That paragraph says:
+
+> Neither of these issues bears on the results reported below, since our upper
+> bound only concerns phase 2, **where these issues do not arise**.
+
+The authors are telling you the work is unnecessary, and — more usefully — that
+there is a theorem there: the ambiguous configuration is unreachable. Proving
+it took a sitting and produced a better result than the refactor would have,
+because it explains *why* the nondeterminism never mattered instead of merely
+carrying it along.
+
+The same paragraph also characterizes the ambiguity precisely — "three of them
+are within the middle drone's interval" — which turns out to be, word for word,
+the condition under which the two escort headings differ. The geometric
+statement to prove was sitting in the prose.
+
+> **Lesson.** A plan item's estimate ages faster than the source it is about.
+> Re-read the twenty lines that define the problem before spending a day on it.
+
+---
+
+## 19. Keep a widened specification honest
+
+`LegitDir` widens the heading update into a relation so that Theorem 2.1 can be
+stated for every resolution. A widening like that has an obvious failure mode:
+write the specification so tightly that it admits only the original function,
+prove uniqueness, and declare victory having proved nothing.
+
+The guard is a witness in the other direction. `ExamplesThree.triple` is a
+configuration where the open clause genuinely admits two different headings —
+the middle drone is together with both neighbours, and the meeting point sits
+strictly inside its own interval, so escorting left and escorting right
+disagree. With that in hand, `legitDir_unique` says something: the freedom
+exists, and the algorithm never reaches a state that exposes it.
+
+> **Lesson.** Every uniqueness theorem about a specification needs a
+> non-vacuity witness, or it is a theorem about your own definition.

@@ -42,10 +42,15 @@ choice (seven of eight competing cases: none).
 
 Everything is `sorry`-free and CI enforces it.
 
-**What is not done** is in `STATUS.md` §4, which is written to be read: the
-nondeterminism the paper allows in *which* neighbour a middle drone escorts is
-still resolved one way rather than quantified over, and sharpness is checked
-at `n = 2` rather than for every `n`.
+The bound is also shown **attained for every `n`** (`bound_sharp_general`), and
+Theorem 2.1 is proved for **every resolution** of the nondeterminism the paper
+leaves open — `step` is modelled as a relation, and the relation is proved to
+collapse to a function on every state the algorithm can reach
+(`convergesBy_of_isRun`), which is what the paper asserts and does not prove.
+
+**What is not done** is in `STATUS.md` §4, which is written to be read. The
+work package is complete; what remains outside it is Algorithm B, and a
+phase-1 result that this scope cannot reach by construction.
 
 ## Where to look
 

@@ -21,80 +21,75 @@ picking up *this* roadmap needs.
 
 ## Where things stand
 
-**565 theorems, all `sorry`-free.** Non-Zeno is proved. **Theorem 2.1 is
-proved** — `convergesBy`, for every `n`, with the bound exactly `2 − 1/n` — and
-shown attained at `n = 2`.
+**594 theorems, all `sorry`-free.** Non-Zeno is proved. **Theorem 2.1 is
+proved** — `convergesBy`, for every `n`, with the bound exactly `2 − 1/n` —
+**shown attained for every `n`**, and **proved for every resolution** of the
+paper's nondeterminism.
 
 | Done | Open |
 |---|---|
-| A (non-Zeno), B1–B7 (**Theorem 2.1**), C1, C2, C3, D1, D2 | **C1′**, **C3′** |
+| A, B1–B7, C1, C1′, C2, C3, C3′, D1, D2 | — |
 
-The critical path is empty. What is left is fidelity work that does not block
-anything, and one item of it is large.
+**The work package is complete.** What follows is a backlog of new directions,
+not unfinished business.
 
 ---
 
 ## Critical path
 
-Nothing. Theorem 2.1 is proved and the statement `Synchronization.lean` has
-carried since the beginning is discharged.
+Nothing. Theorem 2.1 is proved, sharp, and resolution-independent.
 
 ---
 
-## Open items
+## Backlog
 
-### C1′ — model the nondeterminism as a relation  ⟨L⟩
+New work, none of it blocking anything.
 
-**What is already done.** `Dpss/Priority.lean` (**C1**) measured the freedom
-instead of assuming it, and found much less than advertised: `newDir`'s
-priority order is **forced** in seven of its eight competing cases, and the
-eighth is the paper's bounce, where the alternative resolution provably walks a
-drone off its own left endpoint.
+### E1 — a Rust implementation, verified against this spec with Verus  ⟨L⟩
 
-**What is left.** Not the priority order — the definition of a *meet*. Here
-`MeetRight i` requires the pair to be **approaching**, so a drone co-located
-with both neighbours has at most one meet due and its own heading decides
-which. The paper treats meeting as positional and lets a middle drone pair with
-either neighbour and escort to either endpoint.
+**Target.** An executable implementation of Algorithm A in Rust, proved in
+[Verus](https://github.com/verus-lang/verus) to meet the specification this
+development pins down — so that the artefact is not only a proof *about* the
+algorithm but a proof-carrying *implementation of* it.
 
-**Approach.** Make `step` a relation `StepRel` and re-prove the development
-over an arbitrary trajectory of it — `IsRun f := f 0 = c ∧ ∀ k, StepRel (f k)
-(f (k+1))`.
+**What the Lean side already supplies.** The specification, unambiguously:
+`Config`, the three events, `newDir`'s resolution (and `Dpss/Nondeterminism.lean`'s
+proof that every legitimate resolution agrees with it), `timeToNextEvent`, the
+standing `Invariant` and `ApartOnBoundaries`, and the target property
+`ConvergesBy`. Those are the obligations to restate in Verus.
 
-**Why this is L, not M.** Roughly thirty primitive lemmas unfold `newDir`
-(`newDir_left_cases`, `coLocated_of_turnsLeft`, `rightEnd_le_pos_of_turnsLeft`,
-`someDroneTurns_step`, …). Each would be re-derived from a *specification* of
-legitimate resolutions rather than from the definition — which is the honest
-and probably better design. But every statement in the development gains the
-trajectory as a parameter, so the edit reaches all 31 files. The earlier
-estimate of M was made before anyone had counted.
+**The hard part, named up front.** Lean's model is over `ℝ`; Verus reasons
+about executable Rust, where the natural choices are rationals, fixed point, or
+floats. `STATUS.md`'s "known modelling risks" already flags that the ACL2
+development is rational-valued and that its termination intuitions do not
+transfer for free. A faithful port must either
+* carry rationals explicitly (and accept that the implementation is not what
+  anyone would fly), or
+* prove the discretization sound against the real-valued spec — which is the
+  interesting version, and the larger one.
 
-**Done when.** `convergesBy` holds for every trajectory of `StepRel`, and
-`scripts/audit.py` passes.
+**Suggested shape.**
+1. Port the *state* and the *event schedule* to Verus, with `spec fn`s mirroring
+   `Config`, `borderTime`, `meetTime`, `separationTime`, `droneNextTime`.
+2. Prove the executable `step` preserves the invariant — the analogue of
+   `invariant_step`, which is where most of the value is: it is a real safety
+   property of real code (drones stay on the perimeter, never overtake).
+3. State `ConvergesBy` and either import the bound as an assumption discharged
+   by this Lean development, or re-prove it in Verus.
 
----
+**Done when.** A Verus crate that builds with `verus --verify`, whose
+`step`/`run` carry the invariant, with a README mapping each Verus obligation to
+the Lean theorem it mirrors.
 
-### C3′ — sharpness for general `n`  ⟨M⟩
-
-**Depends on:** nothing. `Dpss/Sharpness.lean` does `n = 2`.
-
-**Target.** The paper's construction for every `n`: all `n` drones released
-arbitrarily close to the left border heading right; after nearly one unit of
-time they reach the right border; the rightmost turns and quickly meets the
-others; the group returns leftward, each drone peeling off at its own left
-endpoint, the last separation happening arbitrarily close to `2 − 1/n`.
-
-**The work.** An `n`-drone cascade rather than a four-configuration trace.
-The awkward part is that the group's departures are staggered, so the trace is
-`n` phases long and each phase has to be described by a formula in the phase
-index rather than by a literal configuration.
-
-**Done when.** `∀ B < 2 − 1/n, ∃ c, …` for every `n`, in the shape of
-`bound_sharp`.
+**Worth recording in advance.** Step 2 is worth doing even if step 3 is not —
+a verified-safe implementation with an unverified convergence bound is still a
+much stronger artefact than an unverified one, and it is the part that a
+practitioner would actually use.
 
 ---
 
 ## Completed
+
 
 
 What was built, and what it taught. In the order it happened.
@@ -477,12 +472,74 @@ alone.
 
 ---
 
+### C3′ — sharpness for every `n`  ✅
+
+**Built.** `Dpss/SharpnessGeneral.lean` — the `ladder` family, `ladder_state`,
+`ladder_outside`, and `bound_sharp_general`.
+
+**Insights.**
+
+- **The plan's route was not the cheap one.** The item was sized for the
+  paper's `n`-drone cascade: `2(n−1)` phases, each a configuration given by a
+  formula in the phase index, each needing a minimum over `Fin n`. None of it
+  was needed. Lemma 3.1 plus one gap argument bounds the first turn without
+  computing a single intermediate configuration.
+- **The gap argument is the whole trick.** On a ladder every gap is `d` and
+  stays `d` while all drones head right; a drone that turns left must be
+  co-located with its right-hand neighbour; so the first drone to turn is the
+  one that has no right-hand neighbour. That single observation replaces the
+  entire outbound phase of the trace.
+- **A lower bound needs less than a trace.** The trace says where every drone
+  is at every moment; the theorem needs only that *one* drone is outside its
+  interval at *one* late instant. Sizing the item from the construction rather
+  than from the statement is what made it look like an `M`.
+
+---
+
+### C1′ — the nondeterminism as a relation  ✅
+
+**Built.** `Dpss/Nondeterminism.lean` — `LegitDir`, `StepRel`, `IsRun`,
+`not_strictly_inside_of_grouped`, `legitDir_unique`, `isRun_eq_run`,
+`convergesBy_of_isRun`, and `ExamplesThree.triple` as the non-vacuity witness.
+
+**Insights.**
+
+- **Read the source again before executing the plan.** The item was sized at
+  `L` on the assumption that the development had to be re-proved over
+  trajectories. The paper's own sentence — *"our upper bound only concerns
+  phase 2, where these issues do not arise"* — says it does not, and that
+  sentence is a provable claim about reachable states. The estimate was made
+  from the Lean side without re-reading the twenty lines of prose that defined
+  the problem.
+- **The ambiguity has a crisp geometric characterization.** The two escort
+  headings differ exactly when the meeting point is strictly inside the middle
+  drone's own interval — which is word for word what the paper describes. Once
+  that is written down, the impossibility proof is four cases and each closes on
+  an invariant that was already proved.
+- **A collapse theorem is better than a refactor.** Re-proving 350 theorems
+  over trajectories would have produced the same corollary and taught nothing.
+  Proving the relation is a function on reachable states explains *why* the
+  nondeterminism never mattered — and leaves a witness (`triple`) showing it is
+  real everywhere else.
+- **Keep the width honest.** A specification that quietly admits only one value
+  makes uniqueness vacuous. `triple_ambiguous` exhibits a configuration where
+  the open clause genuinely admits two headings, so the collapse theorem has
+  content.
+
+---
+
 ## Standing hazards
 
 - **Two attempts at B1 failed by guessing an invariant's shape.** Derive, write
   down, then prove.
 - **Measure a gap before restating it.** C1 spent months in three documents as
   a caveat that turned out to be seven-eighths wrong.
+- **Size an item from the statement, not from the construction.** C1′ and C3′
+  were both sized for the obvious route and both fell to a short argument. Look
+  for the argument before budgeting for the machinery.
+- **Re-read the source before executing a plan item.** C1′'s `L` estimate was
+  made without re-reading the paragraph that defined the problem, which said
+  the work was unnecessary.
 - **When a case analysis will not close, suspect the goal.** Building the §3.20
   counterexample took less time than the failed proof did, and produced
   something permanent.
