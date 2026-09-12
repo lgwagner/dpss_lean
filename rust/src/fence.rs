@@ -26,6 +26,15 @@
 //! | `safe_step` | one sample preserves the invariant |
 //! | `safe_at` | therefore it holds at every sample, by induction |
 //! | `low_nonneg_at` | therefore the drone never crosses the fence, *between* samples too |
+//! | `traj_ok_iff_steps` | `traj_ok` is `traj_step_ok` at every sample |
+//! | `*_ex` | executable functions proved to compute `obs_ok`, `leg_ok`, `safe` and `traj_step_ok` |
+//!
+//! The `_ex` functions are S6b. A specification never executes, so no test can
+//! exercise one, and a wrong specification supporting a flawless proof is the
+//! failure mode this project has actually had (`INSIGHTS.md` §1). An `_ex`
+//! function carries an `ensures` clause saying it returns exactly the spec
+//! predicate's truth value, so running it on a trace runs the specification
+//! itself.
 //!
 //! The trajectory is an infinite sequence of samples, as in Lean — `spec_fn` over
 //! `nat`, not a bounded `Seq` — so `safe_at` is the same induction as
@@ -205,6 +214,184 @@ pub proof fn low_nonneg_at(
     safe_at(v, margin, p, d, low, obs, req, k);
     assert(leg_ok(v, p(k), d(k), low(k), p((k + 1) as nat)));
     low_nonneg(v, p(k), d(k), low(k), p((k + 1) as nat));
+}
+
+/// **One sample's worth of `traj_ok`.** The body of the three quantifiers,
+/// with no quantifier around it — so it is a statement about numbers that an
+/// executable function can be proved to compute.
+///
+/// `Dpss/Fence.lean`, one `k` of `DPSS.FenceInt.trajOk`.
+pub open spec fn traj_step_ok(
+    v: Vehicle, margin: int,
+    p: int, d: Dir, low: int, obs: int, req: Dir, p_next: int,
+) -> bool {
+    &&& obs_ok(v, obs, p)
+    &&& d == fence_dir(margin, obs, req)
+    &&& leg_ok(v, p, d, low, p_next)
+}
+
+/// **`traj_ok` is exactly that, at every sample.** Stated and proved rather
+/// than asserted in a comment, because it is what licenses checking a finite
+/// trace against `traj_step_ok_ex` below and calling the result a check of
+/// `traj_ok` on that prefix.
+pub proof fn traj_ok_iff_steps(
+    v: Vehicle, margin: int,
+    p: spec_fn(nat) -> int, d: spec_fn(nat) -> Dir,
+    low: spec_fn(nat) -> int, obs: spec_fn(nat) -> int, req: spec_fn(nat) -> Dir,
+)
+    ensures
+        traj_ok(v, margin, p, d, low, obs, req) <==> (forall|k: nat|
+            traj_step_ok(v, margin, p(k), #[trigger] d(k), low(k), obs(k), req(k),
+                p((k + 1) as nat))),
+{
+    if traj_ok(v, margin, p, d, low, obs, req) {
+        assert forall|k: nat|
+            traj_step_ok(v, margin, p(k), #[trigger] d(k), low(k), obs(k), req(k),
+                p((k + 1) as nat)) by {
+            assert(obs_ok(v, obs(k), p(k)));
+            assert(d(k) == fence_dir(margin, obs(k), req(k)));
+            assert(leg_ok(v, p(k), d(k), low(k), p((k + 1) as nat)));
+        }
+    }
+    if (forall|k: nat| traj_step_ok(v, margin, p(k), #[trigger] d(k), low(k), obs(k),
+            req(k), p((k + 1) as nat))) {
+        assert forall|k: nat| obs_ok(v, #[trigger] obs(k), p(k)) by {
+            assert(traj_step_ok(v, margin, p(k), d(k), low(k), obs(k), req(k),
+                p((k + 1) as nat)));
+        }
+        assert forall|k: nat| #[trigger] d(k) == fence_dir(margin, obs(k), req(k)) by {
+            assert(traj_step_ok(v, margin, p(k), d(k), low(k), obs(k), req(k),
+                p((k + 1) as nat)));
+        }
+        assert forall|k: nat|
+            leg_ok(v, p(k), d(k), #[trigger] low(k), p((k + 1) as nat)) by {
+            assert(traj_step_ok(v, margin, p(k), d(k), low(k), obs(k), req(k),
+                p((k + 1) as nat)));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The spec predicates, executable.
+//
+// `leg_ok`, `obs_ok` and `traj_ok` are SPECIFICATIONS: they never run, so no
+// test can ever exercise them, and a wrong one would make every theorem in this
+// file true about the wrong system. That is the one failure mode this project
+// has actually had (INSIGHTS.md §1), and it is the reason for what follows.
+//
+// Each `_ex` function below is an ordinary executable Rust function whose
+// `ensures` clause says it returns exactly the truth value of the corresponding
+// spec predicate. Verus proves that. So running one of them on a trace is
+// running the specification -- not a hand transcription of it that might have
+// drifted.
+// ---------------------------------------------------------------------------
+
+/// The airframe numbers, executable. `Vehicle` itself is `int`-valued and
+/// therefore ghost; this is the same three numbers in machine integers, with
+/// `@` the map between them.
+pub struct VehicleEx {
+    pub dmax: i64,
+    pub turn: i64,
+    pub eps: i64,
+}
+
+impl View for VehicleEx {
+    type V = Vehicle;
+
+    open spec fn view(&self) -> Vehicle {
+        Vehicle { dmax: self.dmax as int, turn: self.turn as int, eps: self.eps as int }
+    }
+}
+
+/// The range every quantity is kept inside, so that the executable arithmetic
+/// cannot overflow. Generous: a metre-scale vehicle working in millimetres has
+/// room for a perimeter around the earth.
+pub open spec fn in_range(x: int) -> bool {
+    -1_000_000_000 <= x <= 1_000_000_000
+}
+
+impl VehicleEx {
+    pub open spec fn bounded(self) -> bool {
+        &&& 0 <= self.dmax <= 1_000_000_000
+        &&& 0 <= self.turn <= 1_000_000_000
+        &&& 0 <= self.eps <= 1_000_000_000
+    }
+
+    /// `Vehicle::wf`, executable.
+    pub fn wf_ex(&self) -> (r: bool)
+        ensures r == self@.wf(),
+    {
+        0 <= self.dmax && 0 <= self.turn && 0 <= self.eps
+    }
+
+    /// `Vehicle::clearance`, executable.
+    pub fn clearance_ex(&self, d: Dir) -> (c: i64)
+        requires self.bounded(),
+        ensures c as int == self@.clearance(d),
+    {
+        if d == Dir::Left { self.dmax + self.turn } else { self.turn }
+    }
+}
+
+/// `obs_ok`, executable.
+pub fn obs_ok_ex(v: &VehicleEx, obs: i64, p: i64) -> (r: bool)
+    requires
+        v.bounded(),
+        in_range(obs as int),
+        in_range(p as int),
+    ensures
+        r == obs_ok(v@, obs as int, p as int),
+{
+    -v.eps <= obs - p && obs - p <= v.eps
+}
+
+/// `leg_ok`, executable.
+pub fn leg_ok_ex(v: &VehicleEx, p: i64, d: Dir, low: i64, p_next: i64) -> (r: bool)
+    requires
+        v.bounded(),
+        in_range(p as int),
+        in_range(low as int),
+        in_range(p_next as int),
+    ensures
+        r == leg_ok(v@, p as int, d, low as int, p_next as int),
+{
+    low <= p && low <= p_next
+        && (d != Dir::Left || p - v.dmax <= low)
+        && (d != Dir::Right || p - v.turn <= low)
+        && (d != Dir::Right || p <= p_next)
+}
+
+/// `safe`, executable.
+pub fn safe_ex(v: &VehicleEx, p: i64, d: Dir) -> (r: bool)
+    requires
+        v.bounded(),
+        in_range(p as int),
+    ensures
+        r == safe(v@, p as int, d),
+{
+    v.clearance_ex(d) <= p
+}
+
+/// **One sample of `traj_ok`, executable.** With `traj_ok_iff_steps` above,
+/// running this at every sample of a trace *is* checking `traj_ok` on that
+/// prefix of it.
+pub fn traj_step_ok_ex(
+    v: &VehicleEx, margin: i64,
+    p: i64, d: Dir, low: i64, obs: i64, req: Dir, p_next: i64,
+) -> (r: bool)
+    requires
+        v.bounded(),
+        in_range(p as int),
+        in_range(low as int),
+        in_range(obs as int),
+        in_range(p_next as int),
+    ensures
+        r == traj_step_ok(v@, margin as int, p as int, d, low as int, obs as int, req,
+            p_next as int),
+{
+    obs_ok_ex(v, obs, p)
+        && d == fence_control(margin, obs, req)
+        && leg_ok_ex(v, p, d, low, p_next)
 }
 
 /// **The controller.** One comparison, no arithmetic, and therefore nothing to

@@ -108,75 +108,216 @@ fn main() {
                 10, 3, 2, 5, 2, 50, 52, 4);
     comms_trace("stale link on the fresh margin (margin=30 < 2*(10+3+2) + 2*10)",
                 10, 3, 2, 5, 2, 30, 52, 4);
+
+    // S6b, the link itself. The two blocks above apply the steady-state
+    // staleness from the first sample, which is a bound and not a history; this
+    // one is a history, so `link_ok`'s own clauses can be evaluated on it.
+    link_trace("link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50)",
+               10, 3, 2, 5, 2, 50, 52, 4);
+
+    // The negative control for all of the above. A contract check that never
+    // says no is not a check, so here is a drone that breaks the contract: its
+    // reversal loses ground, which `leg_ok`'s `hold_leg` clause forbids. The
+    // same executable specification must -- and does -- reject it, at the first
+    // sample where the controller commands the reversal.
+    fence_violation("fence, vehicle contract violated (a reversal that loses ground)",
+                    10, 3, 2, 15, 44, 6);
+}
+
+/// The negative control for the `contract:` lines. Same vehicle, same
+/// controller, but the drone slips back by the turn allowance on a reversal
+/// instead of holding station — so `hold_leg` fails, and `traj_step_ok_ex` must
+/// say so.
+#[verifier::external]
+fn fence_violation(name: &str, dmax: i64, turn: i64, eps: i64, margin: i64,
+                   p0: i64, samples: usize) {
+    use crate::dir::Dir;
+    use crate::fence::{fence_control, traj_step_ok_ex, VehicleEx};
+    println!("--- {} ---", name);
+    let v = VehicleEx { dmax, turn, eps };
+    let mut p = p0;
+    let mut bad: i64 = -1;
+    for k in 0..samples {
+        let obs = p + eps;
+        let d = fence_control(margin, obs, Dir::Left);
+        let low = if d == Dir::Left { p - dmax } else { p - turn };
+        // the violation: a reversal that does not hold station
+        let p_next = if d == Dir::Left { p - dmax } else { p - turn };
+        if !traj_step_ok_ex(&v, margin, p, d, low, obs, Dir::Left, p_next) && bad < 0 {
+            bad = k as i64;
+        }
+        println!("k={} p={} obs={} dir={} low={}", k, p, obs,
+                 if d == Dir::Left { "<" } else { ">" }, low);
+        p = p_next;
+    }
+    println!("contract: traj_ok {}", verdict(bad, samples));
 }
 
 /// Worst-case separation across a stale link, driven by the *verified*
-/// controller. The steady-state staleness is applied from the first sample.
+/// controller, and checked against the *specification* by `comms_step_ok_ex`
+/// (S6b). The steady-state staleness is applied from the first sample.
 #[verifier::external]
 fn comms_trace(name: &str, dmax: i64, turn: i64, eps: i64, d: i64, age: i64,
                margin: i64, g0: i64, samples: usize) {
     use crate::dir::Dir;
+    use crate::fence::VehicleEx;
+    use crate::comms::comms_step_ok_ex;
     use crate::separation::separation_control;
     println!("--- {} ---", name);
+    let v = VehicleEx { dmax, turn, eps };
     let mut g = g0;
     let mut min_low = i64::MAX;
+    let mut bad: i64 = -1;
     for k in 0..samples {
         // the neighbour has drifted `age*dmax` since the report, and both
         // positions carry `eps` of error, all in the direction that flatters
         let obs = g + age * dmax + 2 * eps;
         let m = separation_control(margin, obs, d, Dir::Left);
         let low = if m == Dir::Left { g - 2 * dmax } else { g - 2 * turn };
+        let g_next = if m == Dir::Left { g - 2 * dmax } else { g };
         if low < min_low { min_low = low; }
+        if !comms_step_ok_ex(&v, age as u64, d, margin, g, obs, m, low, Dir::Left, g_next)
+            && bad < 0 {
+            bad = k as i64;
+        }
         println!("k={} gap={} obs={} mode={} low={}", k, g, obs,
                  if m == Dir::Left { "closing" } else { "apart  " }, low);
-        g = if m == Dir::Left { g - 2 * dmax } else { g };
+        g = g_next;
     }
     println!("min low = {}  (standoff {}; {})", min_low, d,
              if min_low >= d { "clear of the standoff" } else { "BREACH" });
+    println!("contract: comms_step_ok {}", verdict(bad, samples));
 }
 
-/// Worst-case separation simulation, driven by the *verified* controller.
+/// **A realizable stale link**, checked clause by clause against `link_ok` with
+/// the executable mirrors of S6b.
+///
+/// The worst-case gap traces above are deliberately *not* realizable at their
+/// first samples: they apply the full steady-state staleness from `k = 0`, which
+/// is a bound rather than a history. This block is the history — two drones
+/// closing at `dmax` each, a report `age` samples old, adverse sensing — so that
+/// `link_ok`'s own clauses have something to be evaluated on.
+#[verifier::external]
+fn link_trace(name: &str, dmax: i64, turn: i64, eps: i64, d: i64, age: usize,
+              margin: i64, g0: i64, samples: usize) {
+    use crate::dir::Dir;
+    use crate::fence::VehicleEx;
+    use crate::comms::{drift_ok_ex, link_step_ok_ex};
+    use crate::separation::separation_control;
+    let _ = turn;
+    println!("--- {} ---", name);
+    let v = VehicleEx { dmax, turn, eps };
+    // Own drone moves right by dmax a sample. The neighbour moves left by dmax
+    // while the pair is closing and right by dmax once the controller has
+    // stopped the approach, so the gap follows the same course as the trace
+    // above -- and the neighbour never moves more than dmax in a sample, which
+    // is the clause `drift_ok` checks.
+    let pos: Vec<i64> = (0..samples).map(|k| (k as i64) * dmax).collect();
+    let mut gap: Vec<i64> = Vec::new();
+    let mut g = g0;
+    for _ in 0..samples {
+        gap.push(g);
+        let obs = g + (age as i64) * dmax + 2 * eps;
+        let m = separation_control(margin, obs, d, Dir::Left);
+        g = if m == Dir::Left { g - 2 * dmax } else { g };
+    }
+    let q: Vec<i64> = (0..samples).map(|k| pos[k] + gap[k]).collect();
+    let src: Vec<usize> = (0..samples).map(|k| k.saturating_sub(age)).collect();
+    let rep: Vec<i64> = (0..samples).map(|k| q[src[k]] + eps).collect();
+    let mut bad_link: i64 = -1;
+    let mut bad_drift: i64 = -1;
+    for k in 0..samples {
+        println!("k={} p={} q={} gap={} src={} rep={}", k, pos[k], q[k], gap[k],
+                 src[k], rep[k]);
+        if !link_step_ok_ex(&v, age as u64, k as u64, src[k] as u64, rep[k], q[src[k]])
+            && bad_link < 0 {
+            bad_link = k as i64;
+        }
+        for j in 0..=k {
+            if !drift_ok_ex(&v, j as u64, k as u64, q[j], q[k]) && bad_drift < 0 {
+                bad_drift = k as i64;
+            }
+        }
+    }
+    println!("contract: link_step_ok {}; drift_ok {}",
+             verdict(bad_link, samples), verdict(bad_drift, samples));
+}
+
+/// How a contract check reads in a trace: which sample it first failed at, or
+/// that it held at all of them.
+#[verifier::external]
+fn verdict(bad: i64, samples: usize) -> String {
+    if bad < 0 {
+        format!("holds at all {} samples", samples)
+    } else {
+        format!("FAILS first at k={}", bad)
+    }
+}
+
+/// Worst-case separation simulation, driven by the *verified* controller, and
+/// checked against the *specification* by `pair_traj_step_ok_ex` (S6b).
 #[verifier::external]
 fn pair_trace(name: &str, dmax: i64, turn: i64, eps: i64, d: i64, margin: i64,
               g0: i64, samples: usize) {
     use crate::dir::Dir;
-    use crate::separation::separation_control;
+    use crate::fence::VehicleEx;
+    use crate::separation::{pair_safe_ex, pair_traj_step_ok_ex, separation_control};
     println!("--- {} ---", name);
+    let v = VehicleEx { dmax, turn, eps };
     let mut g = g0;
     let mut min_low = i64::MAX;
+    let mut bad: i64 = -1;
+    let m0 = separation_control(margin, g0 + 2 * eps, d, Dir::Left);
+    let safe0 = pair_safe_ex(&v, d, g0, m0);
     for k in 0..samples {
         let obs = g + 2 * eps;                             // adverse sensing
         let m = separation_control(margin, obs, d, Dir::Left);   // adverse request
         let low = if m == Dir::Left { g - 2 * dmax } else { g - 2 * turn };
+        let g_next = if m == Dir::Left { g - 2 * dmax } else { g };
         if low < min_low { min_low = low; }
+        if !pair_traj_step_ok_ex(&v, d, margin, g, m, low, obs, Dir::Left, g_next)
+            && bad < 0 {
+            bad = k as i64;
+        }
         println!("k={} gap={} obs={} mode={} low={}", k, g, obs,
                  if m == Dir::Left { "closing" } else { "apart  " }, low);
-        g = if m == Dir::Left { g - 2 * dmax } else { g };
+        g = g_next;
     }
     println!("min low = {}  (standoff {}; {})", min_low, d,
              if min_low >= d { "clear of the standoff" } else { "BREACH" });
+    println!("contract: pair_traj_ok {}; pair_safe(0) {}", verdict(bad, samples), safe0);
 }
 
-/// Worst-case fence simulation, driven by the *verified* controller.
+/// Worst-case fence simulation, driven by the *verified* controller, and
+/// checked against the *specification* by `traj_step_ok_ex` (S6b).
 #[verifier::external]
 fn fence_trace(name: &str, dmax: i64, turn: i64, eps: i64, margin: i64,
                p0: i64, samples: usize) {
     use crate::dir::Dir;
-    use crate::fence::fence_control;
+    use crate::fence::{fence_control, safe_ex, traj_step_ok_ex, VehicleEx};
     println!("--- {} ---", name);
+    let v = VehicleEx { dmax, turn, eps };
     let mut p = p0;
     let mut min_low = i64::MAX;
+    let mut bad: i64 = -1;
+    let d0 = fence_control(margin, p0 + eps, Dir::Left);
+    let safe0 = safe_ex(&v, p0, d0);
     for k in 0..samples {
         let obs = p + eps;                       // adverse sensing
         let d = fence_control(margin, obs, Dir::Left);   // adverse request
         let low = if d == Dir::Left { p - dmax } else { p - turn };
+        let p_next = if d == Dir::Left { p - dmax } else { p };  // no gain on a reversal
         if low < min_low { min_low = low; }
+        if !traj_step_ok_ex(&v, margin, p, d, low, obs, Dir::Left, p_next) && bad < 0 {
+            bad = k as i64;
+        }
         println!("k={} p={} obs={} dir={} low={}", k, p, obs,
                  if d == Dir::Left { "<" } else { ">" }, low);
-        p = if d == Dir::Left { p - dmax } else { p };   // no net gain on a reversal
+        p = p_next;
     }
     println!("min low = {}  ({})", min_low,
              if min_low >= 0 { "clear of the fence" } else { "BREACH" });
+    println!("contract: traj_ok {}; safe(0) {}", verdict(bad, samples), safe0);
 }
 
 #[verifier::external]

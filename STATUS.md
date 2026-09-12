@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `d44c013f99fb`  
+**Commit at time of writing:** `bedfc710f27f`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2225,6 +2225,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+bedfc71  2026-09-12  S6a: the fence at ℤ, in the shape the Rust has
 d44c013  2026-09-12  S6a: the fence was never about the reals
 a753e1c  2026-09-12  plan: S6 -- raise the safety traces to a real differential test
 daca9d3  2026-09-12  fix: traces.sh was overclaiming for the six safety blocks
@@ -2493,7 +2494,7 @@ not scheduled.
 | **S1** | ~~Kinematics: bounded motion into the *team* model~~ | M | ✅ **uniform speeds** — `Dpss/Kinematics.lean`. Heterogeneous speeds recorded as a rewrite, not attempted |
 | **S4** | The continuous layer | XL | ◐ **core done** — `Dmax = V·Δt` derived, `Dpss/Continuous.lean`. See the non-claims |
 | **S5** | ~~Decentralized safety under a comms model~~ | L | ✅ **done** — `Dpss/Comms.lean`, `rust/src/comms.rs` |
-| **S6** | Raise the safety traces to a real differential test | M | ◐ **S6a done** — the fence is over an ordered ring and instantiated at `ℤ`, `Dpss/FenceInt.lean`. S6b–S6d open |
+| **S6** | Raise the safety traces to a real differential test | M | ◐ **S6a and S6b done** — the fence is over an ordered ring and instantiated at `ℤ` (`Dpss/FenceInt.lean`), and the spec predicates now execute (`121 verified, 0 errors`). S6c–S6d open |
 
 ### S2 — what is actually guaranteed
 
@@ -2707,7 +2708,7 @@ the steady state. It has all three properties the plan asked for:
 | separated | `gap_ge_of_hold` |
 | starves nobody | `hold_covers` — every point of `[0,1]` is covered, because the segments and footprints tile it exactly |
 
-`rust/src/comms.rs` is the same in Verus (`100 verified, 0 errors`), with the
+`rust/src/comms.rs` is the same in Verus, with the
 whole sensing term in one field `2·eps + a·dmax` — splitting it evenly would
 have needed a division by two, exact over the reals and not over the integers.
 Two more traces: margin `50 = 2·(10+3+2) + 2·10` clears a standoff of 5 at
@@ -2752,6 +2753,53 @@ definitions are computable: `FenceInt.trace_breach` exhibits the integer
 trajectory that breaches a margin one `eps` short — the vehicle contract and the
 breach both by `decide` — at exactly the numbers `rust/traces.expected` records.
 That is the machinery S6c needs.
+
+### S6b — the specifications, executed
+
+A `spec fn` never runs. That is what makes it a specification, and it is also
+why a wrong one is the most dangerous object in a verified development: every
+theorem about it stays true, of a system nobody wanted. `INSIGHTS.md` §1 is this
+project's own instance, where 145 passing theorems did not notice a definition
+that falsified the headline result.
+
+The trace tests could not reach that failure mode at all, and no trace test can:
+they exercise the *controller*, and the controller is five lines. The artifacts
+worth worrying about are `leg_ok`, `obs_ok`, `traj_ok`, `pair_leg_ok` and
+`link_ok`, and none of them executes.
+
+**So they were made to execute.** Each `_ex` function in `rust/src/fence.rs`,
+`separation.rs` and `comms.rs` is ordinary executable Rust carrying an `ensures`
+clause that says it returns exactly the corresponding specification's truth
+value. Verus proves it. Running one is therefore running the specification, not
+a transcription of it that might have drifted:
+
+| | |
+|---|---|
+| `obs_ok_ex`, `leg_ok_ex`, `safe_ex`, `traj_step_ok_ex` | `rust/src/fence.rs` |
+| `pair_obs_ok_ex`, `pair_leg_ok_ex`, `pair_safe_ex`, `pair_traj_step_ok_ex` | `rust/src/separation.rs` |
+| `link_step_ok_ex`, `drift_ok_ex`, `comms_step_ok_ex` | `rust/src/comms.rs` |
+
+**The quantified predicates are handled by a theorem, not by a horizon.**
+`traj_ok` quantifies over every sample, so no executable function computes it.
+`traj_ok_iff_steps` proves `traj_ok` is exactly `traj_step_ok` at every sample,
+and `traj_step_ok_ex` computes that. A finite evaluation is then a check of
+`traj_ok` on a prefix, which is a statement one can make precisely.
+`pair_traj_ok_iff_steps` and `link_ok_iff_steps` do the same for the pair and
+the link. `comms_ok_implies_steps` is the one that runs in a single direction,
+deliberately: a trace records the gap and its estimate, which do not determine
+the two positions behind them, so nothing recovers `link_ok` from a trace.
+
+**Every trace now carries a `contract:` line**, and there is a negative control.
+A check that cannot fail is not a check, so the last block of `traces.expected`
+is a drone whose reversal loses ground — which `leg_ok`'s `hold_leg` clause
+forbids — and the same executable specification rejects it at the sample where
+it happens, `FAILS first at k=4`.
+
+**What this does not do.** It does not make the six safety blocks a differential
+test: their columns are still recorded from the binary rather than derived from
+Lean. That is S6c, and `rust/traces.sh` still says so. Nor does it establish that
+the Verus `leg_ok` and the Lean `LegOk` are the same predicate — S6a made that
+read short, and it is still a read.
 
 ### What Track A does not claim
 

@@ -205,6 +205,178 @@ pub proof fn separated_of_segments(d: int, right_i: int, left_next: int, x: int,
 {
 }
 
+// ---------------------------------------------------------------------------
+// The link predicates, executable.
+//
+// `link_ok` is on the same list as `leg_ok` and `traj_ok`: it never runs, so a
+// wrong clause in it would make `comms_le_low` true about a network nobody has.
+// The `_ex` functions below are proved to compute its clauses, one sample and
+// one pair of samples at a time, so a trace can exercise them.
+// ---------------------------------------------------------------------------
+
+/// The per-sample clauses of `link_ok`: the report we hold was taken earlier,
+/// not long ago, and was accurate when taken.
+pub open spec fn link_step_ok(v: Vehicle, a: nat, k: nat, src_k: nat, rep_k: int,
+    q_src: int) -> bool
+{
+    &&& src_k <= k
+    &&& k - src_k <= a
+    &&& -v.eps <= rep_k - q_src <= v.eps
+}
+
+/// The two-sample clause: the neighbour cannot have moved faster than `dmax`
+/// per sample.
+pub open spec fn drift_ok(v: Vehicle, j: nat, k: nat, q_j: int, q_k: int) -> bool {
+    j <= k ==> -((k - j) * v.dmax) <= q_k - q_j <= (k - j) * v.dmax
+}
+
+/// **`link_ok` is exactly those two, quantified.** The statement that licenses
+/// reading a finite evaluation of the `_ex` functions below as a check of
+/// `link_ok` on a prefix.
+pub proof fn link_ok_iff_steps(
+    v: Vehicle, a: nat,
+    q: spec_fn(nat) -> int, rep: spec_fn(nat) -> int, src: spec_fn(nat) -> nat,
+)
+    ensures
+        link_ok(v, a, q, rep, src) <==> (
+            (forall|k: nat| link_step_ok(v, a, k, #[trigger] src(k), rep(k), q(src(k))))
+            && (forall|j: nat, k: nat| #![trigger q(k), q(j)]
+                    drift_ok(v, j, k, q(j), q(k)))),
+{
+    if link_ok(v, a, q, rep, src) {
+        assert forall|k: nat|
+            link_step_ok(v, a, k, #[trigger] src(k), rep(k), q(src(k))) by {
+            assert(src(k) <= k);
+            assert(k - src(k) <= a);
+            assert(-v.eps <= rep(k) - q(src(k)) <= v.eps);
+        }
+    }
+    if ((forall|k: nat| link_step_ok(v, a, k, #[trigger] src(k), rep(k), q(src(k))))
+        && (forall|j: nat, k: nat| #![trigger q(k), q(j)] drift_ok(v, j, k, q(j), q(k)))) {
+        assert forall|k: nat| #[trigger] src(k) <= k by {
+            assert(link_step_ok(v, a, k, src(k), rep(k), q(src(k))));
+        }
+        assert forall|k: nat| k - #[trigger] src(k) <= a by {
+            assert(link_step_ok(v, a, k, src(k), rep(k), q(src(k))));
+        }
+        assert forall|k: nat| -v.eps <= #[trigger] rep(k) - q(src(k)) <= v.eps by {
+            assert(link_step_ok(v, a, k, src(k), rep(k), q(src(k))));
+        }
+    }
+}
+
+/// `link_step_ok`, executable.
+pub fn link_step_ok_ex(v: &VehicleEx, a: u64, k: u64, src_k: u64, rep_k: i64,
+    q_src: i64) -> (r: bool)
+    requires
+        v.bounded(),
+        a <= 1_000_000,
+        k <= 1_000_000,
+        src_k <= 1_000_000,
+        in_range(rep_k as int),
+        in_range(q_src as int),
+    ensures
+        r == link_step_ok(v@, a as nat, k as nat, src_k as nat, rep_k as int,
+            q_src as int),
+{
+    src_k <= k && k - src_k <= a
+        && -v.eps <= rep_k - q_src && rep_k - q_src <= v.eps
+}
+
+/// `drift_ok`, executable.
+pub fn drift_ok_ex(v: &VehicleEx, j: u64, k: u64, q_j: i64, q_k: i64) -> (r: bool)
+    requires
+        v.bounded(),
+        j <= 1_000_000,
+        k <= 1_000_000,
+        in_range(q_j as int),
+        in_range(q_k as int),
+    ensures
+        r == drift_ok(v@, j as nat, k as nat, q_j as int, q_k as int),
+{
+    if j > k {
+        true
+    } else {
+        let span: i64 = (k - j) as i64;
+        proof {
+            assert(0 <= span * v.dmax) by (nonlinear_arith)
+                requires 0 <= span, 0 <= v.dmax;
+            assert(span * v.dmax <= 1_000_000 * 1_000_000_000) by (nonlinear_arith)
+                requires 0 <= span <= 1_000_000, 0 <= v.dmax <= 1_000_000_000;
+        }
+        let bound: i64 = span * v.dmax;
+        -bound <= q_k - q_j && q_k - q_j <= bound
+    }
+}
+
+/// **One sample of `comms_ok`, in the quantities a trace carries.** A trace
+/// records the gap and the gap *estimate*; the drone's own position and its
+/// neighbour's are behind them. This is what `comms_ok` says about the sample
+/// when it is read in those terms.
+pub open spec fn comms_step_ok(
+    v: Vehicle, a: nat, d: int, margin: int,
+    g: int, obs: int, m: Dir, low: int, req: Dir, g_next: int,
+) -> bool {
+    &&& -(2 * v.eps + a * v.dmax) <= obs - g <= 2 * v.eps + a * v.dmax
+    &&& m == fence_dir(margin, obs - d, req)
+    &&& pair_leg_ok(v, g, m, low, g_next)
+}
+
+/// **`comms_ok` implies it, at every sample.** One direction only, and
+/// deliberately: the gap and its estimate do not determine the two positions
+/// behind them, so nothing recovers `link_ok` from a trace. What a trace can
+/// check is that it satisfies what `comms_ok` entails, and this is that.
+pub proof fn comms_ok_implies_steps(
+    v: Vehicle, a: nat, d: int, margin: int,
+    p: spec_fn(nat) -> int, q: spec_fn(nat) -> int,
+    low: spec_fn(nat) -> int, mode: spec_fn(nat) -> Dir, req: spec_fn(nat) -> Dir,
+    phat: spec_fn(nat) -> int, rep: spec_fn(nat) -> int, src: spec_fn(nat) -> nat,
+    k: nat,
+)
+    requires
+        v.wf(),
+        comms_ok(v, a, d, margin, p, q, low, mode, req, phat, rep, src),
+    ensures
+        comms_step_ok(v, a, d, margin, q(k) - p(k), rep(k) - phat(k), mode(k), low(k),
+            req(k), q((k + 1) as nat) - p((k + 1) as nat)),
+{
+    rep_error(v, a, q, rep, src, k);
+    assert(-v.eps <= phat(k) - p(k) <= v.eps);
+    assert(mode(k) == fence_dir(margin, rep(k) - phat(k) - d, req(k)));
+    assert(pair_leg_ok(v, q(k) - p(k), mode(k), low(k),
+        q((k + 1) as nat) - p((k + 1) as nat)));
+}
+
+/// `comms_step_ok`, executable.
+pub fn comms_step_ok_ex(
+    v: &VehicleEx, a: u64, d: i64, margin: i64,
+    g: i64, obs: i64, m: Dir, low: i64, req: Dir, g_next: i64,
+) -> (r: bool)
+    requires
+        v.bounded(),
+        a <= 1_000_000,
+        0 <= d <= 1_000_000_000,
+        in_range(g as int),
+        in_range(obs as int),
+        in_range(obs as int - d as int),
+        in_range(low as int),
+        in_range(g_next as int),
+    ensures
+        r == comms_step_ok(v@, a as nat, d as int, margin as int, g as int, obs as int,
+            m, low as int, req, g_next as int),
+{
+    proof {
+        assert(0 <= a * v.dmax) by (nonlinear_arith)
+            requires 0 <= a, 0 <= v.dmax;
+        assert(a * v.dmax <= 1_000_000 * 1_000_000_000) by (nonlinear_arith)
+            requires 0 <= a <= 1_000_000, 0 <= v.dmax <= 1_000_000_000;
+    }
+    let slack: i64 = 2 * v.eps + (a as i64) * v.dmax;
+    -slack <= obs - g && obs - g <= slack
+        && m == separation_control(margin, obs, d, req)
+        && pair_leg_ok_ex(v, g, m, low, g_next)
+}
+
 /// **The separation margin under a stale link, computed.**
 pub fn comms_margin_ex(dmax: i64, turn: i64, eps: i64, age: i64) -> (m: i64)
     requires

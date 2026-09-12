@@ -58,7 +58,7 @@ scheduled*.
 guarantees exists, in Lean and in Verus, against a vehicle described by
 measurable numbers and a network described by a bound on message age.
 
-### S6 — raise the safety traces to a real differential test  ⟨M⟩  ◐ S6a done
+### S6 — raise the safety traces to a real differential test  ⟨M⟩  ◐ S6a, S6b done
 
 **The known weakness in what Track A ships.** `rust/traces.sh` runs two kinds of
 block. `cfgS` and `spread` are a genuine differential test: Lean proves those
@@ -88,14 +88,25 @@ Four steps, in the order they pay:
   division is involved, which is what S6c needs; `FenceInt.trace_breach` is
   already a `decide`-proved integer breach at the numbers
   `rust/traces.expected` records.
-* **S6b — exec mirrors of the spec predicates.** ⟨S⟩ **The step that matters
-  most.** The controller is five lines; a typo there fails any test. The
-  dangerous artifacts are `traj_ok`, `leg_ok`, `obs_ok`, `pair_leg_ok` and
-  `link_ok` — a wrong one makes the Verus theorem true about the wrong system,
-  and **no trace test can ever catch it, because spec predicates never
-  execute.** Write `leg_ok_ex(..) -> bool` with `ensures result == leg_ok(..)`;
-  Verus proves that, so the exec function provably computes the spec. Then
-  evaluate it on the trace from both sides and compare.
+* **S6b — exec mirrors of the spec predicates.** ⟨S⟩ ✅ **done.** Eleven `_ex`
+  functions across `rust/src/fence.rs`, `separation.rs` and `comms.rs`, each
+  with `ensures result == <the spec predicate>`, and every trace block now
+  carries a `contract:` line that is the specification evaluated on it sample by
+  sample. `121 verified, 0 errors`.
+
+  The quantified predicates needed one thing the sizing did not mention: no
+  executable function computes `traj_ok`, which quantifies over every sample. So
+  `traj_ok_iff_steps` proves `traj_ok` is exactly `traj_step_ok` at every sample
+  and the `_ex` function computes *that*, which makes "checked on a prefix" a
+  precise statement rather than an apology. `pair_traj_ok_iff_steps` and
+  `link_ok_iff_steps` do the same; `comms_ok_implies_steps` runs one way only,
+  because a trace records the gap and its estimate and those do not determine the
+  two positions behind them.
+
+  And a negative control, because a check that cannot fail is not a check: the
+  last trace block is a drone whose reversal loses ground, which `leg_ok`'s
+  `hold_leg` clause forbids, and the same executable specification rejects it —
+  `FAILS first at k=4`.
 * **S6c — `decide`-proved integer traces in Lean.** ⟨M⟩ Define the worst-case
   simulator as a computable `ℤ`-valued function, `decide` its trace, and build a
   `Traj` from it so the theorem applies — the shape of `Sharp.traj` and

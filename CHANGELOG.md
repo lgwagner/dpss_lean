@@ -12,6 +12,52 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S6b: the specifications, executed  *(branch `safety`)*
+
+The step the plan calls the one that matters most, and the reason is that a
+`spec fn` never runs. Every theorem about a wrong specification stays true — of
+a system nobody wanted — and no trace test can reach that, because a trace
+exercises the controller and the controller is five lines. `INSIGHTS.md` §1 is
+this project's own instance: 145 passing theorems did not notice a definition
+that falsified the headline result.
+
+**Eleven `_ex` functions**, across `rust/src/fence.rs`, `separation.rs` and
+`comms.rs`. Each is ordinary executable Rust with an `ensures` clause saying it
+returns exactly the corresponding specification's truth value, and Verus proves
+it. Running one is running the specification.
+
+**The quantified predicates needed a theorem rather than a horizon.** Nothing
+executable computes `traj_ok`, which quantifies over every sample. So
+`traj_ok_iff_steps` proves `traj_ok` is exactly `traj_step_ok` at every sample,
+and `traj_step_ok_ex` computes that — which makes "checked on a prefix" precise
+instead of apologetic. `pair_traj_ok_iff_steps` and `link_ok_iff_steps` do the
+same. `comms_ok_implies_steps` runs one way only, and deliberately: a trace
+records the gap and its estimate, and those do not determine the two positions
+behind them, so nothing recovers `link_ok` from a trace.
+
+**Every trace block now carries a `contract:` line.** Two new blocks come with
+it: a *realizable* stale link — the worst-case gap traces apply the steady-state
+staleness from `k = 0`, which is a bound and not a history, so `link_ok`'s own
+clauses had nothing to be evaluated on — and the **negative control**, because a
+check that cannot fail is not a check. That last block is a drone whose reversal
+loses ground, which `leg_ok`'s `hold_leg` clause forbids, and the same
+executable specification rejects it: `FAILS first at k=4`.
+
+`121 verified, 0 errors`; `traces.sh` passes; no proof holes.
+
+### What is **not** done
+
+* **The six safety blocks are still regression-only.** Their columns are
+  recorded from the binary, not derived from Lean. `rust/traces.sh` says so, and
+  raising them is S6c.
+* **That the Verus `leg_ok` and the Lean `LegOk` are the same predicate is still
+  a human read.** S6a made it a short one; only S6d would remove part of it.
+* **The trace harness is `#[verifier::external]`**, so the `requires` clauses of
+  the `_ex` functions are not checked when it calls them. They hold by
+  inspection of the constants, and nothing verified depends on the harness.
+
+---
+
 ## 2026-09-12 — S6a: the fence was never about the reals  *(branch `safety`)*
 
 `rust/traces.sh` says in as many words that six of its eight blocks are a

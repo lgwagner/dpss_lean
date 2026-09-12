@@ -138,6 +138,127 @@ pub proof fn pair_le_low(
     assert(0 <= p(k));
 }
 
+/// **One sample's worth of `pair_traj_ok`.**
+///
+/// `Dpss/Separation.lean`, one `k` of the fields of `DPSS.Fence.PairTraj`.
+pub open spec fn pair_traj_step_ok(
+    v: Vehicle, d: int, margin: int,
+    g: int, m: Dir, low: int, obs: int, req: Dir, g_next: int,
+) -> bool {
+    &&& pair_obs_ok(v, obs, g)
+    &&& m == fence_dir(margin, obs - d, req)
+    &&& pair_leg_ok(v, g, m, low, g_next)
+}
+
+/// **`pair_traj_ok` is exactly that, at every sample.** As `traj_ok_iff_steps`,
+/// and for the same reason: it is what licenses calling a finite evaluation of
+/// `pair_traj_step_ok_ex` a check of `pair_traj_ok` on a prefix.
+pub proof fn pair_traj_ok_iff_steps(
+    v: Vehicle, d: int, margin: int,
+    gap: spec_fn(nat) -> int, mode: spec_fn(nat) -> Dir,
+    low: spec_fn(nat) -> int, obs: spec_fn(nat) -> int, req: spec_fn(nat) -> Dir,
+)
+    ensures
+        pair_traj_ok(v, d, margin, gap, mode, low, obs, req) <==> (forall|k: nat|
+            pair_traj_step_ok(v, d, margin, gap(k), #[trigger] mode(k), low(k), obs(k),
+                req(k), gap((k + 1) as nat))),
+{
+    if pair_traj_ok(v, d, margin, gap, mode, low, obs, req) {
+        assert forall|k: nat|
+            pair_traj_step_ok(v, d, margin, gap(k), #[trigger] mode(k), low(k), obs(k),
+                req(k), gap((k + 1) as nat)) by {
+            assert(pair_obs_ok(v, obs(k), gap(k)));
+            assert(mode(k) == fence_dir(margin, obs(k) - d, req(k)));
+            assert(pair_leg_ok(v, gap(k), mode(k), low(k), gap((k + 1) as nat)));
+        }
+    }
+    if (forall|k: nat| pair_traj_step_ok(v, d, margin, gap(k), #[trigger] mode(k), low(k),
+            obs(k), req(k), gap((k + 1) as nat))) {
+        assert forall|k: nat| pair_obs_ok(v, #[trigger] obs(k), gap(k)) by {
+            assert(pair_traj_step_ok(v, d, margin, gap(k), mode(k), low(k), obs(k),
+                req(k), gap((k + 1) as nat)));
+        }
+        assert forall|k: nat| #[trigger] mode(k) == fence_dir(margin, obs(k) - d, req(k)) by {
+            assert(pair_traj_step_ok(v, d, margin, gap(k), mode(k), low(k), obs(k),
+                req(k), gap((k + 1) as nat)));
+        }
+        assert forall|k: nat|
+            pair_leg_ok(v, gap(k), mode(k), #[trigger] low(k), gap((k + 1) as nat)) by {
+            assert(pair_traj_step_ok(v, d, margin, gap(k), mode(k), low(k), obs(k),
+                req(k), gap((k + 1) as nat)));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The pair spec predicates, executable. As in `fence.rs`: a specification never
+// runs, so an `_ex` function proved equal to it is the only way a trace can
+// exercise one.
+// ---------------------------------------------------------------------------
+
+/// `pair_obs_ok`, executable.
+pub fn pair_obs_ok_ex(v: &VehicleEx, obs: i64, g: i64) -> (r: bool)
+    requires
+        v.bounded(),
+        in_range(obs as int),
+        in_range(g as int),
+    ensures
+        r == pair_obs_ok(v@, obs as int, g as int),
+{
+    -(2 * v.eps) <= obs - g && obs - g <= 2 * v.eps
+}
+
+/// `pair_leg_ok`, executable.
+pub fn pair_leg_ok_ex(v: &VehicleEx, g: i64, m: Dir, low: i64, g_next: i64) -> (r: bool)
+    requires
+        v.bounded(),
+        in_range(g as int),
+        in_range(low as int),
+        in_range(g_next as int),
+    ensures
+        r == pair_leg_ok(v@, g as int, m, low as int, g_next as int),
+{
+    low <= g && low <= g_next
+        && (m != Dir::Left || g - 2 * v.dmax <= low)
+        && (m != Dir::Right || g - 2 * v.turn <= low)
+        && (m != Dir::Right || g <= g_next)
+}
+
+/// `pair_safe`, executable.
+pub fn pair_safe_ex(v: &VehicleEx, d: i64, g: i64, m: Dir) -> (r: bool)
+    requires
+        v.bounded(),
+        0 <= d <= 1_000_000_000,
+        in_range(g as int),
+    ensures
+        r == pair_safe(v@, d as int, g as int, m),
+{
+    let c = if m == Dir::Left { 2 * (v.dmax + v.turn) } else { 2 * v.turn };
+    d + c <= g
+}
+
+/// **One sample of `pair_traj_ok`, executable.**
+pub fn pair_traj_step_ok_ex(
+    v: &VehicleEx, d: i64, margin: i64,
+    g: i64, m: Dir, low: i64, obs: i64, req: Dir, g_next: i64,
+) -> (r: bool)
+    requires
+        v.bounded(),
+        0 <= d <= 1_000_000_000,
+        in_range(g as int),
+        in_range(low as int),
+        in_range(obs as int),
+        in_range(obs as int - d as int),
+        in_range(g_next as int),
+    ensures
+        r == pair_traj_step_ok(v@, d as int, margin as int, g as int, m, low as int,
+            obs as int, req, g_next as int),
+{
+    pair_obs_ok_ex(v, obs, g)
+        && m == separation_control(margin, obs, d, req)
+        && pair_leg_ok_ex(v, g, m, low, g_next)
+}
+
 /// **The separation controller.** The pair keeps closing only while the observed
 /// excess separation is above the margin.
 ///

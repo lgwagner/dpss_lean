@@ -6,14 +6,18 @@ crate is a program that implements that model, with Verus proving that the
 executable step computes exactly the specified step and preserves the standing
 invariants.
 
-> **Branch.** This lives on `rust-verus`. `main` carries the finished Lean work
-> package and is deliberately untouched.
+> **Branch.** E1 — the team model, everything above `src/fence.rs` in the table
+> below — was built on `rust-verus`, where it verifies at `100 verified, 0
+> errors`. You are on `safety`, which adds the drone-level modules
+> `src/fence.rs`, `src/separation.rs` and `src/comms.rs`. `main` carries the
+> finished Lean work package and is deliberately untouched.
 
 ## Status
 
 ```
-verification results:: 80 verified, 0 errors
-traces agree with Lean
+verification results:: 121 verified, 0 errors
+traces match (cfgS/spread checked against Lean; safety blocks regression-only,
+              with the spec predicates themselves evaluated on each sample)
 ```
 
 | | |
@@ -53,8 +57,8 @@ computes `dt`, and absolute time is carried in ghost state as an unbounded `int`
 
 ```bash
 ./scripts/setup_verus.sh      # installs the pinned toolchain into ~/tools
-./rust/verify.sh              # expect "80 verified, 0 errors"
-./rust/traces.sh              # expect "traces agree with Lean"
+./rust/verify.sh              # expect "121 verified, 0 errors"
+./rust/traces.sh              # expect "traces match ..."
 python3 scripts/lean_to_verus.py --check   # the spec has not drifted
 python3 scripts/no_proof_holes.py          # no assume/admit/external_body
 ```
@@ -75,3 +79,15 @@ version lives in Verus's `tools/common/consts.rs`, not in `INSTALL.md`.
 | `src/geometry.rs` | the scaled geometry, which is nonlinear |
 | `src/step_lemmas.rs`, `src/coherence.rs`, `src/reachable.rs` | invariant preservation |
 | `src/exec.rs` | the executable ensemble, and the key equivalence |
+| `src/fence.rs` | S2 — the margined fence, and the `_ex` mirrors of its specifications |
+| `src/separation.rs` | S3 — margined separation, as the fence on the excess gap |
+| `src/comms.rs` | S5 — staleness priced as sensing error, and the link predicates |
+
+**The `_ex` functions are S6b.** A `spec fn` never executes, so no test can
+exercise one, and a wrong specification supporting a flawless proof is the
+failure mode this project has actually had. Each `_ex` function carries an
+`ensures` clause saying it returns exactly the corresponding specification's
+truth value, so the `contract:` lines in `traces.expected` are the
+specifications themselves evaluated on the trace. The last block of the trace
+output is the negative control: a drone whose reversal loses ground, which the
+same check rejects at the sample where it happens.

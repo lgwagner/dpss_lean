@@ -17,6 +17,7 @@ k=3 p=14 obs=16 dir=< low=4
 k=4 p=4 obs=6 dir=> low=1
 k=5 p=4 obs=6 dir=> low=1
 min low = 1  (clear of the fence)
+contract: traj_ok holds at all 6 samples; safe(0) true
 --- fence, margin short by eps (margin=13 < 10+3+2) ---
 k=0 p=42 obs=44 dir=< low=32
 k=1 p=32 obs=34 dir=< low=22
@@ -25,27 +26,46 @@ k=3 p=12 obs=14 dir=< low=2
 k=4 p=2 obs=4 dir=> low=-1
 k=5 p=2 obs=4 dir=> low=-1
 min low = -1  (BREACH)
+contract: traj_ok holds at all 6 samples; safe(0) true
 --- separation (dmax=10, turn=3, eps=2, d=5, margin=30) ---
 k=0 gap=52 obs=56 mode=closing low=32
 k=1 gap=32 obs=36 mode=closing low=12
 k=2 gap=12 obs=16 mode=apart   low=6
 k=3 gap=12 obs=16 mode=apart   low=6
 min low = 6  (standoff 5; clear of the standoff)
+contract: pair_traj_ok holds at all 4 samples; pair_safe(0) true
 --- separation, margin short by 2*eps (margin=26 < 30) ---
 k=0 gap=48 obs=52 mode=closing low=28
 k=1 gap=28 obs=32 mode=closing low=8
 k=2 gap=8 obs=12 mode=apart   low=2
 k=3 gap=8 obs=12 mode=apart   low=2
 min low = 2  (standoff 5; BREACH)
+contract: pair_traj_ok holds at all 4 samples; pair_safe(0) true
 --- stale link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50) ---
 k=0 gap=52 obs=76 mode=closing low=32
 k=1 gap=32 obs=56 mode=closing low=12
 k=2 gap=12 obs=36 mode=apart   low=6
 k=3 gap=12 obs=36 mode=apart   low=6
 min low = 6  (standoff 5; clear of the standoff)
+contract: comms_step_ok holds at all 4 samples
 --- stale link on the fresh margin (margin=30 < 2*(10+3+2) + 2*10) ---
 k=0 gap=52 obs=76 mode=closing low=32
 k=1 gap=32 obs=56 mode=closing low=12
 k=2 gap=12 obs=36 mode=closing low=-8
 k=3 gap=-8 obs=16 mode=apart   low=-14
 min low = -14  (standoff 5; BREACH)
+contract: comms_step_ok holds at all 4 samples
+--- link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50) ---
+k=0 p=0 q=52 gap=52 src=0 rep=54
+k=1 p=10 q=42 gap=32 src=0 rep=54
+k=2 p=20 q=32 gap=12 src=0 rep=54
+k=3 p=30 q=42 gap=12 src=1 rep=44
+contract: link_step_ok holds at all 4 samples; drift_ok holds at all 4 samples
+--- fence, vehicle contract violated (a reversal that loses ground) ---
+k=0 p=44 obs=46 dir=< low=34
+k=1 p=34 obs=36 dir=< low=24
+k=2 p=24 obs=26 dir=< low=14
+k=3 p=14 obs=16 dir=< low=4
+k=4 p=4 obs=6 dir=> low=1
+k=5 p=1 obs=3 dir=> low=-2
+contract: traj_ok FAILS first at k=4
