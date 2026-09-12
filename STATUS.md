@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `80c449082991`  
+**Commit at time of writing:** `c920cb367759`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -619,7 +619,7 @@ This is the honest gap list, ordered by importance.
 
 ---
 
-## 5. Why Stage 1 matters more than I first said
+## 5. Non-Zeno: the contribution, and it is done
 
 I originally described Stage 1 as "most of the work and none of the glory."
 That was wrong, and reading arXiv:2205.11697 in full is what corrected it.
@@ -644,9 +644,24 @@ argument for it (§2 of their paper) but never mechanize it. So:
 | Avigad–van Doorn | yes | no |
 | ACL2 (Greve et al.) | no (assumed) | yes |
 
-Formalizing AvD's argument in Lean closes that gap. It is a genuine
-contribution rather than a reproduction, it sits in Stage 1, and **it stands
-even if the `2 − 1/n` proof never closes.**
+Closing that gap is a genuine contribution rather than a reproduction, and it
+stands independently of the `2 − 1/n` proof.
+
+### ✅ Done
+
+`Dpss/NonZenoProof.lean` proves
+
+> `nonZeno : ∀ T : ℝ, ∃ k, T < (c.run hn k).time`
+
+for this Lean model of Algorithm A, `sorry`-free, under the standing
+`Invariant` — which §3.10 proves preserved and §3.11 proves satisfiable, so the
+result is not vacuous. `#print axioms` reports only `propext`,
+`Classical.choice` and `Quot.sound`.
+
+See §3.16 for the argument and a careful statement of what it does and does not
+claim — in particular it does **not** literally discharge the ACL2 hypothesis,
+which would require their model rather than this one, and it inherits this
+development's choice of one resolution of the paper's nondeterminism.
 
 **A departure worth flagging.** I am *not* following the paper's own non-Zeno
 argument. It rests on the claim that "if drone `i+1` makes two consecutive left
@@ -655,9 +670,10 @@ to show and does not show. I could not reconstruct it: a right turn by `i+1`
 comes either from separating from `i` — at which instant `i` turns **left** —
 or from meeting `i` left of their shared boundary, at which instant `i` does
 not turn at all. It may still be true, but formalizing an unverified sketch is
-the one move this particular project cannot afford. The route taken instead
-(interval-crossing, §3.7–3.8) is self-contained and reuses a lemma the
-convergence proof needs anyway.
+the one move this particular project cannot afford. The route taken instead —
+interval-crossing (§3.7–3.8) plus counting (§3.14–3.16) — is self-contained,
+avoids the disputed claim entirely, and reuses a lemma the convergence proof
+needs anyway.
 
 The authors invite exactly this: *"given sufficient interest and resources, a
 proper measure for step-time could be developed and used to dispatch this
@@ -1024,6 +1040,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+c920cb3  2026-09-12  feat: non-Zeno, proved
 80c4490  2026-09-12  feat: A3 -- consecutive turns of one drone are 1/n apart in time
 fdb7427  2026-09-12  feat: A1 + A2 complete -- every step turns a drone, unconditionally
 fe8a002  2026-09-12  feat: border deadlines are never spurious -- gap 2 was overstated
