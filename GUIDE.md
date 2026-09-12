@@ -40,7 +40,7 @@ between the model and the paper; group **D** is housekeeping.
 | B7 | The symmetric half | [`Mirror.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Mirror.lean) | 5.8 |
 | **C** | **Fidelity** — the model against the paper | | [6](#6-group-c--fidelity) |
 | C1 | Nondeterminism: measure it | [`Priority.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Priority.lean) | 6.1 |
-| C1′ | Nondeterminism: `step` as a relation | [`Nondeterminism.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean) | 6.2 |
+| C1′ | Nondeterminism: [`step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L160) as a relation | [`Nondeterminism.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean) | 6.2 |
 | C2 | A converging `n = 3` trace | [`ThreeConverge.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ThreeConverge.lean) | 6.3 |
 | C3 | The bound is attained at `n = 2` | [`Sharpness.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Sharpness.lean) | 6.4 |
 | C3′ | The bound is attained at every `n` | [`SharpnessGeneral.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/SharpnessGeneral.lean) | 6.5 |
@@ -113,7 +113,7 @@ CI. The line to look for:
 Those three are Lean's standard axioms. `sorryAx` is not there, and it cannot
 be hidden.
 
-**Non-vacuity.** Both headline theorems are conditional on `Invariant`, so a
+**Non-vacuity.** Both headline theorems are conditional on [`Invariant`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L341), so a
 model in which nothing satisfies it would make them true for the empty reason.
 Three concrete configurations discharge every hypothesis, and the general
 theorems reproduce conclusions those traces had established by hand:
@@ -150,7 +150,7 @@ or `+2`. One equation, [`gap_advance`](https://github.com/lgwagner/dpss_lean/blo
 **The three events.** A drone reaches a perimeter border; a pair meets; a pair
 separates at the boundary they share. [`Dpss/Events.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean).
 
-> **Where a definition was wrong, and a trace caught it.** `AtSeparation`
+> **Where a definition was wrong, and a trace caught it.** [`AtSeparation`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean#L113)
 > originally required the pair to be *escorting* — co-located **and heading the
 > same way**. Two drones converging on their shared boundary have *opposite*
 > headings right up to the instant they meet, so no separation fired, the meet
@@ -160,17 +160,17 @@ separates at the boundary they share. [`Dpss/Events.lean`](https://github.com/lg
 > formalization's danger is not a wrong proof — Lean stops those. It is a wrong
 > **definition** supporting a flawless proof of something else.
 
-**The schedule.** `borderTime`, `meetTime`, `separationTime` per drone,
-minimised into `timeToNextEvent`. [`Dpss/Schedule.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Schedule.lean), [`Dpss/NextEvent.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean).
+**The schedule.** [`borderTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean#L55), [`meetTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Dynamics.lean#L127), [`separationTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Schedule.lean#L87) per drone,
+minimised into [`timeToNextEvent`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean#L274). [`Dpss/Schedule.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Schedule.lean), [`Dpss/NextEvent.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean).
 
 **The step.** Fly to the next event, then let every due event fire *at once*:
-each drone's new heading is `newDir`, a function of the **whole**
+each drone's new heading is [`newDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L114), a function of the **whole**
 configuration, so simultaneity is automatic rather than an ordering that would
 then need justifying. The price is a visible priority order —
 `border > separation > meet > unchanged` — which §6.1 and §6.2 are about.
 [`Dpss/Step.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean).
 
-**The standing invariant.** `Config.Invariant`: every drone on the perimeter,
+**The standing invariant.** [`Config.Invariant`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L341): every drone on the perimeter,
 drones in left-to-right order, escorting pairs with a non-negative separation
 deadline. Proved preserved by every step ([`invariant_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L347), [`invariant_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L354))
 and proved satisfiable. [`Dpss/Coherence.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean).
@@ -216,12 +216,12 @@ convergence proof, not a separate headline.
 Whatever sets the step's length — a border deadline, a meeting time, a
 separation time — the event that deadline belongs to really does fire, and it
 really does reverse somebody. The awkward cases are cascades, where several
-events come due at one instant; `newDir` being a function of the whole
+events come due at one instant; [`newDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L114) being a function of the whole
 configuration is what makes them harmless.
 
 > **A2 was a phantom.** A commit went into proving domination lemmas to contain
 > a worry about "spurious" border deadlines for interior drones. Flying a drone
-> for exactly `borderTime` lands it on `0` or `1` — that is what the quantity
+> for exactly [`borderTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean#L55) lands it on `0` or `1` — that is what the quantity
 > *is* — so the event genuinely fires. The lemmas were not needed, and A2
 > folded into A1.
 
@@ -480,7 +480,7 @@ anywhere, which is load-bearing rather than aesthetic — see §6.4.
 on paper that is honest.
 
 In Lean it needs a reflection map (`pos ↦ 1 − pos`, headings flipped, indices
-reversed) proved to commute with `advance`, `step` and `run`; reflection laws
+reversed) proved to commute with [`advance`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Dynamics.lean#L41), [`step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L160) and [`run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L228); reflection laws
 for every local quantity and every event; invariance of the global deadline;
 and then the transfer principle [`rightSync_iff_leftSync_mirror`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Mirror.lean#L706). A real-time
 version ([`rightSyncAt_iff_leftSyncAt_mirror`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L79)) and a reflection of
@@ -490,11 +490,11 @@ version ([`rightSyncAt_iff_leftSyncAt_mirror`](https://github.com/lgwagner/dpss_
 > lesson: a step the source treats as a triviality about the *mathematics* may
 > be substantial work about the *formalization*.
 >
-> **The priority orders do not correspond.** `newDir` checks the left border
+> **The priority orders do not correspond.** [`newDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L114) checks the left border
 > first; its reflection checks the right border first. Harmless only because
 > paired branches are mutually exclusive — which had to be proved.
 >
-> **The tie-break flips.** `escortDir` and `escortDirLeft` reflect into each
+> **The tie-break flips.** [`escortDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean#L123) and [`escortDirLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L106) reflect into each
 > other *except exactly on the shared boundary*, where one reads `pos <
 > boundary` and the other `boundary < pos`. The mathematics is symmetric; a
 > strict inequality is not.
@@ -508,7 +508,7 @@ showed.
 
 ### 6.1 C1 — measuring the nondeterminism
 
-[`Dpss/Priority.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Priority.lean). `newDir` resolves competing events in the order
+[`Dpss/Priority.lean`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Priority.lean). [`newDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L114) resolves competing events in the order
 `border > separation > meet > unchanged`, and three documents had recorded that
 order for months as "one resolution" of a choice the paper leaves open. That
 description was written when the order was chosen, and never checked.
@@ -518,14 +518,14 @@ instant, compute both answers and compare.
 
 | Both due | Separation says | Meet says | |
 |---|---|---|---|
-| right border + `MeetRight` | `left` | `left` | agree |
-| left border + `MeetLeft` | `right` | `right` | agree |
-| left border + `SepLeft` | — | — | **impossible** |
-| right border + `SepRight` | — | — | **impossible** |
-| `SepRight` + `MeetRight` | `left` | `left` | agree |
-| `SepRight` + `MeetLeft` | `left` | `left` | agree |
-| `SepLeft` + `MeetRight` | `right` | `right` | agree |
-| `SepLeft` + `MeetLeft` | `right` | `left` | **differ** |
+| right border + [`MeetRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L95) | `left` | `left` | agree |
+| left border + [`MeetLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L99) | `right` | `right` | agree |
+| left border + [`SepLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L91) | — | — | **impossible** |
+| right border + [`SepRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L86) | — | — | **impossible** |
+| [`SepRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L86) + [`MeetRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L95) | `left` | `left` | agree |
+| [`SepRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L86) + [`MeetLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L99) | `left` | `left` | agree |
+| [`SepLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L91) + [`MeetRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L95) | `right` | `right` | agree |
+| [`SepLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L91) + [`MeetLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L99) | `right` | `left` | **differ** |
 
 The agreements have one reason: a separating drone is standing on a boundary,
 and from a boundary the escort heading is forced. The single disagreement is
@@ -547,7 +547,7 @@ trace caught.
 > interval; in that case, **the middle drone can escort either neighbor to their
 > common border**.
 
-`PLAN.md` sized this as: make `step` a relation and re-prove the development
+`PLAN.md` sized this as: make [`step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L160) a relation and re-prove the development
 over an arbitrary trajectory — ~30 primitive lemmas re-derived from a
 specification, and every statement in 33 files gaining a parameter. **That is
 not what the file does**, because the same passage says why it is unnecessary:
@@ -574,7 +574,7 @@ That is a claim about reachable states, and it is provable.
   function. [`convergesBy_of_isRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L384) and [`nonZeno_of_isRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L392) follow.
 
 > **Keep the width honest.** A specification that quietly admits only one value
-> makes uniqueness vacuous. `ExamplesThree.triple` exhibits a configuration
+> makes uniqueness vacuous. [`ExamplesThree.triple`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L413) exhibits a configuration
 > where the open clause genuinely admits two headings, so the collapse theorem
 > has content; [`triple_not_reachable`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L453) then says what the collapse implies about
 > it.
@@ -673,9 +673,9 @@ whole perimeter, so `2 − 1/1 = 1` is not attained.
 
 ### 7.1 D1 — two superseded definitions removed
 
-`Config.Together` was superseded by `CoLocated` (stated on an *adjacent* pair
+`Config.Together` was superseded by [`CoLocated`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean#L88) (stated on an *adjacent* pair
 via the gap, which is what every later result quotes) and `Config.Valid` by
-`Config.Invariant` (which adds escort coherence and is what is proved
+[`Config.Invariant`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L341) (which adds escort coherence and is what is proved
 preserved). Neither had a use left.
 
 > A dead predicate in a development like this is not neutral: it invites a
@@ -851,63 +851,81 @@ a line anchor has gone stale.
 <!-- BEGIN:INDEX -->
 | Declaration | File | Line |
 |---|---|---|
-| [`AllSync`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Synchronization.lean#L84) | `Synchronization.lean` | 84 |
-| [`ApartOnBoundaries`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L89) | `InductionStep.lean` | 89 |
-| [`ApartOnBoundary`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Reachable.lean#L47) | `Reachable.lean` | 47 |
-| [`BothLeftApart`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L141) | `PairBalance.lean` | 141 |
-| [`HaveMetBy`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/LeftSyncLemmas.lean#L195) | `LeftSyncLemmas.lean` | 195 |
-| [`IsRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L310) | `Nondeterminism.lean` | 310 |
-| [`PairPhase`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L85) | `BalanceInvariant.lean` | 85 |
-| [`StepRel`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L302) | `Nondeterminism.lean` | 302 |
-| [`allSync_of_time`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L207) | `Convergence.lean` | 207 |
-| [`apartOnBoundaries_of_dir_const`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L107) | `InductionStep.lean` | 107 |
-| [`apartOnBoundaries_of_not_coLocated`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L101) | `InductionStep.lean` | 101 |
-| [`apartOnBoundaries_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L93) | `InductionStep.lean` | 93 |
-| [`approach_converges_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L256) | `Convergence.lean` | 256 |
-| [`bound_sharp`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Sharpness.lean#L341) | `Sharpness.lean` | 341 |
-| [`bound_sharp_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/SharpnessGeneral.lean#L330) | `SharpnessGeneral.lean` | 330 |
-| [`cfgB_converges_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L309) | `Convergence.lean` | 309 |
-| [`cfgS`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ThreeConverge.lean#L62) | `ThreeConverge.lean` | 62 |
-| [`coLocated_of_turnsLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L210) | `PairBalance.lean` | 210 |
-| [`convergesBy`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L199) | `Convergence.lean` | 199 |
-| [`convergesBy_of_isRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L384) | `Nondeterminism.lean` | 384 |
-| [`dir_left_since_of_never_coLocated`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/TurnPersistence.lean#L89) | `TurnPersistence.lean` | 89 |
-| [`escortsCoherent_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L236) | `Coherence.lean` | 236 |
-| [`exists_coLocated_within_one`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Meeting.lean#L340) | `Meeting.lean` | 340 |
-| [`exists_firstLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Meeting.lean#L236) | `Meeting.lean` | 236 |
-| [`exists_firstRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Meeting.lean#L202) | `Meeting.lean` | 202 |
-| [`exists_lastBefore`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L183) | `RealTime.lean` | 183 |
-| [`gap_advance`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Dynamics.lean#L93) | `Dynamics.lean` | 93 |
-| [`invariant_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L354) | `Coherence.lean` | 354 |
-| [`invariant_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L347) | `Coherence.lean` | 347 |
-| [`isRun_eq_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L365) | `Nondeterminism.lean` | 365 |
-| [`ladder_state`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/SharpnessGeneral.lean#L132) | `SharpnessGeneral.lean` | 132 |
-| [`leftEnd_le_pos_of_pairBalance`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L120) | `PairBalance.lean` | 120 |
-| [`leftSyncAt_next`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L141) | `InductionStep.lean` | 141 |
-| [`leftSyncAt_zero`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L332) | `RealTime.lean` | 332 |
-| [`leftSync_next_of_coLocated_left`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L123) | `InductionStep.lean` | 123 |
-| [`leftSync_of_escorting`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L295) | `BalanceInvariant.lean` | 295 |
-| [`leftSync_of_reached_boundary`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L311) | `BalanceInvariant.lean` | 311 |
-| [`leftSync_of_separation`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L286) | `BalanceInvariant.lean` | 286 |
-| [`legitDir_unique`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L265) | `Nondeterminism.lean` | 265 |
-| [`newDirMeetFirst_leaves_interval`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Priority.lean#L262) | `Priority.lean` | 262 |
-| [`nonZeno`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NonZenoProof.lean#L127) | `NonZenoProof.lean` | 127 |
-| [`nonZeno_of_isRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L392) | `Nondeterminism.lean` | 392 |
-| [`nonneg_of_endpoints`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L63) | `RealTime.lean` | 63 |
-| [`not_strictly_inside_of_grouped`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L170) | `Nondeterminism.lean` | 170 |
-| [`onPerimeter_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L361) | `Coherence.lean` | 361 |
-| [`pinned_of_balance_zero`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L402) | `PairBalance.lean` | 402 |
-| [`pos_eq_of_time_le`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L206) | `RealTime.lean` | 206 |
-| [`pos_sub_eq_of_dirConst`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NonZeno.lean#L88) | `NonZeno.lean` | 88 |
-| [`rightSyncAt_iff_leftSyncAt_mirror`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L79) | `Convergence.lean` | 79 |
-| [`rightSync_iff_leftSync_mirror`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Mirror.lean#L706) | `Mirror.lean` | 706 |
-| [`run_cfgB_at`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ThreeConverge.lean#L494) | `ThreeConverge.lean` | 494 |
-| [`someDroneTurns_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/EventsTurn.lean#L283) | `EventsTurn.lean` | 283 |
-| [`spread`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Examples.lean#L484) | `Examples.lean` | 484 |
-| [`spread_converges_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L282) | `Convergence.lean` | 282 |
-| [`step_cfgB`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ExamplesThree.lean#L190) | `ExamplesThree.lean` | 190 |
-| [`step_cfgC`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ExamplesThree.lean#L232) | `ExamplesThree.lean` | 232 |
-| [`sync_at_of_time`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L191) | `Convergence.lean` | 191 |
-| [`time_gap_of_consecutive_turns`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/TurnSpacing.lean#L63) | `TurnSpacing.lean` | 63 |
-| [`triple_not_reachable`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L453) | `Nondeterminism.lean` | 453 |
+| [`DPSS.Config.AllSync`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Synchronization.lean#L84) | `Synchronization.lean` | 84 |
+| [`DPSS.Config.ApartOnBoundaries`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L89) | `InductionStep.lean` | 89 |
+| [`DPSS.Config.ApartOnBoundary`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Reachable.lean#L47) | `Reachable.lean` | 47 |
+| [`DPSS.Config.AtSeparation`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean#L113) | `Events.lean` | 113 |
+| [`DPSS.Config.BothLeftApart`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L141) | `PairBalance.lean` | 141 |
+| [`DPSS.Config.CoLocated`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean#L88) | `Events.lean` | 88 |
+| [`DPSS.Config.HaveMetBy`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/LeftSyncLemmas.lean#L195) | `LeftSyncLemmas.lean` | 195 |
+| [`DPSS.Config.Invariant`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L341) | `Coherence.lean` | 341 |
+| [`DPSS.Config.IsRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L310) | `Nondeterminism.lean` | 310 |
+| [`DPSS.Config.MeetLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L99) | `Step.lean` | 99 |
+| [`DPSS.Config.MeetRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L95) | `Step.lean` | 95 |
+| [`DPSS.Config.PairPhase`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L85) | `BalanceInvariant.lean` | 85 |
+| [`DPSS.Config.SepLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L91) | `Step.lean` | 91 |
+| [`DPSS.Config.SepRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L86) | `Step.lean` | 86 |
+| [`DPSS.Config.StepRel`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L302) | `Nondeterminism.lean` | 302 |
+| [`DPSS.Config.advance`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Dynamics.lean#L41) | `Dynamics.lean` | 41 |
+| [`DPSS.Config.allSync_of_time`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L207) | `Convergence.lean` | 207 |
+| [`DPSS.Config.apartOnBoundaries_of_dir_const`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L107) | `InductionStep.lean` | 107 |
+| [`DPSS.Config.apartOnBoundaries_of_not_coLocated`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L101) | `InductionStep.lean` | 101 |
+| [`DPSS.Config.apartOnBoundaries_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L93) | `InductionStep.lean` | 93 |
+| [`DPSS.Config.borderTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean#L55) | `NextEvent.lean` | 55 |
+| [`DPSS.Config.bound_sharp_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/SharpnessGeneral.lean#L330) | `SharpnessGeneral.lean` | 330 |
+| [`DPSS.Config.coLocated_of_turnsLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L210) | `PairBalance.lean` | 210 |
+| [`DPSS.Config.convergesBy`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L199) | `Convergence.lean` | 199 |
+| [`DPSS.Config.convergesBy_of_isRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L384) | `Nondeterminism.lean` | 384 |
+| [`DPSS.Config.dir_left_since_of_never_coLocated`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/TurnPersistence.lean#L89) | `TurnPersistence.lean` | 89 |
+| [`DPSS.Config.escortDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Events.lean#L123) | `Events.lean` | 123 |
+| [`DPSS.Config.escortDirLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L106) | `Step.lean` | 106 |
+| [`DPSS.Config.escortsCoherent_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L236) | `Coherence.lean` | 236 |
+| [`DPSS.Config.exists_coLocated_within_one`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Meeting.lean#L340) | `Meeting.lean` | 340 |
+| [`DPSS.Config.exists_firstLeft`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Meeting.lean#L236) | `Meeting.lean` | 236 |
+| [`DPSS.Config.exists_firstRight`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Meeting.lean#L202) | `Meeting.lean` | 202 |
+| [`DPSS.Config.exists_lastBefore`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L183) | `RealTime.lean` | 183 |
+| [`DPSS.Config.gap_advance`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Dynamics.lean#L93) | `Dynamics.lean` | 93 |
+| [`DPSS.Config.invariant_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L354) | `Coherence.lean` | 354 |
+| [`DPSS.Config.invariant_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L347) | `Coherence.lean` | 347 |
+| [`DPSS.Config.isRun_eq_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L365) | `Nondeterminism.lean` | 365 |
+| [`DPSS.Config.ladder_state`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/SharpnessGeneral.lean#L132) | `SharpnessGeneral.lean` | 132 |
+| [`DPSS.Config.leftEnd_le_pos_of_pairBalance`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L120) | `PairBalance.lean` | 120 |
+| [`DPSS.Config.leftSyncAt_next`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L141) | `InductionStep.lean` | 141 |
+| [`DPSS.Config.leftSyncAt_zero`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L332) | `RealTime.lean` | 332 |
+| [`DPSS.Config.leftSync_next_of_coLocated_left`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/InductionStep.lean#L123) | `InductionStep.lean` | 123 |
+| [`DPSS.Config.leftSync_of_escorting`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L295) | `BalanceInvariant.lean` | 295 |
+| [`DPSS.Config.leftSync_of_reached_boundary`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L311) | `BalanceInvariant.lean` | 311 |
+| [`DPSS.Config.leftSync_of_separation`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/BalanceInvariant.lean#L286) | `BalanceInvariant.lean` | 286 |
+| [`DPSS.Config.legitDir_unique`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L265) | `Nondeterminism.lean` | 265 |
+| [`DPSS.Config.meetTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Dynamics.lean#L127) | `Dynamics.lean` | 127 |
+| [`DPSS.Config.newDir`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L114) | `Step.lean` | 114 |
+| [`DPSS.Config.newDirMeetFirst_leaves_interval`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Priority.lean#L262) | `Priority.lean` | 262 |
+| [`DPSS.Config.nonZeno`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NonZenoProof.lean#L127) | `NonZenoProof.lean` | 127 |
+| [`DPSS.Config.nonZeno_of_isRun`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L392) | `Nondeterminism.lean` | 392 |
+| [`DPSS.Config.nonneg_of_endpoints`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L63) | `RealTime.lean` | 63 |
+| [`DPSS.Config.not_strictly_inside_of_grouped`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L170) | `Nondeterminism.lean` | 170 |
+| [`DPSS.Config.onPerimeter_run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Coherence.lean#L361) | `Coherence.lean` | 361 |
+| [`DPSS.Config.pinned_of_balance_zero`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/PairBalance.lean#L402) | `PairBalance.lean` | 402 |
+| [`DPSS.Config.pos_eq_of_time_le`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/RealTime.lean#L206) | `RealTime.lean` | 206 |
+| [`DPSS.Config.pos_sub_eq_of_dirConst`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NonZeno.lean#L88) | `NonZeno.lean` | 88 |
+| [`DPSS.Config.rightSyncAt_iff_leftSyncAt_mirror`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L79) | `Convergence.lean` | 79 |
+| [`DPSS.Config.rightSync_iff_leftSync_mirror`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Mirror.lean#L706) | `Mirror.lean` | 706 |
+| [`DPSS.Config.run`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L228) | `Step.lean` | 228 |
+| [`DPSS.Config.separationTime`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Schedule.lean#L87) | `Schedule.lean` | 87 |
+| [`DPSS.Config.someDroneTurns_step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/EventsTurn.lean#L283) | `EventsTurn.lean` | 283 |
+| [`DPSS.Config.step`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Step.lean#L160) | `Step.lean` | 160 |
+| [`DPSS.Config.sync_at_of_time`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L191) | `Convergence.lean` | 191 |
+| [`DPSS.Config.timeToNextEvent`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/NextEvent.lean#L274) | `NextEvent.lean` | 274 |
+| [`DPSS.Config.time_gap_of_consecutive_turns`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/TurnSpacing.lean#L63) | `TurnSpacing.lean` | 63 |
+| [`DPSS.Examples.approach_converges_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L256) | `Convergence.lean` | 256 |
+| [`DPSS.Examples.bound_sharp`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Sharpness.lean#L341) | `Sharpness.lean` | 341 |
+| [`DPSS.Examples.spread`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Examples.lean#L484) | `Examples.lean` | 484 |
+| [`DPSS.Examples.spread_converges_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L282) | `Convergence.lean` | 282 |
+| [`DPSS.ExamplesThree.cfgB_converges_general`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Convergence.lean#L309) | `Convergence.lean` | 309 |
+| [`DPSS.ExamplesThree.cfgS`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ThreeConverge.lean#L62) | `ThreeConverge.lean` | 62 |
+| [`DPSS.ExamplesThree.run_cfgB_at`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ThreeConverge.lean#L494) | `ThreeConverge.lean` | 494 |
+| [`DPSS.ExamplesThree.step_cfgB`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ExamplesThree.lean#L190) | `ExamplesThree.lean` | 190 |
+| [`DPSS.ExamplesThree.step_cfgC`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/ExamplesThree.lean#L232) | `ExamplesThree.lean` | 232 |
+| [`DPSS.ExamplesThree.triple`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L413) | `Nondeterminism.lean` | 413 |
+| [`DPSS.ExamplesThree.triple_not_reachable`](https://github.com/lgwagner/dpss_lean/blob/main/Dpss/Nondeterminism.lean#L453) | `Nondeterminism.lean` | 453 |
 <!-- END:INDEX -->
