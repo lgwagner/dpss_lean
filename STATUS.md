@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `5c128c25141a`  
+**Commit at time of writing:** `2edf1c074c71`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -211,7 +211,7 @@ is automatic and no ordering of updates needs justifying.
 can never compete: a drone cannot meet both neighbours (that needs opposite
 headings), nor separate from both (the two points differ). A separation and a
 meet *can* coincide — the genuine ambiguity the paper leaves open — and giving
-separation priority is one resolution. See gap 7.
+separation priority is one resolution. See gap 4.
 
 Proved: `adjOrdered_step` (a step never flies past a collision, so nobody
 overtakes) and `step_time_lt` (time strictly advances when nothing was due).
@@ -1248,6 +1248,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+2edf1c0  2026-09-12  docs: fix stale gap cross-references in the work package
 5c128c2  2026-09-12  feat: a counterexample -- the lemma I was trying to prove is false
 37a7159  2026-09-12  feat: why a drone ends up heading where it does
 2e8b565  2026-09-12  feat: Lemma 3.6, unconditionally
@@ -1305,17 +1306,17 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | A3 | ~~Consecutive turns `1/n` apart~~ | ✅ | §3.15 |
 | A4 | ~~Assemble `NonZeno`~~ | ✅ | **§3.16 — done** |
 | **B** | **Theorem 2.1** | | *the headline* |
-| B1 | Lemma 3.2 — `BothLeftApart` case 3 | **L** | §3.13; needs a *reachability* invariant, see §3.20 |
+| B1 | Lemma 3.2 — `BothLeftApart` case 3 | **L** | needs a **reachability invariant**; §3.20 says which |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
 | B3 | Lemma 3.5 — every pair has met by time 1 | **L** | `HaveMetBy` now defined (§3.17); the proof is not |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` | S | |
 | **C** | **Fidelity** | | |
-| C1 | Nondeterminism: a relation, not a function | M | gap 7; or document as a restriction |
-| C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 4 |
-| C3 | An `ε`-family showing the bound is *attained* | M | gap 5 |
-| **D** | Cleanup: unused definitions, `PLAN.md` scope fix | S | gaps 6, 8 |
+| C1 | Nondeterminism: a relation, not a function | M | gap 4; §3.20 shows it biting |
+| C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 2 |
+| C3 | An `ε`-family showing the bound is *attained* | M | gap 3 |
+| **D** | Cleanup: unused definitions, `PLAN.md` scope fix | S | gaps 5, 6 |
 
 Sizes are relative: **S** is a sitting, **M** is a session, **L** is the kind of
 argument the paper spends a figure on and the ACL2 team spent 11K lines around.
