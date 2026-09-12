@@ -51,6 +51,7 @@ at `n = 2` rather than for every `n`.
 
 | File | What it is |
 |---|---|
+| **`GUIDE.md`** | **Start here.** A reader's guide to the convergence proof: what it claims, how the pieces fit, what to read in what order, and how to check it. |
 | **`STATUS.md`** | What is proved, what is **not**, and a full axiom audit. Written to be audited, not just read. §4 is the honest gap list. |
 | **`INSIGHTS.md`** | The non-obvious things learned. Read this before extending the work. |
 | **`PLAN.md`** | **Work yet to be done** — the roadmap. Start here to pick up the work. |
