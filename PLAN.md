@@ -32,58 +32,11 @@ and proved at `n = 1` and for specific `n = 2`, `n = 3` configurations.
 
 ## Critical path
 
-### 1 — B1. Lemma 3.2: `BalanceNonneg`  ⟨**L**⟩
-
-**Target.** `BalanceNonneg c hn i h k` for a pair that has just separated. This
-single result completes Lemmas **3.2, 3.3 and 3.4** together, since §3.17 has
-all three waiting on it.
-
-**Approach.** Derived in `STATUS.md` §8a — read that first. A three-clause
-invariant:
-
-1. `0 ≤ balance`
-2. pair heading `(left, right)` ⟹ `balance = 0`
-3. `BothLeftApart` ⟹ `pos i = leftEnd i`
-
-Clause 2 is the engine: the balance rate is the **sum** of the two headings
-(unlike the gap, which uses the difference), so a pair heading apart holds its
-balance *constant*. Entering that state therefore only needs to happen at zero.
-
-**Ingredients — all present.** `pairBalance_advance`,
-`pairBalance_eq_zero_of_atSeparation`, `pairBalance_eq_two_mul_separationTime`,
-`pairBalance_nonneg_step`, `pinned_of_balance_zero`,
-`timeToNextEvent_eq_zero_of_pinned`, `apart_transfer`,
-`coLocated_of_turnsLeft`/`_turnsRight`, `newDir_left_cases`/`_right_cases`,
-`dir_left_of_newDir_apart` and partner.
-
-**Steps.**
-1. State the three-clause invariant as a structure, say `PairPhase`.
-2. Preservation, clause 2: split on co-located / apart. Apart is the easy half
-   — every event that could deliver `(left, right)` needs this pair co-located,
-   so the pair was already in that state. Co-located is §3.21's enumeration.
-3. Preservation, clause 3: from clause 2 plus `pinned_of_balance_zero`.
-4. Preservation, clause 1: from clause 3 plus
-   `timeToNextEvent_eq_zero_of_pinned` (apart) and `pairBalance_nonneg_step`
-   (co-located).
-5. Chain along a run; feed `leftSync_of_balanceNonneg`.
-
-**Done when.** `leftSync_of_atSeparation` and the Lemma 3.3 / 3.4 statements in
-`LeftSyncLemmas.lean` lose their `hnever`/`BothLeftApart` hypotheses.
-
-**Hazard.** Two attempts have already failed by guessing the invariant's shape.
-Do not start proving before the three clauses are written down and each one's
-*purpose* is clear.
-
-**On completion, record:** which clause turned out to be load-bearing, and
-whether the three-clause shape was right or itself needed revising.
-
----
-
-### 2 — B3. Lemma 3.5: every pair has met by time 1  ⟨**L**⟩
+### 1 — B3. Lemma 3.5: every pair has met by time 1  ⟨**L**⟩
 
 **Target.** `HaveMetBy c hn i h (c.time + 1)` for every adjacent pair.
 
-Independent of B1 — can be done in either order. This is the result that makes
+**Now the only remaining L.** This is the result that makes
 the bound `n`-independent; without it the argument degrades to linear in `n`,
 which is what Kingston et al.'s original proof gave.
 
@@ -114,9 +67,9 @@ checkable (D2).
 
 ---
 
-### 3 — B5. Lemma 3.7: the `+1/n` inductive step  ⟨M⟩
+### 2 — B5. Lemma 3.7: the `+1/n` inductive step  ⟨M⟩
 
-**Depends on:** B1 (for 3.2/3.3/3.4 unconditional), B3 (for `have met`).
+**Depends on:** B3 (for `have met`). B1 is done.
 
 **Target.** Drones `1..j` left synchronized and the pair `(j, j+1)` having met
 ⟹ `j+1` left synchronized by `t + 1/n`.
@@ -140,7 +93,7 @@ the primary one from the start.
 
 ---
 
-### 4 — B6. Assemble Theorem 2.1  ⟨S⟩
+### 3 — B6. Assemble Theorem 2.1  ⟨S⟩
 
 **Depends on:** B5, and B7 (done).
 
@@ -316,7 +269,33 @@ principle `rightSync_iff_leftSync_mirror`.
 
 ---
 
-### B1 — partial
+### B1 — Lemma 3.2  ✅
+
+**Built.** `PairPhase`, the three-clause invariant, proved preserved by a step
+and along a run; `balanceNonneg_of_pairPhase`; and **`leftSync_of_separation`**
+— Lemma 3.2 with no hypothesis beyond left synchronization of the left drone.
+`leftSync_of_escorting` is Lemma 3.3, likewise unconditional.
+
+**Insights.**
+
+- **Deriving beat guessing.** Three shapes were tried and two were wrong before
+  the derivation was written down; the derived one worked essentially first
+  time. The cost of the guessing was several days of commits.
+- **Clause 2 is the one that matters.** *Heading apart ⟹ balance zero.* It is
+  not decoration: the pinning argument needs the balance **exactly** zero, not
+  merely nonnegative, so clause 1 alone is not an invariant.
+- **A pair that is apart cannot change phase.** The whole difficulty collapses
+  once you notice this: every event that could deliver `left` to one drone and
+  `right` to the other requires *this pair* to be co-located, and either border
+  event forces co-location by ordering. So an apart pair carries its balance
+  across untouched, and only the co-located case needs work.
+- **Lemma 3.4 does not get the invariant from its own hypothesis.** Reaching
+  the shared boundary gives a *nonnegative* balance, not a zero one, so a pair
+  heading apart from there may carry a strictly positive balance and clause 2
+  fails. 3.4 therefore takes the invariant as a hypothesis rather than being
+  unconditional — an asymmetry with 3.2 and 3.3 I did not anticipate.
+
+### B1 — earlier, partial
 
 **Built.** The pair **balance** and its laws; `BothLeftApart` isolated as the
 sole obstruction, with two of its three routes closed; the positional core

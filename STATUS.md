@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `56882f245432`  
+**Commit at time of writing:** `d7a7147e3d23`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**416 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 207 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**431 theorems**, all `sorry`-free, across 24 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 207 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -847,6 +847,41 @@ A recurring obstacle worth noting: these predicates carry the index inside a
 congruence lemmas (`approaching_congr` and friends) exist purely to substitute
 the index first and close by proof irrelevance.
 
+### 3.24 `Dpss/BalanceInvariant.lean` — **B1: Lemma 3.2, unconditional**
+
+The three-clause invariant derived in §8a, stated as `PairPhase` and proved
+preserved:
+
+1. `0 ≤ balance`;
+2. heading `(left, right)` ⟹ `balance = 0`;
+3. `BothLeftApart` ⟹ the left drone sits on its left endpoint.
+
+`pairPhase_step`, `pairPhase_run`, `balanceNonneg_of_pairPhase`, and then
+**`leftSync_of_separation`** — Lemma 3.2 with no hypothesis beyond left
+synchronization of the left drone, which is its own. **`leftSync_of_escorting`**
+is Lemma 3.3, likewise.
+
+**The pleasant part.** A pair that is **apart** cannot change phase at all.
+Every event that could deliver `left` to one drone and `right` to the other —
+`SepRight`, `MeetRight`, `SepLeft` and `MeetLeft` on the right drone — requires
+*this pair* to be co-located, and either border event forces co-location by
+ordering. So an apart pair simply carries its balance across untouched, and the
+whole difficulty collapses into the co-located case, which §3.21 had already
+enumerated.
+
+**What clause 2 is for.** It is not decoration: the pinning argument
+(`pinned_of_balance_zero`) needs the balance to be *exactly* zero, not merely
+nonnegative. That is why clause 1 alone is not an invariant.
+
+**An asymmetry worth recording.** Lemma 3.4 does **not** get the invariant from
+its own hypothesis. Reaching the shared boundary gives a nonnegative balance but
+not a zero one, so a pair heading apart from there may carry a strictly positive
+balance and clause 2 fails. `leftSync_of_reached_boundary` therefore takes
+`PairPhase` as a hypothesis — which a caller inside a run can always supply,
+since `pairPhase_run` proves it is preserved. 3.2 and 3.3 are unconditional;
+3.4 is conditional on an invariant rather than on an obstruction, which is a
+strictly better position than before.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -854,10 +889,11 @@ the index first and close by proof irrelevance.
 This is the honest gap list, ordered by importance.
 
 1. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for specific
-   `n = 2` and `n = 3` configurations. Lemmas 3.1 and 3.6 are done; 3.2, 3.3
-   and 3.4 are done *conditionally* on one obstruction (`BothLeftApart`);
-   **3.5 and 3.7 are untouched.** Lemma 3.5 ("every adjacent pair has met by
-   time 1") is the uniform timing result that makes the bound `n`-independent.
+   `n = 2` and `n = 3` configurations. **Lemmas 3.1, 3.2, 3.3 and 3.6 are done
+   and unconditional**; 3.4 is conditional on the phase invariant, which is
+   proved preserved. **3.5 and 3.7 are untouched.** Lemma 3.5 ("every adjacent
+   pair has met by time 1") is the uniform timing result that makes the bound
+   `n`-independent, and it is the remaining **L**.
 
 2. ~~**The symmetric half is not started.**~~ **Closed** — §3.23. The
    reflection principle is proved, so right synchronization transfers from left
@@ -991,6 +1027,21 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 
 <!-- BEGIN:AUDIT -->
 ```
+'DPSS.Config.le_nextIdx' depends on axioms: [propext, Quot.sound]
+'DPSS.Config.dir_left_of_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_right_of_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apart_zero_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dt_eq_zero_of_pinned' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.bothLeft_pinned_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.balance_nonneg_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairPhase_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairPhase_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.balanceNonneg_of_pairPhase' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairPhase_of_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairPhase_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_reached_boundary' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Dir.flip_left' does not depend on any axioms
 'DPSS.Dir.flip_right' does not depend on any axioms
 'DPSS.Dir.flip_flip' does not depend on any axioms
@@ -1409,7 +1460,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**416/416 clean — `sorryAx` appears zero times.**
+**431/431 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1459,6 +1510,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+d7a7147  2026-09-12  docs: refresh STATUS.md generated blocks
 56882f2  2026-09-12  docs: PLAN.md records what each completed item built and taught
 b91c5a2  2026-09-12  docs: PLAN.md is now the roadmap of work yet to be done
 e36d467  2026-09-12  docs: derive B1's invariant instead of guessing at it
@@ -1601,7 +1653,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | A3 | ~~Consecutive turns `1/n` apart~~ | ✅ | §3.15 |
 | A4 | ~~Assemble `NonZeno`~~ | ✅ | **§3.16 — done** |
 | **B** | **Theorem 2.1** | | *the headline* |
-| B1 | Lemma 3.2 — `BothLeftApart` case 3 | **L** | needs a **reachability invariant**; §3.20 says which |
+| **B1** | ~~Lemma 3.2~~ | ✅ | **§3.24 — done.** `leftSync_of_separation`, unconditional |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
 | B3 | Lemma 3.5 — every pair has met by time 1 | **L** | §3.22 supplies the turning lemmas; the meeting argument is not done |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
