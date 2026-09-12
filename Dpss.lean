@@ -29,3 +29,4 @@ import Dpss.Convergence
 import Dpss.Sharpness
 import Dpss.ThreeConverge
 import Dpss.Priority
+import Dpss.SharpnessGeneral
