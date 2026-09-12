@@ -12,8 +12,8 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 | | Milestone | State |
 |---|---|---|
 | **M0** | Toolchain, pinned and scripted | ✅ `3 verified, 0 errors` |
-| **M1** | The integer model, in Lean | **in progress** — stage A (definitions) done; stages B (lattice closure) and C (embedding) open |
-| **M2** | The generator | not started |
+| **M1** | The integer model, in Lean | ✅ `embed_step`, `embed_run`, `intRun_converges` |
+| **M2** | The generator | **next** |
 | **M3** | Verus spec and invariants | not started |
 | **M4** | Executable code and the key equivalence | not started |
 | **M5** | Differential testing | not started |
@@ -39,6 +39,14 @@ so a bump or a restart does not rediscover them:
 - In `Dpss/IntModel.lean`, a `variable (c : IntConfig n)` binder does **not** resolve
   inside a recursive definition — `run` has to bind `c` explicitly, which is why
   `Config.run` does too.
+- The integer traces are `decide`, so the kernel checks them — but `OnLattice` is
+  **not** decidable, because the index carries a dependent proof (`∀ i, ∀ h : i+1 < n`).
+  Prove it from `onLattice_run` instead of recomputing; that is what the closure
+  theorem is for.
+- `Dpss/IntModel.lean` shadows ~17 model names on purpose (`gap`, `step`, `newDir`,
+  …). That broke `scripts/refresh_guide_links.py`, which keyed on bare names and
+  silently dropped anything declared twice. It is now namespace-aware — worth
+  knowing before adding another parallel model.
 
 ---
 

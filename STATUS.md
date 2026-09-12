@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `fcd0d2f75f0d`  
+**Commit at time of writing:** `d42b1703191b`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**594 theorems**, all `sorry`-free, across 33 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**658 theorems**, all `sorry`-free, across 34 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1648,6 +1648,70 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.apartOnBoundaries_of_dir_const' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_next_of_coLocated_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSyncAt_next' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Dir.isign_left' does not depend on any axioms
+'DPSS.Dir.isign_right' does not depend on any axioms
+'DPSS.Dir.cast_isign' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Dir.isign_mul_self' does not depend on any axioms
+'DPSS.Dir.isign_ne_zero' does not depend on any axioms
+'DPSS.intRightEnd_sub_intLeftEnd' depends on axioms: [propext]
+'DPSS.IntConfig.ext' depends on axioms: [propext]
+'DPSS.IntConfig.advance_time' does not depend on any axioms
+'DPSS.IntConfig.advance_pos' does not depend on any axioms
+'DPSS.IntConfig.advance_dir' does not depend on any axioms
+'DPSS.IntConfig.step_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.step_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.run_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.run_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.gap_advance' depends on axioms: [propext, Quot.sound]
+'DPSS.IntConfig.two_dvd_sepRate' depends on axioms: [propext]
+'DPSS.IntConfig.onLattice_advance' depends on axioms: [propext, Quot.sound]
+'DPSS.IntConfig.onLattice_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.onLattice_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.two_mul_meetTime' depends on axioms: [propext, Quot.sound]
+'DPSS.scaleR_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.scaleR_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.div_eq_div_iff_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.div_lt_div_iff_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.div_le_div_iff_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_leftEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_rightEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_commonEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_sign' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.cast_min_div' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_borderTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_separationTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_meetTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_droneNextTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_timeToNextEvent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_escortDir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_escortDirLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_sepLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_meetRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_meetLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_newDir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.embed_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.intRun_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.hn3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.cfgSI_onLattice' depends on axioms: [propext, Quot.sound]
+'DPSS.IntExamples.cfgSI_run_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.cfgSI_run_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.cfgSI_run_3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.cfgSI_run_4' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.cfgSI_lattice_at_2' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_nonneg_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_nonneg_of_pos_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1974,7 +2038,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**594/594 clean — `sorryAx` appears zero times.**
+**658/658 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2024,6 +2088,10 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+d42b170  2026-09-12  fix: the deep-link generator lost seventeen links to IntModel's twins
+c8dc116  2026-09-12  docs: commit the E1 build plan, as a living document
+8fcf4cb  2026-09-12  feat: M0 -- the Verus toolchain, pinned, plus M1's integer model
+38aeffb  2026-09-12  docs: the last two sentences that still described closed work as open
 fcd0d2f  2026-09-12  chore: bring the whole repo up to current status, and fix a red CI step
 9027985  2026-09-12  docs: refresh STATUS.md generated blocks
 f757d92  2026-09-12  docs: GUIDE.md covers the whole work package, with deep links
