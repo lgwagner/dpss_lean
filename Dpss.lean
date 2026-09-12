@@ -11,3 +11,4 @@ import Dpss.Coherence
 import Dpss.Examples
 import Dpss.ExamplesThree
 import Dpss.PairBalance
+import Dpss.EventsTurn

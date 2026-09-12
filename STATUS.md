@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `69e6577973cd`  
+**Commit at time of writing:** `e0f35b645d70`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -70,7 +70,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**278 theorems**, all `sorry`-free, across 13 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**284 theorems**, all `sorry`-free, across 14 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 144 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -447,6 +447,38 @@ first and the pair never both heads left while apart. Formalizing that requires
 tracking elapsed time since the separation for both drones. It is the **L** in
 the work package, and it is where the paper draws its figure.
 
+### 3.14 `Dpss/EventsTurn.lean` — every scheduled event turns a drone
+
+**A1** of the work package, and independent of every convergence lemma.
+
+`Turning.lean` showed consecutive turns of one drone are at least `1/n` apart.
+To turn that into "only finitely many events fit in a bounded interval" needs
+the other half: each event actually reverses somebody. Then `k` steps force
+some drone to turn about `k/n` times, and the `1/n` spacing bounds the elapsed
+time from below.
+
+A step's length is set by one of exactly three deadlines, and each is handled:
+
+- `someDroneTurns_of_atLeftBorder` / `_atRightBorder` — a drone reaching the
+  perimeter edge reverses. (With `not_atLeftBorder_of_atRightBorder`: a drone
+  cannot be at both ends at once.)
+- `someDroneTurns_of_separation` — an escorting pair arrives heading the *same*
+  way and leaves heading opposite ways, so exactly one of them has turned.
+- `someDroneTurns_of_meet` — a meeting pair arrives heading *opposite* ways and
+  leaves heading the same way, so again exactly one has turned.
+
+The meet case rests on an identity worth naming on its own,
+`escortDirLeft_next_eq_escortDir`: when a pair is co-located, the heading the
+left drone adopts on meeting its right neighbour and the heading the right
+drone adopts on meeting its left neighbour are **the same direction**. That is
+what makes an escort an escort.
+
+**A caveat, stated:** each theorem carries hypotheses excluding higher-priority
+events (`newDir` resolves border > separation > meet). Assembling them into the
+unconditional "every step turns somebody" needs **A2** — knowing which deadline
+actually attained the minimum — so A1 is proved case by case but not yet
+collected.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -653,6 +685,12 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.doBorder_dir_of_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sepRate_eq_zero_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_advance_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.someDroneTurns_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_atLeftBorder_of_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.someDroneTurns_of_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.someDroneTurns_of_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDirLeft_next_eq_escortDir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.someDroneTurns_of_meet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.d0_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.commonEnd_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.leftEnd_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -857,7 +895,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**278/278 clean — `sorryAx` appears zero times.**
+**284/284 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -907,6 +945,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+e0f35b6  2026-09-12  feat: Lemma 3.2 reduced to a single configuration class
 69e6577  2026-09-12  feat: the pair balance -- Lemma 3.2, modulo one invariance
 4c4fe2d  2026-09-12  feat: three drones -- the first case where the middle-drone machinery runs
 f268410  2026-09-12  feat: a converging n = 2 trace, checked against the paper's bound
@@ -944,7 +983,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | # | Item | Size | Notes |
 |---|---|---|---|
 | **A** | **Non-Zeno** | | *the novel contribution — ACL2 assumes this* |
-| A1 | Every event turns at least one drone | S | self-contained |
+| A1 | Every event turns at least one drone | ~~S~~ | **done case-by-case** (§3.14); collecting needs A2 |
 | A2 | The minimum is attained by a genuine event | M | gap 2; needs argmin machinery |
 | A3 | Pigeonhole: `k` steps ⟹ some drone turns ≥ `k/n` times | M | |
 | A4 | Assemble `NonZeno` | S | |
