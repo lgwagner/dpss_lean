@@ -189,6 +189,98 @@ theorem pairBalance_nonneg_step {c : Config n} (hn : 0 < n) (hi : c.Invariant)
       rw [hR, hR2, Dir.sign_right]
       linarith
 
+/-! ## A drone only ever turns left onto its neighbour
+
+The `BothLeftApart` obstruction has three ways to arise: the left drone turns
+left, the right drone turns left, or neither turns and the pair was already in
+that state. This settles the first, and it settles it outright.
+
+**Whenever drone `i` reverses to leftward, it is co-located with `i+1`.** Look
+at what can reverse it: a meet with `i+1` (co-located by definition), a
+separation from `i+1` (likewise), or the right perimeter border — and a drone
+at position 1 has its right-hand neighbour pinned there too, between it and the
+edge. Nothing else can turn a rightward drone around.
+
+So a leftward-turning drone is never *apart* from its neighbour, and that
+branch of `BothLeftApart` cannot occur. -/
+
+/-- **A drone that reverses to leftward is co-located with its right-hand
+neighbour.** -/
+theorem coLocated_of_turnsLeft {c : Config n} (hp : c.OnPerimeter)
+    (ho : c.Ordered) {i : Fin n} (h : i.val + 1 < n) (ht : c.TurnsLeft i) :
+    c.CoLocated i h := by
+  obtain ⟨hd, hnew⟩ := ht
+  have hle : i ≤ nextIdx i h := by
+    rw [Fin.le_def, nextIdx_val]; omega
+  unfold newDir at hnew
+  split_ifs at hnew with h1 h2 h3 h4 h5 h6
+  · -- at the right perimeter border: the neighbour is pinned there too
+    unfold CoLocated gap
+    rw [pos_eq_one_of_ge ho hp hle h2.1, h2.1]
+    ring
+  · -- separating from that very neighbour
+    exact h3.2.1
+  · -- meeting that very neighbour
+    exact h5.2.1
+  · -- a rightward drone cannot be meeting its *left* neighbour
+    exact absurd h6 (not_meetLeft_of_dir_right hd)
+  · -- nothing fired, so it did not turn at all
+    rw [hd] at hnew
+    exact absurd hnew (fun hc => Dir.noConfusion hc)
+
+/-- Restated for the obstruction: a drone that reverses to leftward cannot be
+the left member of a `BothLeftApart` pair. -/
+theorem not_bothLeftApart_of_turnsLeft {c : Config n} (hp : c.OnPerimeter)
+    (ho : c.Ordered) {i : Fin n} (h : i.val + 1 < n) (ht : c.TurnsLeft i) :
+    ¬ (c.newDir i = Dir.left ∧ c.newDir (nextIdx i h) = Dir.left ∧
+        ¬ c.CoLocated i h) := by
+  rintro ⟨-, -, hnc⟩
+  exact hnc (coLocated_of_turnsLeft hp ho h ht)
+
+/-! ## A pair already escorting stays together
+
+The second of the three ways `BothLeftApart` could arise: neither drone turns,
+and the pair was already heading left. If the obstruction did not hold before
+the step, the pair was co-located — hence escorting — and uniform speed keeps
+them together. So that branch cannot introduce the obstruction either. -/
+
+/-- **If a leftward pair was not already apart, it is still together after a
+step.** -/
+theorem coLocated_step_of_both_left {c : Config n} (hn : 0 < n) {i : Fin n}
+    {h : i.val + 1 < n} (hIH : ¬ c.BothLeftApart i h) (hL : c.dir i = Dir.left)
+    (hL2 : c.dir (nextIdx i h) = Dir.left) : (c.step hn).CoLocated i h := by
+  have hco : c.CoLocated i h := by
+    by_contra hnc
+    exact hIH ⟨hL, hL2, hnc⟩
+  exact coLocated_advance_of_escorting ⟨hco, by rw [hL, hL2]⟩ _
+
+/-! ## What is left of the obstruction
+
+`BothLeftApart` can only appear at a step in one of three ways, and two are now
+closed:
+
+1. the **left** drone reverses to leftward — impossible, it would be
+   co-located (`coLocated_of_turnsLeft`);
+2. **neither** drone reverses — impossible, they were already escorting and
+   stay together (`coLocated_step_of_both_left`);
+3. the left drone **holds** its leftward heading while the right one
+   **reverses** to leftward — still open.
+
+Case 3 is where drone `j`'s left synchronization has to do its work, and it is
+positional rather than temporal, which is the useful discovery. In the state
+preceding it the pair heads in opposite directions, so the balance is constant;
+starting from a separation it is zero, so the two drones are displaced from the
+shared boundary by *equal* amounts. Left synchronization caps the left drone's
+displacement at `1/n`, hence caps the right drone's at `1/n` too — so the right
+drone is at or before `rightEnd (j+1)`. But Lemma 3.1 only permits it to
+reverse at or *beyond* that point. The two meet exactly, which pins both drones
+to their endpoints, and the left drone must then reverse as well — so it does
+not hold its heading after all.
+
+Formalizing that needs one extra invariant alongside `BalanceNonneg`: that the
+balance is exactly zero whenever the pair heads in opposite directions with the
+left one going left. -/
+
 /-! ## What left synchronization buys
 
 The timing argument behind Lemma 3.2 turns on knowing *exactly when* drone `j`
