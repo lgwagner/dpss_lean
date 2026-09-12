@@ -36,3 +36,4 @@ import Dpss.Fence
 import Dpss.Standoff
 import Dpss.Separation
 import Dpss.Kinematics
+import Dpss.Continuous
