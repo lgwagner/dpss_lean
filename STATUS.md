@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `2edf1c074c71`  
+**Commit at time of writing:** `eb396c4232b9`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**345 theorems**, all `sorry`-free, across 20 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**347 theorems**, all `sorry`-free, across 21 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -721,6 +721,31 @@ middle drones each pick the outward neighbour and the pair splits early.
 **Second time in this project** that reaching for a concrete instance overturned
 something that read as obvious — the first was the bounce bug (§3.11).
 
+### 3.21 `Dpss/Reachable.lean` — the invariant the counterexample called for
+
+§3.20 showed the pointwise statement is false. So it is an **invariant**, and
+this file builds it.
+
+`ApartOnBoundary` — *a co-located pair heading apart sits on the boundary it
+shares* — false pointwise, true along runs.
+
+Two moves carry the preservation argument, and both are proved:
+
+- **`apart_transfer`** — the crux. A pair heading apart separates at rate 2, so
+  if it is *still* co-located after flying forward, the gap must have been zero
+  **and the step must have taken no time at all**. The configuration carries
+  over unchanged, and with it the induction hypothesis. This is what the
+  counterexample's route runs into: it forces the pair to have been co-located
+  and already heading apart *before* the step.
+- **`not_apart_of_meet`** — a meeting pair cannot leave the meeting heading
+  apart, because both drones adopt the *same* heading
+  (`escortDirLeft_next_eq_escortDir`). That kills most of the remaining routes.
+
+**What is not done:** the full preservation theorem, which enumerates how
+`newDir` could have delivered `left` to one drone and `right` to the other and
+applies the above to each route. The two hard moves exist; what remains is the
+enumeration, and §3.20 is the map of which branch needs which move.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -1144,6 +1169,8 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.pos_eq_commonEnd_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_commonEnd_of_sepLeft_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.meeting_pair_agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apart_transfer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_apart_of_meet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1198,7 +1225,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**345/345 clean — `sorryAx` appears zero times.**
+**347/347 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1248,6 +1275,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+eb396c4  2026-09-12  docs: actually fix the stale gap cross-references
 2edf1c0  2026-09-12  docs: fix stale gap cross-references in the work package
 5c128c2  2026-09-12  feat: a counterexample -- the lemma I was trying to prove is false
 37a7159  2026-09-12  feat: why a drone ends up heading where it does
