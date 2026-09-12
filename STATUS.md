@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `00d447f33fce`  
+**Commit at time of writing:** `f551b0699586`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -61,6 +61,7 @@ Stage 1 broken down:
 | Invariants hold along a whole run (`invariant_run`) | done |
 | Concrete examples; bounce regression test | done |
 | Full `n = 2` trace; synchronized forever; period 1 | done |
+| Converging `n = 2` trace, checked against the bound | done |
 | **Non-Zeno proper (the counting step)** | **not started** |
 
 ---
@@ -68,7 +69,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**191 theorems**, all `sorry`-free, across 11 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 472 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**220 theorems**, all `sorry`-free, across 11 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 805 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -330,6 +331,27 @@ three step equations do the rest.
   1. **This is an independent check of the model against a number the paper
   states**, and it agrees.
 
+#### A trace that actually converges
+
+`approach` is already synchronized at time zero, so it only shows the steady
+state is a *fixed point*. `spread` is the real test — the paper's worst case
+for `n = 2`, scaled to a concrete gap. Both drones start near the left border
+heading right, **not quite together**, so they never meet. They run all the way
+out to the right border, and only then turn, meet, and escort back.
+
+    spread ─3/4─▶ chase ─1/8─▶ escortBack ─3/8─▶ atBoundary ─▶ (steady cycle)
+
+- `spread_not_allSync_zero` — **this team starts out of position.** At step 1
+  the left drone sits at `3/4`, far outside its interval `[0, 1/2]`. So there
+  is genuine convergence here to demonstrate, not just a fixed point.
+- `run_spread` — the configuration at every step index, by induction.
+- **`spread_allSync_three`** — from step 3 onward, every drone is confined to
+  its own interval **forever**.
+- **`spread_sync_within_bound`** — synchronization happens at time `5/4`, and
+  Theorem 2.1 promises `2 - 1/n = 3/2`. The trace sits inside the bound, as it
+  must. **A second independent numerical check against the paper.**
+- `spread_converges` — Theorem 2.1 itself, for this configuration.
+
 Also `approach_invariant`: the standing invariant of a run is satisfiable,
 without which every theorem conditioned on `Invariant` would hold vacuously.
 
@@ -363,16 +385,18 @@ This is the honest gap list, ordered by importance.
    time 1") is the uniform timing result that makes the bound `n`-independent,
    and nothing here approaches it.
 
-4. **The traces cover only the easy case.** `approach` is *already*
-   synchronized at time zero, so it never exercises convergence — it shows the
-   steady state is a fixed point of the dynamics, not that anything converges
-   to it. A configuration that starts unsynchronized and takes real time to
-   settle would be a far better test, and the paper's sharp `n = 2` worst case
-   (both drones together near a border, needing `5/2`) is the one to build.
+4. **`n = 3` is untouched**, and the paper calls it the first interesting
+   case. The known-false phase-1 bound lives there, and refuting it was Stage
+   3's headline goal. Both traces so far are `n = 2`, where the drones have
+   only each other to interact with — no cascades, no middle drone, and none of
+   the nondeterminism of gap 6.
 
-5. **`n = 3` is untouched**, and the paper calls it the first interesting case.
-   The known-false phase-1 bound lives there, and refuting it was Stage 3's
-   headline goal.
+5. **The traces are single configurations, not the sharp worst case.** `spread`
+   converges at `5/4` against a bound of `3/2`. Closing that last quarter needs
+   the drones started *arbitrarily* close together, i.e. a family parameterised
+   by `ε` rather than one fixed gap. That would demonstrate the bound is
+   **attained**, which the paper asserts and this development does not yet
+   check.
 
 6. **The nondeterminism is not modelled.** When three or more drones converge
    the paper leaves open which neighbour the middle one escorts, and notes the
@@ -574,6 +598,35 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Examples.approach_allSync' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.approach_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.approach_period' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chase_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chase_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chase_dir_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chase_dir_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortBack_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortBack_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chase_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortBack_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.not_sepRight_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.not_meetRight_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.not_sepLeft_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.not_meetLeft_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.newDir_d0_unchanged' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_spread' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_chase' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_escortBack' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spread_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spread_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spread_3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spread' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_not_allSync_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_pos_bounds' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_allSync_three' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_sync_within_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -647,7 +700,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**191/191 clean — `sorryAx` appears zero times.**
+**220/220 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -697,6 +750,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+f551b06  2026-09-12  feat: a complete n = 2 trace -- synchronized forever, period 1
 00d447f  2026-09-12  fix: bounce events sent a drone out of its own interval
 05f29ef  2026-09-12  feat: escorts stay coherent -- the last assumption discharged
 f2d3eca  2026-09-12  docs: bring STATUS.md up to date, and guard it against silent edit failures

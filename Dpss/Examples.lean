@@ -353,7 +353,7 @@ theorem step_approach : approach.step hn2 = atBoundary (1 / 4) := by
     · simp only [advance_newDir_dir]; rfl
   refine Config.ext ?_ (funext fun i => ?_) (funext fun i => ?_)
   · simp only [step_time, hdt]
-    show (0 : ℝ) + 1 / 4 = 1 / 4
+    change (0 : ℝ) + 1 / 4 = 1 / 4
     norm_num
   · rcases fin2_cases i with h | h <;> subst h
     · simp only [step_pos, hdt, approach_pos_d0, atBoundary_pos]
@@ -396,7 +396,6 @@ theorem run_approach (m : ℕ) :
     have hodd : approach.run hn2 (2 * (m + 1) + 1) = atBoundary (1 / 4 + (m + 1)) := by
       rw [e1, run_succ, h2, step_atEnds]
       congr 1
-      push_cast
       ring
     have hcast : ((m + 1 : ℕ) : ℝ) = (m : ℝ) + 1 := by push_cast; ring
     refine ⟨by rw [hcast]; exact hodd, ?_⟩
@@ -463,9 +462,343 @@ theorem approach_period (m : ℕ) :
       = (approach.run hn2 (2 * m + 1)).time + 1 := by
   rw [(run_approach m).1, (run_approach (m + 1)).1]
   refine ⟨rfl, ?_⟩
-  show (1 : ℝ) / 4 + (↑(m + 1) : ℝ) = 1 / 4 + (m : ℝ) + 1
+  change (1 : ℝ) / 4 + (↑(m + 1) : ℝ) = 1 / 4 + (m : ℝ) + 1
   push_cast
   ring
+
+/-! ## A trace that actually converges
+
+`approach` above was already synchronized at time zero, so it only shows the
+steady state is a fixed point. This one starts **unsynchronized** and settles,
+which is the behaviour the convergence theorem is about.
+
+It is the paper's worst case for `n = 2`, scaled to a concrete gap: both drones
+start near the left border heading right, *not quite together*, so they do not
+meet. They run all the way out to the right border, and only then turn, meet,
+and escort back to the boundary they share.
+
+The left drone spends the middle of this trace at `3/4` and `7/8` — well
+outside its own interval `[0, 1/2]`. -/
+
+/-- Both drones near the left border heading right, a quarter apart. -/
+noncomputable def spread : Config 2 where
+  time := 0
+  pos := fun i => if i.val = 0 then 0 else 1 / 4
+  dir := fun _ => Dir.right
+
+/-- The right drone has reached the far border and turned; the left one is
+still heading out, far outside its own interval. -/
+noncomputable def chase (t : ℝ) : Config 2 where
+  time := t
+  pos := fun i => if i.val = 0 then 3 / 4 else 1
+  dir := fun i => if i.val = 0 then Dir.right else Dir.left
+
+/-- They have met beyond their shared boundary and escort back towards it. -/
+noncomputable def escortBack (t : ℝ) : Config 2 where
+  time := t
+  pos := fun _ => 7 / 8
+  dir := fun _ => Dir.left
+
+@[simp] theorem spread_pos_d0 : spread.pos d0 = 0 := rfl
+@[simp] theorem spread_pos_d1 : spread.pos d1 = 1 / 4 := rfl
+@[simp] theorem spread_dir (i : Fin 2) : spread.dir i = Dir.right := rfl
+@[simp] theorem chase_pos_d0 (t : ℝ) : (chase t).pos d0 = 3 / 4 := rfl
+@[simp] theorem chase_pos_d1 (t : ℝ) : (chase t).pos d1 = 1 := rfl
+@[simp] theorem chase_dir_d0 (t : ℝ) : (chase t).dir d0 = Dir.right := rfl
+@[simp] theorem chase_dir_d1 (t : ℝ) : (chase t).dir d1 = Dir.left := rfl
+@[simp] theorem escortBack_pos (t : ℝ) (i : Fin 2) : (escortBack t).pos i = 7 / 8 := rfl
+@[simp] theorem escortBack_dir (t : ℝ) (i : Fin 2) : (escortBack t).dir i = Dir.left := rfl
+
+/-- Heading the same way and apart, neither drone has a pair event pending, so
+each simply runs for its own border. The right one gets there first. -/
+theorem spread_timeToNext : spread.timeToNextEvent hn2 = 3 / 4 := by
+  have hA : ¬ spread.Approaching d0 bounce_h := by
+    rintro ⟨-, h2⟩
+    rw [nextIdx_d0_eq, spread_dir] at h2
+    exact Dir.noConfusion h2
+  have hE : ¬ spread.Escorting d0 bounce_h := by
+    rintro ⟨h1, -⟩
+    unfold CoLocated gap at h1
+    rw [nextIdx_d0_eq, spread_pos_d0, spread_pos_d1] at h1
+    norm_num at h1
+  rw [timeToNextEvent_two, droneNextTime_d1, droneNextTime_d0_apart _ hA hE,
+      borderTime_of_right (spread_dir d0), borderTime_of_right (spread_dir d1)]
+  norm_num
+
+theorem chase_timeToNext (t : ℝ) : (chase t).timeToNextEvent hn2 = 1 / 8 := by
+  have hA : (chase t).Approaching d0 bounce_h := by
+    refine ⟨chase_dir_d0 t, ?_⟩
+    rw [nextIdx_d0_eq]; exact chase_dir_d1 t
+  have hgap : (chase t).gap d0 bounce_h = 1 / 4 := by
+    unfold gap
+    rw [nextIdx_d0_eq, chase_pos_d0, chase_pos_d1]; norm_num
+  rw [timeToNextEvent_two, droneNextTime_d1, droneNextTime_d0_approaching _ hA,
+      borderTime_of_right (chase_dir_d0 t), borderTime_of_left (chase_dir_d1 t)]
+  unfold meetTime
+  rw [hgap, chase_pos_d0, chase_pos_d1]
+  norm_num
+
+theorem escortBack_timeToNext (t : ℝ) :
+    (escortBack t).timeToNextEvent hn2 = 3 / 8 := by
+  have hA : ¬ (escortBack t).Approaching d0 bounce_h := by
+    rintro ⟨h1, -⟩
+    rw [escortBack_dir] at h1
+    exact Dir.noConfusion h1
+  have hE : (escortBack t).Escorting d0 bounce_h := by
+    refine ⟨?_, ?_⟩
+    · unfold CoLocated gap
+      rw [nextIdx_d0_eq, escortBack_pos, escortBack_pos]; norm_num
+    · rw [nextIdx_d0_eq, escortBack_dir, escortBack_dir]
+  have hd : (escortBack t).droneNextTime d0
+      = min ((escortBack t).borderTime d0) ((escortBack t).separationTime d0) := by
+    unfold droneNextTime
+    rw [dif_pos bounce_h, if_neg hA, if_pos hE]
+  rw [timeToNextEvent_two, droneNextTime_d1, hd,
+      borderTime_of_left (escortBack_dir t d0),
+      borderTime_of_left (escortBack_dir t d1)]
+  unfold separationTime
+  rw [escortBack_pos, escortBack_dir, Dir.sign_left, commonEnd_d0]
+  norm_num
+
+/-! ### Events that cannot happen with only two drones -/
+
+theorem not_sepRight_d1 (c : Config 2) : ¬ c.SepRight d1 := by
+  rintro ⟨h, -⟩; exact absurd h (by norm_num [d1])
+
+theorem not_meetRight_d1 (c : Config 2) : ¬ c.MeetRight d1 := by
+  rintro ⟨h, -⟩; exact absurd h (by norm_num [d1])
+
+theorem not_sepLeft_d0 (c : Config 2) : ¬ c.SepLeft d0 := by
+  rintro ⟨h, -⟩; exact absurd h (by norm_num [d0])
+
+theorem not_meetLeft_d0 (c : Config 2) : ¬ c.MeetLeft d0 := by
+  rintro ⟨h, -⟩; exact absurd h (by norm_num [d0])
+
+/-- A drone away from both borders, with no pair event pending, keeps going. -/
+theorem newDir_d0_unchanged {c : Config 2} (h1 : ¬ c.AtLeftBorder d0)
+    (h2 : ¬ c.AtRightBorder d0) (h3 : ¬ c.SepRight d0) (h5 : ¬ c.MeetRight d0) :
+    c.newDir d0 = c.dir d0 :=
+  newDir_of_noEvent h1 h2 h3 (not_sepLeft_d0 c) h5 (not_meetLeft_d0 c)
+
+/-! ### The three steps -/
+
+theorem step_spread : spread.step hn2 = chase (3 / 4) := by
+  have hdt := spread_timeToNext
+  have hco : ¬ (spread.advance (3 / 4)).CoLocated d0 bounce_h := by
+    unfold CoLocated gap
+    rw [nextIdx_d0_eq]
+    simp only [advance_pos, spread_pos_d0, spread_pos_d1, spread_dir,
+      Dir.sign_right]
+    norm_num
+  refine Config.ext ?_ (funext fun i => ?_) (funext fun i => ?_)
+  · simp only [step_time, hdt]; change (0 : ℝ) + 3 / 4 = 3 / 4; norm_num
+  · rcases fin2_cases i with h | h <;> subst h
+    · simp only [step_pos, hdt, spread_pos_d0, spread_dir, Dir.sign_right,
+        chase_pos_d0]; norm_num
+    · simp only [step_pos, hdt, spread_pos_d1, spread_dir, Dir.sign_right,
+        chase_pos_d1]; norm_num
+  · rcases fin2_cases i with h | h <;> subst h
+    · rw [step_dir, hdt, chase_dir_d0]
+      rw [newDir_d0_unchanged ?_ ?_ ?_ ?_]
+      · simp only [advance_newDir_dir, spread_dir]
+      · rintro ⟨hp, -⟩
+        simp only [advance_pos, spread_pos_d0, spread_dir, Dir.sign_right] at hp
+        norm_num at hp
+      · rintro ⟨hp, -⟩
+        simp only [advance_pos, spread_pos_d0, spread_dir, Dir.sign_right] at hp
+        norm_num at hp
+      · rintro ⟨_hh, hs⟩; exact hco hs.1
+      · rintro ⟨_hh, hs, _ha⟩; exact hco hs
+    · rw [step_dir, hdt, chase_dir_d1]
+      apply newDir_atRightBorder
+      · rintro ⟨hp, -⟩
+        simp only [advance_pos, spread_pos_d1, spread_dir, Dir.sign_right] at hp
+        norm_num at hp
+      · refine ⟨?_, ?_⟩
+        · simp only [advance_pos, spread_pos_d1, spread_dir, Dir.sign_right]
+          norm_num
+        · simp only [advance_newDir_dir, spread_dir]
+
+theorem step_chase (t : ℝ) : (chase t).step hn2 = escortBack (t + 1 / 8) := by
+  have hdt := chase_timeToNext t
+  have hpos : ∀ i, ((chase t).advance (1 / 8)).pos i = 7 / 8 := by
+    intro i
+    rcases fin2_cases i with h | h <;> subst h
+    · simp only [advance_pos, chase_pos_d0, chase_dir_d0, Dir.sign_right]; norm_num
+    · simp only [advance_pos, chase_pos_d1, chase_dir_d1, Dir.sign_left]; norm_num
+  have hco : ((chase t).advance (1 / 8)).CoLocated d0 bounce_h := by
+    unfold CoLocated gap
+    rw [nextIdx_d0_eq, hpos d0, hpos d1]; norm_num
+  have hnotsep : ¬ ((chase t).advance (1 / 8)).AtSeparation d0 bounce_h := by
+    rintro ⟨-, hp⟩
+    rw [hpos d0, commonEnd_d0] at hp
+    norm_num at hp
+  have hA : ((chase t).advance (1 / 8)).Approaching d0 bounce_h := by
+    refine ⟨by simp only [advance_newDir_dir, chase_dir_d0], ?_⟩
+    rw [nextIdx_d0_eq]
+    simp only [advance_newDir_dir, chase_dir_d1]
+  refine Config.ext ?_ (funext fun i => ?_) (funext fun i => ?_)
+  · simp only [step_time, hdt]; rfl
+  · rcases fin2_cases i with h | h <;> subst h
+    · simp only [step_pos, hdt, chase_pos_d0, chase_dir_d0, Dir.sign_right,
+        escortBack_pos]; norm_num
+    · simp only [step_pos, hdt, chase_pos_d1, chase_dir_d1, Dir.sign_left,
+        escortBack_pos]; norm_num
+  · rcases fin2_cases i with h | h <;> subst h
+    · rw [step_dir, hdt, escortBack_dir]
+      unfold newDir
+      rw [if_neg, if_neg, if_neg, if_neg (not_sepLeft_d0 _), if_pos ⟨bounce_h, hco, hA⟩]
+      · unfold escortDir
+        rw [if_neg, ]
+        rw [hpos d0, commonEnd_d0]; norm_num
+      · rintro ⟨_hh, hs⟩; exact hnotsep hs
+      · rintro ⟨hp, -⟩; rw [hpos d0] at hp; norm_num at hp
+      · rintro ⟨hp, -⟩; rw [hpos d0] at hp; norm_num at hp
+    · rw [step_dir, hdt, escortBack_dir]
+      unfold newDir
+      rw [if_neg, if_neg, if_neg (not_sepRight_d1 _), if_neg,
+          if_neg (not_meetRight_d1 _), if_pos ⟨by norm_num [d1], hco, hA⟩]
+      · unfold escortDirLeft
+        rw [if_neg]
+        rw [hpos d1, leftEnd_d1]; norm_num
+      · rintro ⟨_hh, hs⟩; exact hnotsep hs
+      · rintro ⟨hp, -⟩; rw [hpos d1] at hp; norm_num at hp
+      · rintro ⟨hp, -⟩; rw [hpos d1] at hp; norm_num at hp
+
+theorem step_escortBack (t : ℝ) :
+    (escortBack t).step hn2 = atBoundary (t + 3 / 8) := by
+  have hdt := escortBack_timeToNext t
+  have hpos : ∀ i, ((escortBack t).advance (3 / 8)).pos i = 1 / 2 := by
+    intro i
+    simp only [advance_pos, escortBack_pos, escortBack_dir, Dir.sign_left]
+    norm_num
+  have hsep : ((escortBack t).advance (3 / 8)).AtSeparation d0 bounce_h := by
+    refine ⟨?_, ?_⟩
+    · unfold CoLocated gap
+      rw [nextIdx_d0_eq, hpos d0, hpos d1]; norm_num
+    · rw [hpos d0, commonEnd_d0]
+  refine Config.ext ?_ (funext fun i => ?_) (funext fun i => ?_)
+  · simp only [step_time, hdt]; rfl
+  · rcases fin2_cases i with h | h <;> subst h
+    · simp only [step_pos, hdt, escortBack_pos, escortBack_dir, Dir.sign_left,
+        atBoundary_pos]; norm_num
+    · simp only [step_pos, hdt, escortBack_pos, escortBack_dir, Dir.sign_left,
+        atBoundary_pos]; norm_num
+  · rcases fin2_cases i with h | h <;> subst h
+    · rw [step_dir, hdt, atBoundary_dir_d0]
+      unfold newDir
+      rw [if_neg, if_neg, if_pos ⟨bounce_h, hsep⟩]
+      · rintro ⟨hp, -⟩; rw [hpos d0] at hp; norm_num at hp
+      · rintro ⟨hp, -⟩; rw [hpos d0] at hp; norm_num at hp
+    · rw [step_dir, hdt, atBoundary_dir_d1]
+      unfold newDir
+      rw [if_neg, if_neg, if_neg (not_sepRight_d1 _), if_pos ⟨by norm_num [d1], hsep⟩]
+      · rintro ⟨hp, -⟩; rw [hpos d1] at hp; norm_num at hp
+      · rintro ⟨hp, -⟩; rw [hpos d1] at hp; norm_num at hp
+
+/-! ### The converging trace, end to end -/
+
+theorem run_spread_1 : spread.run hn2 1 = chase (3 / 4) := by
+  rw [show spread.run hn2 1 = spread.step hn2 from rfl, step_spread]
+
+theorem run_spread_2 : spread.run hn2 2 = escortBack (7 / 8) := by
+  rw [show spread.run hn2 2 = (spread.run hn2 1).step hn2 from rfl,
+    run_spread_1, step_chase]
+  norm_num
+
+theorem run_spread_3 : spread.run hn2 3 = atBoundary (5 / 4) := by
+  rw [show spread.run hn2 3 = (spread.run hn2 2).step hn2 from rfl,
+    run_spread_2, step_escortBack]
+  norm_num
+
+/-- From step 3 on, the system is in the steady cycle. -/
+theorem run_spread (m : ℕ) :
+    spread.run hn2 (2 * m + 3) = atBoundary (5 / 4 + m) ∧
+    spread.run hn2 (2 * m + 4) = atEnds (7 / 4 + m) := by
+  induction m with
+  | zero =>
+    refine ⟨?_, ?_⟩
+    · rw [show 2 * 0 + 3 = 3 from rfl, run_spread_3]; norm_num
+    · rw [show 2 * 0 + 4 = 4 from rfl,
+        show spread.run hn2 4 = (spread.run hn2 3).step hn2 from rfl,
+        run_spread_3, step_atBoundary]
+      norm_num
+  | succ m ih =>
+    obtain ⟨h1, h2⟩ := ih
+    have e1 : 2 * (m + 1) + 3 = (2 * m + 4) + 1 := by ring
+    have hcast : ((m + 1 : ℕ) : ℝ) = (m : ℝ) + 1 := by push_cast; ring
+    have hodd : spread.run hn2 (2 * (m + 1) + 3) = atBoundary (5 / 4 + ((m : ℝ) + 1)) := by
+      rw [e1, run_succ, h2, step_atEnds]
+      congr 1
+      ring
+    refine ⟨by rw [hcast]; exact hodd, ?_⟩
+    have e2 : 2 * (m + 1) + 4 = (2 * (m + 1) + 3) + 1 := by ring
+    rw [e2, run_succ, hodd, step_atBoundary]
+    congr 1
+    push_cast
+    ring
+
+/-- **This team starts out of position.** At step 1 the left drone sits at
+`3/4`, far outside its own interval `[0, 1/2]`, so it is *not* synchronized at
+time zero. Unlike `approach`, this trace has real convergence to demonstrate. -/
+theorem spread_not_allSync_zero : ¬ AllSync spread hn2 0 := by
+  intro h
+  have hb := (h d0).2 1 (by norm_num)
+  rw [run_spread_1, chase_pos_d0, rightEnd_d0] at hb
+  norm_num at hb
+
+theorem spread_pos_bounds {j : ℕ} (hj : 3 ≤ j) :
+    0 ≤ (spread.run hn2 j).pos d0 ∧ (spread.run hn2 j).pos d0 ≤ 1 / 2 ∧
+    1 / 2 ≤ (spread.run hn2 j).pos d1 ∧ (spread.run hn2 j).pos d1 ≤ 1 := by
+  obtain ⟨m, hm⟩ : ∃ m, j = 2 * m + 3 ∨ j = 2 * m + 4 := ⟨(j - 3) / 2, by omega⟩
+  rcases hm with hm | hm <;> subst hm
+  · rw [(run_spread m).1]
+    refine ⟨?_, ?_, ?_, ?_⟩ <;> rw [atBoundary_pos] <;> norm_num
+  · rw [(run_spread m).2]
+    exact ⟨by rw [atEnds_pos_d0], by rw [atEnds_pos_d0]; norm_num,
+           by rw [atEnds_pos_d1]; norm_num, by rw [atEnds_pos_d1]⟩
+
+/-- **And it converges.** From step 3 on — time `5/4` — every drone is confined
+to its own interval forever. -/
+theorem spread_allSync_three : AllSync spread hn2 3 := by
+  intro i
+  constructor
+  · intro j hj
+    rcases fin2_cases i with h | h <;> subst h
+    · rw [leftEnd_d0]; exact (spread_pos_bounds hj).1
+    · rw [leftEnd_d1]; exact (spread_pos_bounds hj).2.2.1
+  · intro j hj
+    rcases fin2_cases i with h | h <;> subst h
+    · rw [rightEnd_d0]; exact (spread_pos_bounds hj).2.1
+    · rw [rightEnd_d1]; exact (spread_pos_bounds hj).2.2.2
+
+/-- **Checked against the paper's bound.** Theorem 2.1 promises synchronization
+by time `2 - 1/n`, which is `3/2` here. This team is synchronized at time
+`5/4`, inside the bound — as it must be. -/
+theorem spread_sync_within_bound :
+    (spread.run hn2 3).time = 5 / 4 ∧ (5 : ℝ) / 4 ≤ 2 - 1 / (2 : ℝ) := by
+  constructor
+  · rw [run_spread_3]; rfl
+  · norm_num
+
+/-- Theorem 2.1 itself, for this configuration. -/
+theorem spread_converges : ConvergesBy spread hn2 := by
+  intro i j hj
+  have h3 : 3 ≤ j := by
+    by_contra hlt
+    rw [Nat.not_le] at hlt
+    interval_cases j
+    · rw [run_zero] at hj
+      norm_num [spread] at hj
+    · rw [run_spread_1] at hj
+      norm_num [spread, chase] at hj
+    · rw [run_spread_2] at hj
+      norm_num [spread, escortBack] at hj
+  rcases fin2_cases i with h | h <;> subst h
+  · exact ⟨by rw [leftEnd_d0]; exact (spread_pos_bounds h3).1,
+           by rw [rightEnd_d0]; exact (spread_pos_bounds h3).2.1⟩
+  · exact ⟨by rw [leftEnd_d1]; exact (spread_pos_bounds h3).2.2.1,
+           by rw [rightEnd_d1]; exact (spread_pos_bounds h3).2.2.2⟩
 
 end Examples
 
