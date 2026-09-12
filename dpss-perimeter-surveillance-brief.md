@@ -8,6 +8,14 @@ than from careful reading of every primary PDF. Items marked **[verify]** are th
 worth checking against the primary text before any of them is turned into a Lean
 `theorem` statement.
 
+> **Verification pass, 2026-09-12.** arXiv:2008.04262 was read in full (sec 2 and sec 3).
+> Five items are now marked **[resolved]**, **[partly resolved]** or **[searched]** inline
+> below, one factual error was corrected (the "bounce" terminology in sec 3.4 — it was
+> wrong in a way that would have corrupted the Lean model), and one omitted result was
+> added (Theorem 2.2 in sec 4.3). arXiv:2205.11697 has *not* yet been read in full, so
+> every ACL2-specific claim below remains unverified. See PLAN.md for the formalization
+> plan this fed into.
+
 ---
 
 ## 1. TL;DR
@@ -108,8 +116,13 @@ is its estimate of `N`; agents do not separately know the team size.
 
 Three event types change an agent's state:
 
-1. **Bounce.** The agent reaches a perimeter endpoint. It reverses direction and updates
-   the corresponding endpoint estimate to ground truth.
+1. **Border event.** The agent reaches a perimeter endpoint. It reverses direction and
+   updates the corresponding endpoint estimate to ground truth and the count on that side
+   to zero. **[resolved 2026-09-12]** This brief originally called this a "bounce". That
+   is wrong and actively dangerous for the formalization: Avigad-van Doorn reserve
+   **bounce** for the distinct case where a meet and a separation *coincide*, i.e. two
+   drones meet exactly at their common endpoint. Paper vocabulary is now used throughout;
+   see PLAN.md sec 1.1.
 2. **Meet.** Two agents become co-located. They exchange coordination variables: *the
    left one adopts the right-hand estimate `(b, m)` of the drone to its right, with `m`
    incremented by 1; the right one symmetrically adopts the left-hand estimate `(a, ℓ)`,
@@ -165,9 +178,12 @@ Two equivalent-ish formulations appear:
   increments (in the segment-normalized units).
 
 Synchronization is the more useful one to formalize — it is a safety property with a
-"from now on" quantifier, whereas periodicity is an exact-orbit statement. **[verify]**
-whether the two are actually equivalent in the papers or whether periodicity is derived
-from synchronization plus an argument about phase.
+"from now on" quantifier, whereas periodicity is an exact-orbit statement.
+**[partly resolved 2026-09-12]** Avigad-van Doorn use *only* synchronization; the word
+periodicity does not carry their argument. Periodicity is the ACL2 paper's framing. So
+the two are not presented as equivalent, and synchronization is confirmed as the right
+target. Whether the ACL2 development *derives* periodicity from synchronization is still
+unchecked against arXiv:2205.11697 in full. **[verify]**
 
 ---
 
@@ -199,11 +215,19 @@ contract-based model checker for AADL) and found that **Lemma 1 of the 2008 pape
 false**. The argument had not fully accounted for initial conditions and for interaction
 effects at *both* ends of the perimeter simultaneously.
 
-Reported numbers: the lemma's claimed `3T` phase-1 bound does not hold; the CAV write-up
-cites a true figure of roughly `3.67T`, while Avigad's slides describe the Davis et al.
-`n = 3` counterexample as reaching about `3.5`. **[verify]** — these are probably
-different configurations (one a specific counterexample, one a bound), but the
-discrepancy should be resolved before either number is quoted in a Lean docstring.
+Reported numbers — **[resolved 2026-09-12]** against arXiv:2008.04262 sec 2. The guess in
+this brief was right: the two figures measure different things and both are correct.
+
+- **`3 + 1/2`** is the *explicit counterexample*. Davis et al. exhibited configurations
+  with `n = 3` requiring up to 3.5 units before all drones have correct estimates. This
+  is what refutes the claimed bound of 3.
+- **`3 + 2/3`** is the *upper bound the AGREE tool reported*, under its fixed parameter
+  bounds (drone-count estimates capped at 20). The tool also reported 4 + 1/3 until full
+  synchronization, and an absolute phase-2 bound of 2 for `n <= 6`.
+
+Quote 3.5 for "the counterexample" and 3.67 for "what the model checker could prove".
+Note also that AvD number the false claim **Conjecture 2.1**, not "Lemma 1"; the
+correspondence to the 2008 paper's own numbering is still unchecked. **[verify]**
 
 Cost of the check: bounded model checking only. Parameters had to be fixed (drone-count
 estimates capped at 20), and `n = 6` took roughly **20 days on 40 cores**. This is the
@@ -224,6 +248,12 @@ Results:
   `4 − 1/n − ε`, and are not fully synchronized before time `5 − 3/n − ε`. This beats the
   Davis et al. counterexample and definitively kills the `3` of the original phase-1
   claim.
+- **Theorem 2.2 (phase 2, sharper, conditional).** **[added 2026-09-12 — missing from the
+  original brief.]** If all drones start with *incorrect* estimates and all have correct
+  estimates at time `t`, then all are synchronized by time `t + 1 - 1/n`. The "incorrect
+  start" hypothesis is load-bearing: because Theorem 2.1 is sharp, 2.2 is false if drones
+  start correct. Proved via Lemma 3.8. This is the result that converts the `4 - 1/n`
+  phase-1 lower bound into the `5 - 3/n` total.
 - Some partial progress toward a phase-1 *upper* bound.
 
 Note the shape of the final result: total convergence is bounded **below** by roughly
@@ -330,8 +360,11 @@ events (bounce, meet, escort-split). The usual traps apply.
   with, rather than a purely retrospective exercise.
 - Avigad — one of the two authors of the corrected proof — is a Lean person, and the
   arXiv paper notes that Greve "has recently formalized the proof presented here
-  (personal communication)". It is worth checking whether a Lean formalization already
-  exists or was attempted before duplicating effort. **[verify]**
+  (personal communication)". **[searched 2026-09-12]** No public Lean formalization of
+  DPSS found: not in the leanprover-community papers index, not on van Doorn's homepage,
+  and no repository surfaced by search. Greve's formalization referred to in that note is
+  the **ACL2** one (arXiv:2205.11697), not Lean. Treating this as greenfield. Worth one
+  direct email to Avigad before Stage 4 if we get that far.
 
 ---
 
