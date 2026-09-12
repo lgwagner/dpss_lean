@@ -61,6 +61,7 @@ phase-1 result that this scope cannot reach by construction.
 | **`INSIGHTS.md`** | The non-obvious things learned. Read this before extending the work. |
 | **`PLAN.md`** | The roadmap. The work package is complete, so this now holds the **backlog** — new directions, sized and scoped. |
 | `CHANGELOG.md` | What changed and when, newest first — including what each session did **not** finish. |
+| `rust/PLAN.md` | The build plan for **E1** — an executable Rust implementation verified with Verus. On the `rust-verus` branch, not this one. |
 | `PLAN-original.md` | The original scoping plan, including one recorded planning error. |
 | `dpss-perimeter-surveillance-brief.md` | Literature brief, with corrections from the primary sources. |
 | `Dpss/` | The development. Each file opens with prose explaining the mathematics. |

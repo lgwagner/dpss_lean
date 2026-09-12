@@ -50,6 +50,10 @@ New work, none of it blocking anything.
 
 ### E1 — a Rust implementation, verified against this spec with Verus  ⟨L⟩
 
+> **Approved and under way on the `rust-verus` branch.** The full build plan,
+> its milestones and their current state are `rust/PLAN.md`. What follows is the
+> scoping that fed into it.
+
 **Target.** An executable implementation of Algorithm A in Rust, proved in
 [Verus](https://github.com/verus-lang/verus) to meet the specification this
 development pins down — so that the artefact is not only a proof *about* the
