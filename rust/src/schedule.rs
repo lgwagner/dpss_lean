@@ -9,7 +9,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 use crate::inv::*;
 
@@ -18,7 +18,7 @@ verus! {
 /// **The step never overshoots a drone's own deadline.**
 ///
 /// `Dpss/NextEvent.lean`, `DPSS.Config.timeToNextEvent_le`.
-pub proof fn lemma_min_deadline_le(c: View, m: int, i: int)
+pub proof fn lemma_min_deadline_le(c: Snapshot, m: int, i: int)
     requires 0 <= i < m
     ensures min_deadline(c, m) <= drone_next_time(c, i)
     decreases m
@@ -29,7 +29,7 @@ pub proof fn lemma_min_deadline_le(c: View, m: int, i: int)
     }
 }
 
-pub proof fn lemma_step_le_drone(c: View, i: int)
+pub proof fn lemma_step_le_drone(c: Snapshot, i: int)
     requires 0 <= i < c.n
     ensures time_to_next_event(c) <= drone_next_time(c, i)
 {
@@ -38,20 +38,20 @@ pub proof fn lemma_step_le_drone(c: View, i: int)
 
 /// A drone's own deadline never exceeds its border deadline — the border is always
 /// one of the candidates minimised over.
-pub proof fn lemma_drone_le_border(c: View, i: int)
+pub proof fn lemma_drone_le_border(c: Snapshot, i: int)
     ensures drone_next_time(c, i) <= border_time(c, i)
 {
 }
 
 /// And for an approaching pair, its meeting time is a candidate too.
-pub proof fn lemma_drone_le_meet(c: View, i: int)
+pub proof fn lemma_drone_le_meet(c: Snapshot, i: int)
     requires 0 <= i, i + 1 < c.n, approaching(c, i)
     ensures drone_next_time(c, i) <= meet_time(c, i)
 {
 }
 
 /// And for an escorting pair, its separation time.
-pub proof fn lemma_drone_le_separation(c: View, i: int)
+pub proof fn lemma_drone_le_separation(c: Snapshot, i: int)
     requires 0 <= i, i + 1 < c.n, escorting(c, i)
     ensures drone_next_time(c, i) <= separation_time(c, i)
 {
@@ -66,7 +66,7 @@ pub proof fn lemma_drone_le_separation(c: View, i: int)
 /// because escort coherence says so.
 ///
 /// `Dpss/NextEvent.lean`, `DPSS.Config.timeToNextEvent_nonneg`.
-pub proof fn lemma_drone_next_time_nonneg(c: View, i: int)
+pub proof fn lemma_drone_next_time_nonneg(c: Snapshot, i: int)
     requires inv(c), 0 <= i < c.n
     ensures 0 <= drone_next_time(c, i)
 {
@@ -88,7 +88,7 @@ pub proof fn lemma_drone_next_time_nonneg(c: View, i: int)
     }
 }
 
-pub proof fn lemma_min_deadline_nonneg(c: View, m: int)
+pub proof fn lemma_min_deadline_nonneg(c: Snapshot, m: int)
     requires inv(c), 0 < m <= c.n
     ensures 0 <= min_deadline(c, m)
     decreases m
@@ -101,7 +101,7 @@ pub proof fn lemma_min_deadline_nonneg(c: View, m: int)
     }
 }
 
-pub proof fn lemma_step_nonneg(c: View)
+pub proof fn lemma_step_nonneg(c: Snapshot)
     requires inv(c)
     ensures 0 <= time_to_next_event(c)
 {

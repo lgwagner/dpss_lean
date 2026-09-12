@@ -15,7 +15,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 
 verus! {
@@ -23,21 +23,21 @@ verus! {
 /// Every drone is somewhere on the perimeter.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.OnPerimeter`.
-pub open spec fn on_perimeter(c: View) -> bool {
+pub open spec fn on_perimeter(c: Snapshot) -> bool {
     forall|i: int| 0 <= i < c.n ==> 0 <= #[trigger] c.pos[i] <= perimeter(c)
 }
 
 /// Drones are indexed left to right and never pass each other.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.AdjOrdered`.
-pub open spec fn adj_ordered(c: View) -> bool {
+pub open spec fn adj_ordered(c: Snapshot) -> bool {
     forall|i: int| 0 <= i && i + 1 < c.n ==> 0 <= #[trigger] gap(c, i)
 }
 
 /// Escorts point at the boundary they are escorting to.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.EscortsCoherent`.
-pub open spec fn escorts_coherent(c: View) -> bool {
+pub open spec fn escorts_coherent(c: Snapshot) -> bool {
     forall|i: int|
         0 <= i && i + 1 < c.n && #[trigger] escorting(c, i)
             ==> 0 <= separation_time(c, i)
@@ -47,7 +47,7 @@ pub open spec fn escorts_coherent(c: View) -> bool {
 /// drones are congruent mod 2. This is what makes `meet_time` exact.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.OnLattice`.
-pub open spec fn on_lattice(c: View) -> bool {
+pub open spec fn on_lattice(c: Snapshot) -> bool {
     forall|i: int| 0 <= i && i + 1 < c.n ==> #[trigger] gap(c, i) % 2 == 0
 }
 
@@ -55,7 +55,7 @@ pub open spec fn on_lattice(c: View) -> bool {
 /// coherent, on the lattice.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.Invariant`, plus `wf` and the lattice.
-pub open spec fn inv(c: View) -> bool {
+pub open spec fn inv(c: Snapshot) -> bool {
     &&& c.wf()
     &&& on_perimeter(c)
     &&& adj_ordered(c)
@@ -70,7 +70,7 @@ pub open spec fn inv(c: View) -> bool {
 /// *reachability* invariant, carried separately.
 ///
 /// `Dpss/InductionStep.lean`, `DPSS.Config.ApartOnBoundaries`.
-pub open spec fn apart_on_boundaries(c: View) -> bool {
+pub open spec fn apart_on_boundaries(c: Snapshot) -> bool {
     forall|i: int|
         0 <= i && i + 1 < c.n && #[trigger] co_located(c, i)
             && c.dir[i] == Dir::Left && c.dir[i + 1] == Dir::Right
@@ -81,7 +81,7 @@ pub open spec fn apart_on_boundaries(c: View) -> bool {
 ///
 /// `Dpss/IntModel.lean` takes a `Finset.inf'` over `Fin n`; this is the same
 /// minimum written as a recursion, which is what the executable loop computes.
-pub open spec fn min_deadline(c: View, m: int) -> int
+pub open spec fn min_deadline(c: Snapshot, m: int) -> int
     decreases m
 {
     if m <= 1 {
@@ -96,15 +96,15 @@ pub open spec fn min_deadline(c: View, m: int) -> int
 /// The step length: the earliest deadline across all `n` drones.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.timeToNextEvent`.
-pub open spec fn time_to_next_event(c: View) -> int {
+pub open spec fn time_to_next_event(c: Snapshot) -> int {
     min_deadline(c, c.n)
 }
 
 /// Flying the whole team forward by `dt`.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.advance`.
-pub open spec fn advance(c: View, dt: int) -> View {
-    View {
+pub open spec fn advance(c: Snapshot, dt: int) -> Snapshot {
+    Snapshot {
         n: c.n,
         k: c.k,
         time: c.time + dt,
@@ -118,15 +118,15 @@ pub open spec fn advance(c: View, dt: int) -> View {
 /// Named because `new_dir` is evaluated on *this*, not on the configuration the
 /// step started from — an off-by-one that `Dpss/NonZeno.lean` warns about at
 /// length.
-pub open spec fn flown(c: View) -> View {
+pub open spec fn flown(c: Snapshot) -> Snapshot {
     advance(c, time_to_next_event(c))
 }
 
 /// One step: fly to the next event, then let every due event fire.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.step`.
-pub open spec fn spec_step(c: View) -> View {
-    View {
+pub open spec fn spec_step(c: Snapshot) -> Snapshot {
+    Snapshot {
         n: flown(c).n,
         k: flown(c).k,
         time: flown(c).time,
@@ -138,7 +138,7 @@ pub open spec fn spec_step(c: View) -> View {
 /// `k` steps.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.run`.
-pub open spec fn spec_run(c: View, k: nat) -> View
+pub open spec fn spec_run(c: Snapshot, k: nat) -> Snapshot
     decreases k
 {
     if k == 0 { c } else { spec_step(spec_run(c, (k - 1) as nat)) }
@@ -153,7 +153,7 @@ pub open spec fn spec_run(c: View, k: nat) -> View
 /// in this crate depends on it.
 ///
 /// In scaled units the bound `2 - 1/n` is `4*k*n - 2*k`.
-pub open spec fn converges_by(c: View, j: nat) -> bool {
+pub open spec fn converges_by(c: Snapshot, j: nat) -> bool {
     c.time + (4 * c.k * c.n - 2 * c.k) <= spec_run(c, j).time
         ==> forall|i: int| 0 <= i < c.n
                 ==> left_end(c, i) <= #[trigger] spec_run(c, j).pos[i] <= right_end(c, i)

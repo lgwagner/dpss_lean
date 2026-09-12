@@ -10,7 +10,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 use crate::inv::*;
 use crate::schedule::*;
@@ -18,7 +18,7 @@ use crate::schedule::*;
 verus! {
 
 /// Flying moves each drone by its velocity times the elapsed time.
-pub proof fn lemma_advance_pos(c: View, dt: int, i: int)
+pub proof fn lemma_advance_pos(c: Snapshot, dt: int, i: int)
     requires 0 <= i < c.pos.len()
     ensures advance(c, dt).pos[i] == c.pos[i] + isign(c.dir[i]) * dt
 {
@@ -27,7 +27,7 @@ pub proof fn lemma_advance_pos(c: View, dt: int, i: int)
 /// So a gap changes by the separation rate times the elapsed time.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.gap_advance`.
-pub proof fn lemma_advance_gap(c: View, dt: int, i: int)
+pub proof fn lemma_advance_gap(c: Snapshot, dt: int, i: int)
     requires 0 <= i, i + 1 < c.n, c.wf()
     ensures gap(advance(c, dt), i) == gap(c, i) + sep_rate(c, i) * dt
 {
@@ -43,7 +43,7 @@ pub proof fn lemma_advance_gap(c: View, dt: int, i: int)
 
 /// A step moves the drones exactly as flying does; the events only change
 /// headings.
-pub proof fn lemma_step_pos(c: View, i: int)
+pub proof fn lemma_step_pos(c: Snapshot, i: int)
     requires 0 <= i < c.n, c.wf()
     ensures
         spec_step(c).pos[i] == advance(c, time_to_next_event(c)).pos[i],
@@ -52,7 +52,7 @@ pub proof fn lemma_step_pos(c: View, i: int)
 {
 }
 
-pub proof fn lemma_step_gap(c: View, i: int)
+pub proof fn lemma_step_gap(c: Snapshot, i: int)
     requires 0 <= i, i + 1 < c.n, c.wf()
     ensures gap(spec_step(c), i) == gap(advance(c, time_to_next_event(c)), i)
 {
@@ -66,7 +66,7 @@ pub proof fn lemma_step_gap(c: View, i: int)
 /// fact the whole integer model rests on.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.onLattice_step`.
-pub proof fn lemma_on_lattice_step(c: View)
+pub proof fn lemma_on_lattice_step(c: Snapshot)
     requires inv(c)
     ensures on_lattice(spec_step(c))
 {
@@ -90,7 +90,7 @@ pub proof fn lemma_on_lattice_step(c: View)
 /// edge.
 ///
 /// `Dpss/Synchronization.lean`, `DPSS.Config.onPerimeter_step`.
-pub proof fn lemma_on_perimeter_step(c: View)
+pub proof fn lemma_on_perimeter_step(c: Snapshot)
     requires inv(c)
     ensures on_perimeter(spec_step(c))
 {
@@ -117,7 +117,7 @@ pub proof fn lemma_on_perimeter_step(c: View)
 /// `2 * meet_time == gap` and the arithmetic closes.
 ///
 /// `Dpss/Step.lean`, `DPSS.Config.adjOrdered_step`.
-pub proof fn lemma_adj_ordered_step(c: View)
+pub proof fn lemma_adj_ordered_step(c: Snapshot)
     requires inv(c)
     ensures adj_ordered(spec_step(c))
 {
@@ -145,7 +145,7 @@ pub proof fn lemma_adj_ordered_step(c: View)
 }
 
 /// The step leaves the shape of the ensemble alone.
-pub proof fn lemma_wf_step(c: View)
+pub proof fn lemma_wf_step(c: Snapshot)
     requires c.wf()
     ensures spec_step(c).wf()
 {
@@ -154,7 +154,7 @@ pub proof fn lemma_wf_step(c: View)
 /// **The standing invariant is preserved by a step.**
 ///
 /// `Dpss/Coherence.lean`, `DPSS.Config.invariant_step`, plus the lattice.
-pub proof fn lemma_inv_step(c: View)
+pub proof fn lemma_inv_step(c: Snapshot)
     requires inv(c)
     ensures inv(spec_step(c))
 {
@@ -168,7 +168,7 @@ pub proof fn lemma_inv_step(c: View)
 /// **And therefore by a whole run.**
 ///
 /// `Dpss/Coherence.lean`, `DPSS.Config.invariant_run`.
-pub proof fn lemma_inv_run(c: View, k: nat)
+pub proof fn lemma_inv_run(c: Snapshot, k: nat)
     requires inv(c)
     ensures inv(spec_run(c, k))
     decreases k

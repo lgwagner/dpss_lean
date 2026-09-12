@@ -8,7 +8,7 @@
 //! Mirrors the endpoint lemmas of `Dpss/Basic.lean`.
 
 use vstd::prelude::*;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 
 verus! {
@@ -16,7 +16,7 @@ verus! {
 /// No segment starts before the perimeter does.
 ///
 /// `Dpss/Basic.lean`, `DPSS.leftEnd_nonneg`.
-pub proof fn lemma_left_end_nonneg(c: View, i: int)
+pub proof fn lemma_left_end_nonneg(c: Snapshot, i: int)
     requires c.k > 0, 0 <= i
     ensures 0 <= left_end(c, i)
 {
@@ -27,7 +27,7 @@ pub proof fn lemma_left_end_nonneg(c: View, i: int)
 /// Every segment is nondegenerate: it has width `2*k`.
 ///
 /// `Dpss/Basic.lean`, `DPSS.leftEnd_lt_rightEnd` and `rightEnd_sub_leftEnd`.
-pub proof fn lemma_segment_width(c: View, i: int)
+pub proof fn lemma_segment_width(c: Snapshot, i: int)
     ensures
         right_end(c, i) - left_end(c, i) == 2 * c.k,
         c.k > 0 ==> left_end(c, i) < common_end(c, i),
@@ -38,7 +38,7 @@ pub proof fn lemma_segment_width(c: View, i: int)
 /// No segment ends after the perimeter does.
 ///
 /// `Dpss/Basic.lean`, `DPSS.rightEnd_le_one`.
-pub proof fn lemma_common_le_perimeter(c: View, i: int)
+pub proof fn lemma_common_le_perimeter(c: Snapshot, i: int)
     requires c.k > 0, 0 <= i, i + 1 <= c.n
     ensures common_end(c, i) <= perimeter(c)
 {
@@ -47,7 +47,7 @@ pub proof fn lemma_common_le_perimeter(c: View, i: int)
 }
 
 /// Boundaries increase along the team.
-pub proof fn lemma_common_lt_common_next(c: View, i: int)
+pub proof fn lemma_common_lt_common_next(c: Snapshot, i: int)
     requires c.k > 0
     ensures common_end(c, i) < common_end(c, i + 1)
 {
@@ -59,7 +59,7 @@ pub proof fn lemma_common_lt_common_next(c: View, i: int)
 /// left, and its right endpoint the boundary it shares with the one to its right.
 ///
 /// `Dpss/Basic.lean`, `DPSS.rightEnd_eq_leftEnd_succ`.
-pub proof fn lemma_common_is_next_left(c: View, i: int)
+pub proof fn lemma_common_is_next_left(c: Snapshot, i: int)
     ensures common_end(c, i) == left_end(c, i + 1)
 {
 }

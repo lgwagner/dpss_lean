@@ -7,7 +7,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 
 verus! {
@@ -42,7 +42,7 @@ pub proof fn lemma_isign_ne_zero(d: Dir)
 /// even, and therefore why `meet_time`'s division by two is exact.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig.two_dvd_sepRate`.
-pub proof fn lemma_sep_rate_even(c: View, i: int)
+pub proof fn lemma_sep_rate_even(c: Snapshot, i: int)
     ensures
         sep_rate(c, i) == -2 || sep_rate(c, i) == 0 || sep_rate(c, i) == 2,
         sep_rate(c, i) % 2 == 0,
@@ -67,7 +67,7 @@ pub proof fn lemma_sep_rate_even(c: View, i: int)
 /// emergent escort, in the integer model.
 ///
 /// `Dpss/Events.lean`, `DPSS.Config.sepRate_eq_zero_of_escorting`.
-pub proof fn lemma_sep_rate_zero_of_escorting(c: View, i: int)
+pub proof fn lemma_sep_rate_zero_of_escorting(c: Snapshot, i: int)
     requires escorting(c, i)
     ensures sep_rate(c, i) == 0
 {
@@ -77,7 +77,7 @@ pub proof fn lemma_sep_rate_zero_of_escorting(c: View, i: int)
 /// right-hand drone's own left endpoint.
 ///
 /// `Dpss/Basic.lean`, `DPSS.rightEnd_eq_leftEnd_succ`.
-pub proof fn lemma_common_end_is_next_left_end(c: View, i: int)
+pub proof fn lemma_common_end_is_next_left_end(c: Snapshot, i: int)
     ensures common_end(c, i) == left_end(c, i + 1)
 {
 }

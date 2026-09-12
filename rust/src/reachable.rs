@@ -9,7 +9,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 use crate::inv::*;
 use crate::schedule::*;
@@ -23,7 +23,7 @@ verus! {
 /// co-located. The condition then carries straight over.
 ///
 /// `Dpss/Reachable.lean`, `DPSS.Config.apart_transfer`.
-pub proof fn lemma_apart_transfer(c: View, i: int)
+pub proof fn lemma_apart_transfer(c: Snapshot, i: int)
     requires
         inv(c),
         apart_on_boundaries(c),
@@ -53,7 +53,7 @@ pub proof fn lemma_apart_transfer(c: View, i: int)
 /// applies.
 ///
 /// `Dpss/Reachable.lean`, `DPSS.Config.apartOnBoundary_step`.
-pub proof fn lemma_apart_on_boundaries_step(c: View)
+pub proof fn lemma_apart_on_boundaries_step(c: Snapshot)
     requires inv(c), apart_on_boundaries(c)
     ensures apart_on_boundaries(spec_step(c))
 {
@@ -98,7 +98,7 @@ pub proof fn lemma_apart_on_boundaries_step(c: View)
 /// **And therefore along a whole run.**
 ///
 /// `Dpss/InductionStep.lean`, `DPSS.Config.apartOnBoundaries_run`.
-pub proof fn lemma_apart_on_boundaries_run(c: View, k: nat)
+pub proof fn lemma_apart_on_boundaries_run(c: Snapshot, k: nat)
     requires inv(c), apart_on_boundaries(c)
     ensures apart_on_boundaries(spec_run(c, k)), inv(spec_run(c, k))
     decreases k

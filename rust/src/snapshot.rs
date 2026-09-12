@@ -1,11 +1,11 @@
-//! The ghost view of an ensemble.
+//! A snapshot of the team, as the specification sees it.
 //!
 //! Mirrors `DPSS.IntConfig` in `Dpss/IntModel.lean`: a clock, a position per drone
 //! and a heading per drone, all in scaled integer units where the perimeter is
 //! `2*k*n` and the segment boundaries are the even integers `2*k*i`.
 //!
 //! This is specification-only. The executable `Ensemble` in `exec.rs` holds
-//! machine integers and a `Vec`; `View` is what it abstracts to.
+//! machine integers and a `Vec`; `Snapshot` is what it abstracts to.
 
 use vstd::prelude::*;
 use crate::dir::Dir;
@@ -15,7 +15,7 @@ verus! {
 /// A snapshot of the team, in scaled integer units.
 ///
 /// `Dpss/IntModel.lean`, `DPSS.IntConfig`.
-pub struct View {
+pub struct Snapshot {
     /// Number of drones. `Fin n` in Lean; a range side-condition here.
     pub n: int,
     /// The resolution. One unit of the original perimeter is `2*k*n` here.
@@ -28,7 +28,7 @@ pub struct View {
     pub dir: Seq<Dir>,
 }
 
-impl View {
+impl Snapshot {
     /// Well-formedness of the view itself: the sequences have one entry per drone
     /// and the geometry is non-degenerate.
     pub open spec fn wf(self) -> bool {

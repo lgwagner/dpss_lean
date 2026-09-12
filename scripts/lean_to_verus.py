@@ -373,7 +373,7 @@ def verus_params(name, params):
     """Every spec fn takes the configuration; indices come through as `int`."""
     if name == "Dir.isign":
         return "d: Dir"
-    ps = ["c: View"]
+    ps = ["c: Snapshot"]
     if re.search(r"\(i\s*:\s*Fin", params):
         ps.append("i: int")
     return ", ".join(ps)
@@ -444,7 +444,7 @@ pub open spec fn {vname}({verus_params(lean, params)}) -> {RESULT_TYPE[ty]} {{
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 
 verus! {{
 

@@ -6,7 +6,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 use crate::spec::model::*;
 use crate::inv::*;
 use crate::schedule::*;
@@ -16,7 +16,7 @@ use crate::step_lemmas::*;
 verus! {
 
 /// A pair heading the same way keeps its gap: the escort is emergent, not stored.
-pub proof fn lemma_gap_unchanged_of_same_dir(c: View, i: int)
+pub proof fn lemma_gap_unchanged_of_same_dir(c: Snapshot, i: int)
     requires c.wf(), 0 <= i, i + 1 < c.n, c.dir[i] == c.dir[i + 1]
     ensures gap(flown(c), i) == gap(c, i)
 {
@@ -27,7 +27,7 @@ pub proof fn lemma_gap_unchanged_of_same_dir(c: View, i: int)
 /// Flying reduces a drone's separation deadline by exactly the elapsed time.
 ///
 /// `Dpss/Coherence.lean`, `DPSS.Config.separationTime_advance`.
-pub proof fn lemma_separation_time_advance(c: View, dt: int, i: int)
+pub proof fn lemma_separation_time_advance(c: Snapshot, dt: int, i: int)
     requires 0 <= i < c.n, c.wf()
     ensures separation_time(advance(c, dt), i) == separation_time(c, i) - dt
 {
@@ -60,7 +60,7 @@ pub proof fn lemma_times_isign(x: int, d: Dir)
 /// configuration the step started from.
 ///
 /// `Dpss/Coherence.lean`, `DPSS.Config.commonEnd_le_pos_of_both_left`.
-pub proof fn lemma_common_le_pos_of_both_left(c: View, i: int)
+pub proof fn lemma_common_le_pos_of_both_left(c: Snapshot, i: int)
     requires
         inv(c),
         0 <= i,
@@ -108,7 +108,7 @@ pub proof fn lemma_common_le_pos_of_both_left(c: View, i: int)
 /// branches go through the workhorse above.
 ///
 /// `Dpss/Coherence.lean`, `DPSS.Config.escortsCoherent_step`.
-pub proof fn lemma_escorts_coherent_step(c: View)
+pub proof fn lemma_escorts_coherent_step(c: Snapshot)
     requires inv(c)
     ensures escorts_coherent(spec_step(c))
 {

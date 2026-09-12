@@ -31,7 +31,7 @@
 #![allow(unused_imports)]
 
 pub mod dir;
-pub mod view;
+pub mod snapshot;
 pub mod spec;
 pub mod inv;
 pub mod geometry;
@@ -40,3 +40,4 @@ pub mod facts;
 pub mod step_lemmas;
 pub mod coherence;
 pub mod reachable;
+pub mod exec;

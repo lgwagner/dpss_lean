@@ -18,7 +18,7 @@
 
 use vstd::prelude::*;
 use crate::dir::Dir;
-use crate::view::View;
+use crate::snapshot::Snapshot;
 
 verus! {
 
@@ -27,95 +27,95 @@ pub open spec fn isign(d: Dir) -> int {
     match d { Dir::Left => -1int, Dir::Right => 1int }
 }
 /// `DPSS.intPerimeter` -- Dpss/IntModel.lean:93
-pub open spec fn perimeter(c: View) -> int {
+pub open spec fn perimeter(c: Snapshot) -> int {
     ((2 * (c.k)) * (c.n))
 }
 /// `DPSS.intLeftEnd` -- Dpss/IntModel.lean:96
-pub open spec fn left_end(c: View, i: int) -> int {
+pub open spec fn left_end(c: Snapshot, i: int) -> int {
     ((2 * (c.k)) * (i))
 }
 /// `DPSS.intRightEnd` -- Dpss/IntModel.lean:99
-pub open spec fn right_end(c: View, i: int) -> int {
+pub open spec fn right_end(c: Snapshot, i: int) -> int {
     ((2 * (c.k)) * (((i) + 1)))
 }
 /// `DPSS.intCommonEnd` -- Dpss/IntModel.lean:102
-pub open spec fn common_end(c: View, i: int) -> int {
+pub open spec fn common_end(c: Snapshot, i: int) -> int {
     right_end(c, i)
 }
 /// `DPSS.gap` -- Dpss/IntModel.lean:141
-pub open spec fn gap(c: View, i: int) -> int {
+pub open spec fn gap(c: Snapshot, i: int) -> int {
     (c.pos[((i + 1))] - c.pos[i])
 }
 /// `DPSS.sepRate` -- Dpss/IntModel.lean:145
-pub open spec fn sep_rate(c: View, i: int) -> int {
+pub open spec fn sep_rate(c: Snapshot, i: int) -> int {
     (isign((c.dir[((i + 1))])) - isign((c.dir[i])))
 }
 /// `DPSS.Approaching` -- Dpss/IntModel.lean:150
-pub open spec fn approaching(c: View, i: int) -> bool {
+pub open spec fn approaching(c: Snapshot, i: int) -> bool {
     ((c.dir[i] == Dir::Right) && (c.dir[((i + 1))] == Dir::Left))
 }
 /// `DPSS.meetTime` -- Dpss/IntModel.lean:155
-pub open spec fn meet_time(c: View, i: int) -> int {
+pub open spec fn meet_time(c: Snapshot, i: int) -> int {
     (gap(c, i) / 2)
 }
 /// `DPSS.AtLeftBorder` -- Dpss/IntModel.lean:159
-pub open spec fn at_left_border(c: View, i: int) -> bool {
+pub open spec fn at_left_border(c: Snapshot, i: int) -> bool {
     ((c.pos[i] == 0) && (c.dir[i] == Dir::Left))
 }
 /// `DPSS.AtRightBorder` -- Dpss/IntModel.lean:162
-pub open spec fn at_right_border(c: View, i: int) -> bool {
+pub open spec fn at_right_border(c: Snapshot, i: int) -> bool {
     ((c.pos[i] == perimeter(c)) && (c.dir[i] == Dir::Right))
 }
 /// `DPSS.CoLocated` -- Dpss/IntModel.lean:165
-pub open spec fn co_located(c: View, i: int) -> bool {
+pub open spec fn co_located(c: Snapshot, i: int) -> bool {
     (gap(c, i) == 0)
 }
 /// `DPSS.Escorting` -- Dpss/IntModel.lean:168
-pub open spec fn escorting(c: View, i: int) -> bool {
+pub open spec fn escorting(c: Snapshot, i: int) -> bool {
     (co_located(c, i) && (c.dir[i] == c.dir[((i + 1))]))
 }
 /// `DPSS.AtSeparation` -- Dpss/IntModel.lean:171
-pub open spec fn at_separation(c: View, i: int) -> bool {
+pub open spec fn at_separation(c: Snapshot, i: int) -> bool {
     (co_located(c, i) && (c.pos[i] == common_end(c, i)))
 }
 /// `DPSS.separationTime` -- Dpss/IntModel.lean:176
-pub open spec fn separation_time(c: View, i: int) -> int {
+pub open spec fn separation_time(c: Snapshot, i: int) -> int {
     (((common_end(c, i) - c.pos[i])) * isign((c.dir[i])))
 }
 /// `DPSS.borderTime` -- Dpss/IntModel.lean:179
-pub open spec fn border_time(c: View, i: int) -> int {
+pub open spec fn border_time(c: Snapshot, i: int) -> int {
     if (c.dir[i] == Dir::Left) { c.pos[i] } else { (perimeter(c) - c.pos[i]) }
 }
 /// `DPSS.droneNextTime` -- Dpss/IntModel.lean:183
-pub open spec fn drone_next_time(c: View, i: int) -> int {
+pub open spec fn drone_next_time(c: Snapshot, i: int) -> int {
     if ((i + 1) < c.n) { if approaching(c, i) { vstd::math::min((border_time(c, i)), (meet_time(c, i))) } else { if escorting(c, i) { vstd::math::min((border_time(c, i)), (separation_time(c, i))) } else { border_time(c, i) } } } else { border_time(c, i) }
 }
 /// `DPSS.SepRight` -- Dpss/IntModel.lean:198
-pub open spec fn sep_right(c: View, i: int) -> bool {
+pub open spec fn sep_right(c: Snapshot, i: int) -> bool {
     if ((i + 1) < c.n) { at_separation(c, i) } else { false }
 }
 /// `DPSS.SepLeft` -- Dpss/IntModel.lean:201
-pub open spec fn sep_left(c: View, i: int) -> bool {
+pub open spec fn sep_left(c: Snapshot, i: int) -> bool {
     if (0 < i) { at_separation(c, ((i - 1))) } else { false }
 }
 /// `DPSS.MeetRight` -- Dpss/IntModel.lean:206
-pub open spec fn meet_right(c: View, i: int) -> bool {
+pub open spec fn meet_right(c: Snapshot, i: int) -> bool {
     if ((i + 1) < c.n) { (co_located(c, i) && approaching(c, i)) } else { false }
 }
 /// `DPSS.MeetLeft` -- Dpss/IntModel.lean:209
-pub open spec fn meet_left(c: View, i: int) -> bool {
+pub open spec fn meet_left(c: Snapshot, i: int) -> bool {
     if (0 < i) { (co_located(c, ((i - 1))) && approaching(c, ((i - 1)))) } else { false }
 }
 /// `DPSS.escortDir` -- Dpss/IntModel.lean:218
-pub open spec fn escort_dir(c: View, i: int) -> Dir {
+pub open spec fn escort_dir(c: Snapshot, i: int) -> Dir {
     if (c.pos[i] < common_end(c, i)) { Dir::Right } else { Dir::Left }
 }
 /// `DPSS.escortDirLeft` -- Dpss/IntModel.lean:222
-pub open spec fn escort_dir_left(c: View, i: int) -> Dir {
+pub open spec fn escort_dir_left(c: Snapshot, i: int) -> Dir {
     if (c.pos[i] < left_end(c, i)) { Dir::Right } else { Dir::Left }
 }
 /// `DPSS.newDir` -- Dpss/IntModel.lean:227
-pub open spec fn new_dir(c: View, i: int) -> Dir {
+pub open spec fn new_dir(c: Snapshot, i: int) -> Dir {
     if at_left_border(c, i) { Dir::Right } else { if at_right_border(c, i) { Dir::Left } else { if sep_right(c, i) { Dir::Left } else { if sep_left(c, i) { Dir::Right } else { if meet_right(c, i) { escort_dir(c, i) } else { if meet_left(c, i) { escort_dir_left(c, i) } else { c.dir[i] } } } } } }
 }
 } // verus!
