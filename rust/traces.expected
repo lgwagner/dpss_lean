@@ -25,3 +25,15 @@ k=3 p=12 obs=14 dir=< low=2
 k=4 p=2 obs=4 dir=> low=-1
 k=5 p=2 obs=4 dir=> low=-1
 min low = -1  (BREACH)
+--- separation (dmax=10, turn=3, eps=2, d=5, margin=30) ---
+k=0 gap=52 obs=56 mode=closing low=32
+k=1 gap=32 obs=36 mode=closing low=12
+k=2 gap=12 obs=16 mode=apart   low=6
+k=3 gap=12 obs=16 mode=apart   low=6
+min low = 6  (standoff 5; clear of the standoff)
+--- separation, margin short by 2*eps (margin=26 < 30) ---
+k=0 gap=48 obs=52 mode=closing low=28
+k=1 gap=28 obs=32 mode=closing low=8
+k=2 gap=8 obs=12 mode=apart   low=2
+k=3 gap=8 obs=12 mode=apart   low=2
+min low = 2  (standoff 5; BREACH)

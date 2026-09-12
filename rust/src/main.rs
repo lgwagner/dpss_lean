@@ -44,6 +44,7 @@ pub mod coherence;
 pub mod reachable;
 pub mod exec;
 pub mod fence;
+pub mod separation;
 
 /// A trace harness, not part of the verified development.
 ///
@@ -85,6 +86,39 @@ fn main() {
     // verified controller, a margin one term short, and a breach.
     fence_trace("fence (dmax=10, turn=3, eps=2, margin=15)", 10, 3, 2, 15, 44, 6);
     fence_trace("fence, margin short by eps (margin=13 < 10+3+2)", 10, 3, 2, 13, 42, 6);
+
+    // S3, margined separation. A pair closing on each other, worst case
+    // throughout: both drones move a full `dmax` every leg so the gap shrinks by
+    // `2*dmax`; the gap reads high by `2*eps`, which is adverse because it makes
+    // the pair believe it has room it does not have; both reversals cost the full
+    // `turn`; and the algorithm asks them to keep closing at every sample.
+    //
+    // The guarantee is `d <= gap`, not `0 <= gap`: in DPSS the pair is *supposed*
+    // to close, so the standoff is the floor, not the wall.
+    pair_trace("separation (dmax=10, turn=3, eps=2, d=5, margin=30)", 10, 3, 2, 5, 30, 52, 4);
+    pair_trace("separation, margin short by 2*eps (margin=26 < 30)", 10, 3, 2, 5, 26, 48, 4);
+}
+
+/// Worst-case separation simulation, driven by the *verified* controller.
+#[verifier::external]
+fn pair_trace(name: &str, dmax: i64, turn: i64, eps: i64, d: i64, margin: i64,
+              g0: i64, samples: usize) {
+    use crate::dir::Dir;
+    use crate::separation::separation_control;
+    println!("--- {} ---", name);
+    let mut g = g0;
+    let mut min_low = i64::MAX;
+    for k in 0..samples {
+        let obs = g + 2 * eps;                             // adverse sensing
+        let m = separation_control(margin, obs, d, Dir::Left);   // adverse request
+        let low = if m == Dir::Left { g - 2 * dmax } else { g - 2 * turn };
+        if low < min_low { min_low = low; }
+        println!("k={} gap={} obs={} mode={} low={}", k, g, obs,
+                 if m == Dir::Left { "closing" } else { "apart  " }, low);
+        g = if m == Dir::Left { g - 2 * dmax } else { g };
+    }
+    println!("min low = {}  (standoff {}; {})", min_low, d,
+             if min_low >= d { "clear of the standoff" } else { "BREACH" });
 }
 
 /// Worst-case fence simulation, driven by the *verified* controller.
