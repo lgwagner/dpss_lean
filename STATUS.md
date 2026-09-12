@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `fe8a002c69c8`  
+**Commit at time of writing:** `fdb7427f87d3`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -70,7 +70,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**291 theorems**, all `sorry`-free, across 14 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**293 theorems**, all `sorry`-free, across 15 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -492,18 +492,43 @@ With `turn_separation` from §3.7 — consecutive turns of one drone are at leas
 `1/n` apart — this is **the other half of non-Zeno**. What remains is counting:
 `k` steps force turns, turns are spaced, so time cannot stand still.
 
+### 3.15 `Dpss/TurnSpacing.lean` — turns of one drone are spaced out
+
+**A3** of the work package, less the counting.
+
+`Turning.lean` established *where* a drone may turn; `NonZeno.lean` established
+that crossing between those two points costs `1/n` of time. This file joins
+them along a run:
+
+> **`time_gap_of_consecutive_turns`** — between two consecutive turns of the
+> same drone, at least `1/n` of time elapses.
+
+Between them the drone holds a single heading (`dir_const_of_no_turns`) and
+crosses its whole assigned interval, endpoint to endpoint, because that is the
+only place it is allowed to reverse.
+
+**Non-Zeno now has both halves.** Every step turns somebody (§3.14); turns of
+any one drone are `1/n` apart (here). What remains is purely the counting:
+`k` steps force `k` turns spread over only `n` drones, so some drone turns at
+least `k/n` times, and its turns are spaced — so the clock must have advanced
+by roughly `k/n²`, without bound. That is a pigeonhole over `Fin n` and nothing
+about DPSS.
+
 ---
 
 ## 4. What is **not** proved — read this part
 
 This is the honest gap list, ordered by importance.
 
-1. **Non-Zeno: the counting step is missing.** The geometry is done —
-   consecutive turns of one drone are at least `1/n` apart. What remains: every
-   event turns at least one drone, each drone turns at most once per `1/n`,
-   therefore only finitely many events fit in a bounded interval. That needs a
-   pigeonhole over `Fin n`, and also gap 2. **This is the headline opportunity
-   (§5) and it is not finished.**
+1. **Non-Zeno: only the counting step is missing.** Both halves are now
+   proved. Every step turns at least one drone (§3.14, unconditional), and
+   consecutive turns of any one drone are at least `1/n` apart in time (§3.15).
+
+   What remains is a pigeonhole over `Fin n` and nothing about DPSS: `k` steps
+   force `k` turns spread over `n` drones, so some drone turns at least `k/n`
+   times, so the clock has advanced by roughly `k/n²` — without bound. **This
+   is the headline opportunity (§5) and it is close, but it is not finished,
+   and `NonZeno` is still only a definition.**
 
 2. ~~**The minimum might not be attained by a genuine event.**~~ **Closed.**
    Kept here as a record of being wrong about my own model, twice.
@@ -919,6 +944,8 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.rightEnd_eq_one_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sync_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_const_of_no_turns' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_gap_of_consecutive_turns' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_meetLeft_of_dir_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_meetRight_of_dir_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_leftEnd_of_sepLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -928,7 +955,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**291/291 clean — `sorryAx` appears zero times.**
+**293/293 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -978,6 +1005,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+fdb7427  2026-09-12  feat: A1 + A2 complete -- every step turns a drone, unconditionally
 fe8a002  2026-09-12  feat: border deadlines are never spurious -- gap 2 was overstated
 b3b3663  2026-09-12  feat: A1 -- every scheduled event turns a drone
 e0f35b6  2026-09-12  feat: Lemma 3.2 reduced to a single configuration class
@@ -1020,7 +1048,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | **A** | **Non-Zeno** | | *the novel contribution — ACL2 assumes this* |
 | A1 | ~~Every event turns at least one drone~~ | ✅ | `someDroneTurns_step`, unconditional |
 | A2 | ~~The minimum is attained by a genuine event~~ | ✅ | folded into A1; gap 2 closed |
-| A3 | Pigeonhole: `k` steps ⟹ some drone turns ≥ `k/n` times | M | |
+| A3 | Consecutive turns `1/n` apart ✅; the pigeonhole itself | S | §3.15; only the counting is left |
 | A4 | Assemble `NonZeno` | S | |
 | **B** | **Theorem 2.1** | | *the headline* |
 | B1 | Lemma 3.2 — rule out `BothLeftApart` | **L** | §3.13 reduces the whole lemma to this |
