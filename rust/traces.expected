@@ -37,3 +37,15 @@ k=1 gap=28 obs=32 mode=closing low=8
 k=2 gap=8 obs=12 mode=apart   low=2
 k=3 gap=8 obs=12 mode=apart   low=2
 min low = 2  (standoff 5; BREACH)
+--- stale link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50) ---
+k=0 gap=52 obs=76 mode=closing low=32
+k=1 gap=32 obs=56 mode=closing low=12
+k=2 gap=12 obs=36 mode=apart   low=6
+k=3 gap=12 obs=36 mode=apart   low=6
+min low = 6  (standoff 5; clear of the standoff)
+--- stale link on the fresh margin (margin=30 < 2*(10+3+2) + 2*10) ---
+k=0 gap=52 obs=76 mode=closing low=32
+k=1 gap=32 obs=56 mode=closing low=12
+k=2 gap=12 obs=36 mode=closing low=-8
+k=3 gap=-8 obs=16 mode=apart   low=-14
+min low = -14  (standoff 5; BREACH)

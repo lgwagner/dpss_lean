@@ -45,6 +45,7 @@ pub mod reachable;
 pub mod exec;
 pub mod fence;
 pub mod separation;
+pub mod comms;
 
 /// A trace harness, not part of the verified development.
 ///
@@ -97,6 +98,41 @@ fn main() {
     // to close, so the standoff is the floor, not the wall.
     pair_trace("separation (dmax=10, turn=3, eps=2, d=5, margin=30)", 10, 3, 2, 5, 30, 52, 4);
     pair_trace("separation, margin short by 2*eps (margin=26 < 30)", 10, 3, 2, 5, 26, 48, 4);
+
+    // S5, a stale link. The drone controls on a report of its neighbour taken
+    // `age` samples ago, so its gap estimate reads high by `age*dmax + 2*eps`:
+    // the neighbour's drift since the report, plus both sensing errors, all
+    // adverse. The margin has to absorb that, and the second run is what happens
+    // when it is not given the chance.
+    comms_trace("stale link (dmax=10, turn=3, eps=2, d=5, age=2, margin=50)",
+                10, 3, 2, 5, 2, 50, 52, 4);
+    comms_trace("stale link on the fresh margin (margin=30 < 2*(10+3+2) + 2*10)",
+                10, 3, 2, 5, 2, 30, 52, 4);
+}
+
+/// Worst-case separation across a stale link, driven by the *verified*
+/// controller. The steady-state staleness is applied from the first sample.
+#[verifier::external]
+fn comms_trace(name: &str, dmax: i64, turn: i64, eps: i64, d: i64, age: i64,
+               margin: i64, g0: i64, samples: usize) {
+    use crate::dir::Dir;
+    use crate::separation::separation_control;
+    println!("--- {} ---", name);
+    let mut g = g0;
+    let mut min_low = i64::MAX;
+    for k in 0..samples {
+        // the neighbour has drifted `age*dmax` since the report, and both
+        // positions carry `eps` of error, all in the direction that flatters
+        let obs = g + age * dmax + 2 * eps;
+        let m = separation_control(margin, obs, d, Dir::Left);
+        let low = if m == Dir::Left { g - 2 * dmax } else { g - 2 * turn };
+        if low < min_low { min_low = low; }
+        println!("k={} gap={} obs={} mode={} low={}", k, g, obs,
+                 if m == Dir::Left { "closing" } else { "apart  " }, low);
+        g = if m == Dir::Left { g - 2 * dmax } else { g };
+    }
+    println!("min low = {}  (standoff {}; {})", min_low, d,
+             if min_low >= d { "clear of the standoff" } else { "BREACH" });
 }
 
 /// Worst-case separation simulation, driven by the *verified* controller.
