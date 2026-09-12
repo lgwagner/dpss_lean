@@ -833,3 +833,73 @@ identical is where to look first.
 > **Lesson.** Judge a mechanical translator by what it declines, not by what it
 > covers, and publish the declined list where the code is — a refusal recorded
 > only in the tool is a refusal nobody reads.
+
+## 28. A predicate that never executes is checked by nothing, and the gap hides
+between two tools that each look complete
+
+`scripts/lean_to_verus.py` generates the arithmetic and boolean specification
+from Lean and CI fails on drift, so nothing arithmetic can be mistranslated.
+Verus proves every executable function equals its specification, up to
+`view_of(*final(e)) == spec_step(view_of(*old(e)))` for all `repr_ok` inputs, so
+nothing executable can drift from what it is verified against. Both statements
+are true, both were true before S7b, and between them sat four definitions that
+neither covered.
+
+`OnPerimeter`, `AdjOrdered`, `EscortsCoherent` and `OnLattice` quantify over
+`Fin n` with a dependent proof argument. The generator **refuses** them — §27 is
+about why that refusal is the right behaviour — so they are hand-written on the
+Rust side. And a Verus `spec fn` never runs, so no trace could reach them
+either. Each tool's guarantee was intact and the definitions fell through the
+join. The lesson generalizes past this repo: when two mechanisms each cover
+"their part", the thing to audit is the part *neither* claims.
+
+**The fix has to be evaluable on states that violate the predicate.** This is
+the part that is easy to get wrong. The obvious move — evaluate the standing
+conditions along a recorded run — proves nothing at all, because `repr_ok`
+*asserts* `inv`, so on any state reached by `step_ex` a wrong transcription and
+a right one both answer `true`. What distinguishes them is which states they
+**reject**. So none of the new `*_ex` functions may require `repr_ok`;
+`repr_bounded` says only what the arithmetic needs, and six of the ten rows in
+the standing-conditions block violate something on purpose.
+
+**Both sides needed the same trick, in their own idiom.** Lean has no
+`Decidable` instance for `∀ (i : Fin n) (h : i.val + 1 < n), …` either — the
+dependent binder defeats `Fintype.decidableForallFintype`, which is the same
+shape that defeats the translator. A `List.all` over `List.finRange n` with the
+body a `dite` on `h` carries it, and an `_iff` theorem makes the `Bool` twin the
+condition rather than a second copy of it.
+
+## 29. The invariant proofs really are the tighter net — measured, not assumed
+
+The changelog for E1 recorded that a corrupted `escort_dir_left` was caught by
+escort coherence rather than by the traces, and that no corruption could be
+found that passed every proof and still changed a trace. S7b was a chance to
+test that claim against a predicate the proofs constrain directly, and it
+survived twice:
+
+| corruption of `adj_ordered`, spec and exec together | result |
+|---|---|
+| `0 <= gap` weakened to `-2 <= gap` | 7 Verus errors |
+| range `0 <= i` slipped to `1 <= i` | 6 Verus errors |
+
+The reason is structural, and worth stating because it says when *not* to reach
+for a differential test. `inv` is used in both directions: preservation lemmas
+must **prove** it of the stepped configuration, and everything else **assumes**
+it of the current one. A strengthening breaks the proofs; a weakening breaks the
+uses. A predicate pinned from both sides has very little room to be wrong and
+still verify, and adding test rows will not find what is not there.
+
+So the standing-conditions block is defence in depth, not the primary net, and
+the honest claim for it is narrower than "it catches mistranslations": it is
+that the four predicates are now checked by something *other than* the proof
+structure that also depends on them, and that a systematic mistranslation
+coherent across every Rust proof — the failure mode a self-consistent
+verification cannot detect from the inside — now has to survive comparison with
+Lean on ten states as well.
+
+The second corruption did earn its keep, though, in a way that had nothing to do
+with catching it: a range slip at `0 <= i` is invisible to every row whose only
+bad gap is at a later index, and the block had no row violating at index `0`.
+`unordered-at-0` exists because the experiment exposed that hole, not because
+anything failed.
+

@@ -113,6 +113,7 @@ def condBlock : List String :=
   , condRow "spread@1"          2 2 [6, 8]    [right, left ]
   , condRow "off-perimeter"     3 1 [0, 2, 8] [right, right, right]
   , condRow "unordered"         3 1 [0, 4, 2] [right, right, right]
+  , condRow "unordered-at-0"    3 1 [4, 0, 2] [right, right, right]
   , condRow "off-lattice"       3 1 [0, 1, 4] [right, right, right]
   , condRow "escort-incoherent" 3 1 [4, 4, 4] [right, right, right]
   , condRow "inv-but-not-apart" 3 1 [3, 3, 5] [left,  right, right] ]

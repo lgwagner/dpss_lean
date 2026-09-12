@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `0361a874123a`  
+**Commit at time of writing:** `3d130a0e049b`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**841 theorems**, all `sorry`-free, across 43 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 282 lines, `FenceTrace.lean` 348 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `SeparationInt.lean` 171 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**851 theorems**, all `sorry`-free, across 43 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 282 lines, `FenceTrace.lean` 348 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 984 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `SeparationInt.lean` 171 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1771,6 +1771,11 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.IntConfig.step_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntConfig.run_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntConfig.run_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntConfig.onPerimeterB_iff' depends on axioms: [propext, Quot.sound]
+'DPSS.IntConfig.adjOrderedB_iff' depends on axioms: [propext, Quot.sound]
+'DPSS.IntConfig.escortsCoherentB_iff' depends on axioms: [propext, Quot.sound]
+'DPSS.IntConfig.onLatticeB_iff' depends on axioms: [propext, Quot.sound]
+'DPSS.IntConfig.invariantB_iff' depends on axioms: [propext, Quot.sound]
 'DPSS.IntConfig.gap_advance' depends on axioms: [propext, Quot.sound]
 'DPSS.IntConfig.two_dvd_sepRate' depends on axioms: [propext]
 'DPSS.IntConfig.onLattice_advance' depends on axioms: [propext, Quot.sound]
@@ -1815,12 +1820,17 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.IntConfig.embed_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntConfig.intRun_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.hn3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.hn2' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_onLattice' depends on axioms: [propext, Quot.sound]
 'DPSS.IntExamples.cfgSI_run_1' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_run_2' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_run_3' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_run_4' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_lattice_at_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.spreadI_onLattice' depends on axioms: [propext, Quot.sound]
+'DPSS.IntExamples.spreadI_run_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.spreadI_run_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.IntExamples.spreadI_run_3' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Clock.mono' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Clock.add_mul_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sync_at_speed' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2221,7 +2231,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**841/841 clean — `sorryAx` appears zero times.**
+**851/851 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2271,6 +2281,9 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+3d130a0  2026-09-12  S7b: the team's standing conditions are executable, and checked against Lean
+e8953f6  2026-09-12  S7: every recorded trace is now checked against Lean, not just the safety ones
+dba23c7  2026-09-12  Handoff: S6 complete, and the next item is a question
 0361a87  2026-09-12  plan: move S6 to Completed, as the plan's own convention asks
 c29bf57  2026-09-12  S6d: the pair and the link too, and one deliberate refusal
 4a1515b  2026-09-12  S6d: the fence specifications are generated, not transcribed
@@ -2972,3 +2985,61 @@ and the proof structures, which stay separate whatever the definitions do.
 * **Nothing here is about staying *synchronized* under degradation.** A team
   that loses coordination stays safe; whether it re-synchronizes is a question
   about Algorithm B and estimate propagation, and is Track B.
+
+
+---
+
+## 11. S7 — what checks the Lean against the Rust, and what does not
+
+Three mechanisms connect the two halves. They are not interchangeable, and the
+useful question about any given definition is *which one covers it*.
+
+| mechanism | what it covers | strength |
+|---|---|---|
+| `scripts/lean_to_verus.py` | the scalar and boolean definitions of `Dpss/IntModel.lean`, `Dpss/FenceInt.lean` and `Dpss/SeparationInt.lean` — 38 `spec fn`s | mechanical translation, CI fails on drift; no transcription to be wrong |
+| Verus | every executable function against its `spec fn`, up to `view_of(*final(e)) == spec_step(view_of(*old(e)))` | proof, all inputs |
+| the traces | everything hand-written in between | test, 11 blocks |
+
+**The third row is where the risk lives**, because it is the only one covering
+definitions that a human typed twice. Those are: `advance`, `step`, `run`,
+`timeToNextEvent` (structure literals, recursion, a `Finset.inf'`), the four
+standing conditions (a dependent proof argument), and `Dir`. The generator
+refuses all of them by design — `INSIGHTS.md` §27 — and refusing loudly is right,
+but it does mean the traces are load-bearing exactly there.
+
+### What S7 and S7b changed
+
+Both were cases of the third row not covering what it appeared to.
+
+* **S7.** `check_traces.py` compared only from the first fence block, so `cfgS`
+  and `spread` — the only blocks exercising `advance`/`step`/`run`/
+  `timeToNextEvent` — were never compared to Lean. Now all 11 blocks are, 73
+  lines, and `spreadI` joins `cfgSI` in `Dpss/IntModel.lean` with `decide`-proved
+  rows so those numbers are attested by execution *and* by proof.
+* **S7b.** The four standing conditions were `spec fn`s, so they never executed
+  and no trace could reach them; nothing checked them against Lean at all. Both
+  sides now have an executable form proved to be the real one — `Bool` twins with
+  `_iff` theorems in Lean, `*_ex` with `ensures` in Verus — compared on ten
+  configurations, six of which violate something deliberately. A predicate
+  evaluated only on valid states distinguishes nothing, because `repr_ok`
+  asserts `inv`.
+
+### What still is not checked, stated plainly
+
+* **The traces are ten hand-chosen configurations, not a sweep.** Nothing
+  enumerates the valid states of the integer model and compares the two
+  implementations across all of them. This is the next real strengthening. It
+  needs a CI job holding both toolchains at once; today the Lean job checks the
+  file and the Verus job checks the file, and they meet on it, which is what
+  makes the present split possible.
+* **The safety blocks all sit at one vehicle.** `dmax=10, turn=3, eps=2`
+  throughout; only the margin, the standoff and the age vary.
+* **`contract:` lines are not compared**, by design. They report the Rust's own
+  executable specifications, and for `apart_on_boundaries` there is no
+  `IntConfig` counterpart to compare against — it is stated over the real-valued
+  `Config` in `Dpss/InductionStep.lean`.
+* **A mistranslation coherent across every Rust proof** is what none of the three
+  mechanisms can rule out from the inside, and is the reason the third row
+  matters even where the proofs look airtight. `INSIGHTS.md` §29 measures how
+  little room `inv` in particular leaves for one.
+

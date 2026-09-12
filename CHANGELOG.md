@@ -10,6 +10,70 @@ The long forms live elsewhere: `STATUS.md` for what is proved, `PLAN.md` for
 what is next, `INSIGHTS.md` for what the work taught, `GUIDE.md` for how to
 follow the convergence proof.
 
+## S7 / S7b — the differential test covers what it claimed to (2026-09-12)
+
+Two gaps between the Lean specification and the Rust implementation, both of
+the same kind: something described as checked that nothing actually checked.
+
+**S7 — two blocks were never compared to Lean.** `scripts/check_traces.py`
+sliced `rust/traces.expected` from the first fence block, so `cfgS` and `spread`
+were diffed against the verified binary and against nothing else. Behind them
+stood a proof chain and a hand-maintained match to `cfgSI_run_1` .. `_4`. The
+match held; nothing in CI would have caught it drifting. The chain also stops
+short of `advance`, `step`, `run` and `timeToNextEvent` — the definitions the
+generator refuses — and those two blocks are the only thing that exercises them.
+`EmitTraces.lean` now prints them from `IntConfig.run`, `spreadI` joins `cfgSI`
+in `Dpss/IntModel.lean` with its rows `decide`-proved, and the whole file is
+compared.
+
+**S7b — four predicates were checked by neither tool.** The generator refuses
+`OnPerimeter`, `AdjOrdered`, `EscortsCoherent` and `OnLattice` (dependent proof
+argument), so the Rust transcribes them by hand; and a `spec fn` never executes,
+so no trace reached them. Both sides now have an executable form proved to be
+the real one — `Bool` twins with `_iff` theorems in Lean, `*_ex` functions with
+`ensures` in Verus — and a block of ten configurations compares them. Six
+violate something deliberately: a predicate evaluated only on valid states
+cannot distinguish a right transcription from a wrong one, because `repr_ok`
+asserts `inv` and both answer `true`.
+
+### The thing that did not go as expected
+
+**The corruption experiment failed, twice, and that is the finding.** Weakening
+`adj_ordered` to `-2 <= gap` gave 7 Verus errors; slipping its range to
+`1 <= i` gave 6. `inv` is proved of the stepped configuration and assumed of the
+current one, so a strengthening breaks the proofs and a weakening breaks the
+uses. This repeats E1's result rather than overturning it, and it means the new
+block is defence in depth: the four predicates are now checked by something
+other than the proof structure that also depends on them, which is what a
+self-consistent verification cannot do from the inside. `INSIGHTS.md` §29 states
+the narrower claim carefully, because the wider one would be false.
+
+One row exists purely because of the failed experiment: a range slip at index 0
+is invisible unless some row's *only* bad gap is at index 0, and none was.
+`unordered-at-0` is that row.
+
+### Numbers
+
+| | before | after |
+|---|---|---|
+| trace lines compared against Lean | 52 | 73 |
+| blocks compared | 8 | 11 |
+| Verus | 121 verified | 133 verified |
+| Lean | 841 theorems | 851 theorems |
+
+### What is not done
+
+The differential test is still ten hand-chosen configurations, not a generated
+sweep: nothing enumerates the valid states of the integer model and compares the
+two implementations across all of them. That is the next real strengthening, and
+it needs a CI job holding both toolchains at once — the present two-job split
+(Lean checks the file, Verus checks the file) is what avoids that today.
+
+`apart_on_boundaries` is executable on the Rust side but has no `IntConfig`
+counterpart in Lean; it is stated over the real-valued `Config`, so its verdicts
+go on a `contract:` line and are not compared.
+
+
 ---
 
 ## 2026-09-12 — session handoff: S6 complete, and nothing is scheduled  *(branch `safety`)*

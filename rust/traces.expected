@@ -67,10 +67,11 @@ c=cfgS@2 perim=T ord=T esc=T lat=T inv=T
 c=spread@1 perim=T ord=T esc=T lat=T inv=T
 c=off-perimeter perim=F ord=- esc=- lat=- inv=F
 c=unordered perim=T ord=F esc=T lat=T inv=F
+c=unordered-at-0 perim=T ord=F esc=T lat=T inv=F
 c=off-lattice perim=T ord=T esc=T lat=F inv=F
 c=escort-incoherent perim=T ord=T esc=F lat=T inv=F
 c=inv-but-not-apart perim=T ord=T esc=T lat=T inv=T
-contract: apart_on_boundaries cfgS@0=T cfgS@2=T spread@1=T off-perimeter=- unordered=T off-lattice=T escort-incoherent=T inv-but-not-apart=F
+contract: apart_on_boundaries cfgS@0=T cfgS@2=T spread@1=T off-perimeter=- unordered=T unordered-at-0=T off-lattice=T escort-incoherent=T inv-but-not-apart=F
 --- fence, vehicle contract violated (a reversal that loses ground) ---
 k=0 p=44 obs=46 dir=< low=34
 k=1 p=34 obs=36 dir=< low=24

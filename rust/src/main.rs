@@ -177,6 +177,10 @@ fn standing_conditions() {
         ("spread@1",          2, vec![6, 8],    vec![Right, Left ]),
         ("off-perimeter",     1, vec![0, 2, 8], vec![Right, Right, Right]),
         ("unordered",         1, vec![0, 4, 2], vec![Right, Right, Right]),
+        // the same violation at the quantifier's lower boundary: only gap 0 is
+        // negative, so a range slip of `0 <= i` to `1 <= i` shows up here and
+        // nowhere else in this block
+        ("unordered-at-0",    1, vec![4, 0, 2], vec![Right, Right, Right]),
         ("off-lattice",       1, vec![0, 1, 4], vec![Right, Right, Right]),
         ("escort-incoherent", 1, vec![4, 4, 4], vec![Right, Right, Right]),
         ("inv-but-not-apart", 1, vec![3, 3, 5], vec![Left,  Right, Right]),
