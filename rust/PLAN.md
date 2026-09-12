@@ -17,7 +17,7 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 | **M3** | Verus spec and invariants | ✅ both invariants preserved, and along a run |
 | **M4** | Executable code and the key equivalence | ✅ `80 verified, 0 errors` |
 | **M5** | Differential testing | ✅ two traces, CI-checked |
-| **M6** | The controller, scoped not built | **next** |
+| **M6** | The controller, scoped not built | ✅ `rust/REFINEMENT.md` |
 
 **Toolchain, as pinned** (`rust/toolchain-versions.txt`, installed by
 `scripts/setup_verus.sh`):
