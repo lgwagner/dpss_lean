@@ -51,13 +51,15 @@ set_option linter.style.header false
 namespace DPSS
 namespace Fence
 
+variable {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+
 /-! ## The doubled vehicle
 
 Two drones contribute to every quantity that matters to the gap. -/
 
 /-- The vehicle contract as the *gap* sees it: both drones move, both drones
 turn, both drones are observed. -/
-noncomputable def Vehicle.pair (V : Vehicle) : Vehicle where
+def Vehicle.pair (V : Vehicle α) : Vehicle α where
   Dmax := 2 * V.Dmax
   turn := 2 * V.turn
   eps := 2 * V.eps
@@ -65,9 +67,9 @@ noncomputable def Vehicle.pair (V : Vehicle) : Vehicle where
   turn_nonneg := by have := V.turn_nonneg; linarith
   eps_nonneg := by have := V.eps_nonneg; linarith
 
-@[simp] theorem Vehicle.pair_Dmax (V : Vehicle) : V.pair.Dmax = 2 * V.Dmax := rfl
-@[simp] theorem Vehicle.pair_turn (V : Vehicle) : V.pair.turn = 2 * V.turn := rfl
-@[simp] theorem Vehicle.pair_eps (V : Vehicle) : V.pair.eps = 2 * V.eps := rfl
+@[simp] theorem Vehicle.pair_Dmax (V : Vehicle α) : V.pair.Dmax = 2 * V.Dmax := rfl
+@[simp] theorem Vehicle.pair_turn (V : Vehicle α) : V.pair.turn = 2 * V.turn := rfl
+@[simp] theorem Vehicle.pair_eps (V : Vehicle α) : V.pair.eps = 2 * V.eps := rfl
 
 /-! ## A sampled pair
 
@@ -76,13 +78,14 @@ where left meant approaching the wall. `Dir.right` means holding station or
 separating. -/
 
 /-- A sampled trajectory of one adjacent pair, holding a standoff `d`. -/
-structure PairTraj (V : Vehicle) (d M : ℝ) where
+structure PairTraj {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+    (V : Vehicle α) (d M : α) where
   /-- The true gap at each sample. -/
-  gap : ℕ → ℝ
+  gap : ℕ → α
   /-- The least gap reached on the leg from sample `k` to sample `k+1`. -/
-  low : ℕ → ℝ
+  low : ℕ → α
   /-- The gap as observed. -/
-  obs : ℕ → ℝ
+  obs : ℕ → α
   /-- Whether the pair is closing on that leg. -/
   mode : ℕ → Dir
   /-- What the surveillance algorithm asked for. -/
@@ -103,12 +106,12 @@ structure PairTraj (V : Vehicle) (d M : ℝ) where
 
 namespace PairTraj
 
-variable {V : Vehicle} {d M : ℝ}
+variable {V : Vehicle α} {d M : α}
 
 /-- **The separation problem is the fence problem.** Excess separation `g - d`
 plays the part of position, and the doubled vehicle plays the part of the
 vehicle. Every field is the corresponding field, shifted. -/
-noncomputable def toFence (P : PairTraj V d M) : Traj V.pair M where
+def toFence (P : PairTraj V d M) : Traj V.pair M where
   p := fun k => P.gap k - d
   d := P.mode
   low := fun k => P.low k - d
@@ -176,7 +179,7 @@ pair that closes inside the standoff. So none of the six terms in
 `2·(Dmax + turn + eps)` is slack either. -/
 
 /-- The correspondence, backwards. -/
-noncomputable def Traj.toPair (d : ℝ) {V : Vehicle} {M : ℝ} (T : Traj V.pair M) :
+def Traj.toPair (d : α) {V : Vehicle α} {M : α} (T : Traj V.pair M) :
     PairTraj V d M where
   gap := fun k => T.p k + d
   low := fun k => T.low k + d
@@ -213,7 +216,7 @@ noncomputable def Traj.toPair (d : ℝ) {V : Vehicle} {M : ℝ} (T : Traj V.pair
 /-- **The separation margin `2·(Dmax + turn + eps)` is exactly tight.** For any
 smaller `M` there is a pair obeying the whole vehicle contract, starting with
 the clearance the invariant asks for, that closes inside the standoff. -/
-theorem pair_margin_sharp (V : Vehicle) (d M : ℝ) (hD : 0 < V.Dmax)
+theorem pair_margin_sharp (V : Vehicle ℝ) (d M : ℝ) (hD : 0 < V.Dmax)
     (hlt : M < 2 * (V.Dmax + V.turn + V.eps)) :
     ∃ (P : PairTraj V d M) (k : ℕ), P.Safe 0 ∧ P.low k < d := by
   have hDp : 0 < V.pair.Dmax := by simp only [Vehicle.pair_Dmax]; linarith

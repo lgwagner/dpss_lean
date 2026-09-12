@@ -59,7 +59,7 @@ open Set
 /-- **The displacement bound, derived.** A drone that never exceeds speed `V`
 travels at most `V · Δt` between samples taken `Δt` apart. -/
 noncomputable def Vehicle.ofSpeed (V dt turnA eps : ℝ) (hV : 0 ≤ V) (hdt : 0 ≤ dt)
-    (ht : 0 ≤ turnA) (he : 0 ≤ eps) : Vehicle where
+    (ht : 0 ≤ turnA) (he : 0 ≤ eps) : Vehicle ℝ where
   Dmax := V * dt
   turn := turnA
   eps := eps

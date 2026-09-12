@@ -91,36 +91,38 @@ set_option linter.style.header false
 namespace DPSS
 namespace Fence
 
+variable {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+
 /-! ## The degraded vehicle -/
 
 /-- The vehicle a *pair* faces when one of them is working from a report at most
 `A` samples old. Everything doubles as in `Vehicle.pair` — both drones move,
 both turn, both are sensed — and the sensing term carries `A · Dmax` more,
 because the neighbour may have moved that far since the report was taken. -/
-noncomputable def Vehicle.commsPair (V : Vehicle) (A : ℕ) : Vehicle where
+def Vehicle.commsPair (V : Vehicle α) (A : ℕ) : Vehicle α where
   Dmax := 2 * V.Dmax
   turn := 2 * V.turn
-  eps := 2 * V.eps + (A : ℝ) * V.Dmax
+  eps := 2 * V.eps + (A : α) * V.Dmax
   Dmax_nonneg := by have := V.Dmax_nonneg; linarith
   turn_nonneg := by have := V.turn_nonneg; linarith
   eps_nonneg := by
     have h1 := V.eps_nonneg
-    have h2 : 0 ≤ (A : ℝ) * V.Dmax := mul_nonneg (Nat.cast_nonneg A) V.Dmax_nonneg
+    have h2 : 0 ≤ (A : α) * V.Dmax := mul_nonneg (Nat.cast_nonneg A) V.Dmax_nonneg
     linarith
 
-@[simp] theorem Vehicle.commsPair_Dmax (V : Vehicle) (A : ℕ) :
+@[simp] theorem Vehicle.commsPair_Dmax (V : Vehicle α) (A : ℕ) :
     (V.commsPair A).Dmax = 2 * V.Dmax := rfl
 
-@[simp] theorem Vehicle.commsPair_turn (V : Vehicle) (A : ℕ) :
+@[simp] theorem Vehicle.commsPair_turn (V : Vehicle α) (A : ℕ) :
     (V.commsPair A).turn = 2 * V.turn := rfl
 
-@[simp] theorem Vehicle.commsPair_eps (V : Vehicle) (A : ℕ) :
-    (V.commsPair A).eps = 2 * V.eps + (A : ℝ) * V.Dmax := rfl
+@[simp] theorem Vehicle.commsPair_eps (V : Vehicle α) (A : ℕ) :
+    (V.commsPair A).eps = 2 * V.eps + (A : α) * V.Dmax := rfl
 
 /-- **A fresh link is S3.** With zero staleness the degraded vehicle is the one
 `Dpss/Separation.lean` already uses, so this file generalizes that result rather
 than sitting beside it. -/
-theorem Vehicle.commsPair_zero (V : Vehicle) :
+theorem Vehicle.commsPair_zero (V : Vehicle α) :
     (V.commsPair 0).Dmax = V.pair.Dmax ∧ (V.commsPair 0).turn = V.pair.turn ∧
       (V.commsPair 0).eps = V.pair.eps := by
   refine ⟨rfl, rfl, ?_⟩
@@ -134,22 +136,23 @@ neighbour that may be stale.
 `mode k = Dir.left` means **closing**, as in `PairTraj`. The fields split into
 three groups: what the pair is physically doing, what the drone knows, and what
 the controller does with it. -/
-structure CommsPair (V : Vehicle) (A : ℕ) (d M : ℝ) where
+structure CommsPair {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+    (V : Vehicle α) (A : ℕ) (d M : α) where
   /-- Own position at each sample. -/
-  p : ℕ → ℝ
+  p : ℕ → α
   /-- The neighbour's true position at each sample. -/
-  q : ℕ → ℝ
+  q : ℕ → α
   /-- The gap, and the least gap on each leg. -/
-  gap : ℕ → ℝ
-  low : ℕ → ℝ
+  gap : ℕ → α
+  low : ℕ → α
   /-- Whether the pair is closing on each leg. -/
   mode : ℕ → Dir
   /-- What the surveillance algorithm asked for. -/
   req : ℕ → Dir
   /-- Own position as sensed. -/
-  phat : ℕ → ℝ
+  phat : ℕ → α
   /-- The neighbour's position, as last reported. -/
-  rep : ℕ → ℝ
+  rep : ℕ → α
   /-- The sample at which that report was taken. -/
   src : ℕ → ℕ
   gap_def : ∀ k, gap k = q k - p k
@@ -163,7 +166,7 @@ structure CommsPair (V : Vehicle) (A : ℕ) (d M : ℝ) where
   phat_close : ∀ k, |phat k - p k| ≤ V.eps
   /-- **The airframe's obligation**, applied to the neighbour: it cannot have
   moved more than `Dmax` per sample since the report. -/
-  drift : ∀ j k : ℕ, j ≤ k → |q k - q j| ≤ ((k - j : ℕ) : ℝ) * V.Dmax
+  drift : ∀ j k : ℕ, j ≤ k → |q k - q j| ≤ ((k - j : ℕ) : α) * V.Dmax
   /-- The controller sees only the estimated excess separation. -/
   control : ∀ k, mode k = fenceDir M (rep k - phat k - d) (req k)
   low_le_gap : ∀ k, low k ≤ gap k
@@ -174,19 +177,19 @@ structure CommsPair (V : Vehicle) (A : ℕ) (d M : ℝ) where
 
 namespace CommsPair
 
-variable {V : Vehicle} {A : ℕ} {d M : ℝ}
+variable {V : Vehicle α} {A : ℕ} {d M : α}
 
 /-- **Staleness is sensing error.** A report `a` samples old localizes the
 neighbour to `eps + a · Dmax`. -/
 theorem rep_error (C : CommsPair V A d M) (k : ℕ) :
-    |C.rep k - C.q k| ≤ V.eps + (A : ℝ) * V.Dmax := by
+    |C.rep k - C.q k| ≤ V.eps + (A : α) * V.Dmax := by
   have hsrc := C.src_le k
   have hdrift := C.drift (C.src k) k hsrc
-  have hcast : ((k - C.src k : ℕ) : ℝ) ≤ (A : ℝ) := by
+  have hcast : ((k - C.src k : ℕ) : α) ≤ (A : α) := by
     exact_mod_cast C.fresh k
-  have hmul : ((k - C.src k : ℕ) : ℝ) * V.Dmax ≤ (A : ℝ) * V.Dmax :=
+  have hmul : ((k - C.src k : ℕ) : α) * V.Dmax ≤ (A : α) * V.Dmax :=
     mul_le_mul_of_nonneg_right hcast V.Dmax_nonneg
-  have hq : |C.q (C.src k) - C.q k| ≤ (A : ℝ) * V.Dmax := by
+  have hq : |C.q (C.src k) - C.q k| ≤ (A : α) * V.Dmax := by
     rw [abs_sub_comm]
     linarith
   have htri : |C.rep k - C.q k|
@@ -207,12 +210,12 @@ theorem obs_error (C : CommsPair V A d M) (k : ℕ) :
   have h2 := C.phat_close k
   calc |C.rep k - C.q k - (C.phat k - C.p k)|
       ≤ |C.rep k - C.q k| + |C.phat k - C.p k| := abs_sub _ _
-    _ ≤ (V.eps + (A : ℝ) * V.Dmax) + V.eps := by linarith
-    _ = 2 * V.eps + (A : ℝ) * V.Dmax := by ring
+    _ ≤ (V.eps + (A : α) * V.Dmax) + V.eps := by linarith
+    _ = 2 * V.eps + (A : α) * V.Dmax := by ring
 
 /-- **The link is a fence problem.** Same map as `PairTraj.toFence`, with the
 staleness folded into the vehicle. -/
-noncomputable def toFence (C : CommsPair V A d M) : Traj (V.commsPair A) M where
+def toFence (C : CommsPair V A d M) : Traj (V.commsPair A) M where
   p := fun k => C.gap k - d
   d := C.mode
   low := fun k => C.low k - d
@@ -251,7 +254,7 @@ theorem safe_iff_fence (C : CommsPair V A d M) (k : ℕ) :
 One extra sample of staleness costs exactly one `Dmax` of margin, and nothing
 else changes: no extra hypothesis on the vehicle, no second induction. -/
 theorem le_low
-    (hM : 2 * (V.Dmax + V.turn + V.eps) + (A : ℝ) * V.Dmax ≤ M)
+    (hM : 2 * (V.Dmax + V.turn + V.eps) + (A : α) * V.Dmax ≤ M)
     {C : CommsPair V A d M} (h0 : C.Safe 0) (k : ℕ) : d ≤ C.low k := by
   have hMv : (V.commsPair A).Dmax + (V.commsPair A).turn + (V.commsPair A).eps ≤ M := by
     simp only [Vehicle.commsPair_Dmax, Vehicle.commsPair_turn, Vehicle.commsPair_eps]
@@ -263,7 +266,7 @@ theorem le_low
 
 /-- And at every sample. -/
 theorem le_gap
-    (hM : 2 * (V.Dmax + V.turn + V.eps) + (A : ℝ) * V.Dmax ≤ M)
+    (hM : 2 * (V.Dmax + V.turn + V.eps) + (A : α) * V.Dmax ≤ M)
     {C : CommsPair V A d M} (h0 : C.Safe 0) (k : ℕ) : d ≤ C.gap k :=
   le_trans (le_low hM h0 k) (C.low_le_gap k)
 
@@ -276,7 +279,7 @@ the network may fall behind by up to
 
 samples before the separation guarantee is no longer supported. Beyond that the
 pair must fall back — and §3 below says what the fallback is. -/
-theorem age_within_budget (hD : 0 < V.Dmax)
+theorem age_within_budget {V : Vehicle ℝ} {A : ℕ} {d M : ℝ} (hD : 0 < V.Dmax)
     (hA : (A : ℝ) ≤ (M - 2 * (V.Dmax + V.turn + V.eps)) / V.Dmax)
     {C : CommsPair V A d M} (h0 : C.Safe 0) (k : ℕ) : d ≤ C.gap k := by
   refine le_gap ?_ h0 k

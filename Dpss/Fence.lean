@@ -78,6 +78,26 @@ set_option linter.style.header false
 namespace DPSS
 namespace Fence
 
+/-! ## The scalars
+
+Every statement in this file is about **an ordered ring**, not about `ℝ`. The
+fence argument uses addition, subtraction and comparison and nothing else — no
+division, no completeness, no limits — so `ℝ` was never what it was about.
+
+The instance that matters is `ℤ`. `rust/src/fence.rs` states the same theorems
+over Verus's `int`, and with `α := ℤ` the two developments are about *the same
+integers*: there is no scaling argument between them, and no real-to-integer
+step left for a reader to inspect. `Dpss/FenceInt.lean` is that instantiation,
+written to be read beside the Rust.
+
+The one exception is `margin_sharp` at the bottom, which builds a witness by
+dividing the deficiency in half and so needs a field; it stays over `ℝ`. The
+construction it uses (`Sharp.traj`) is general, so an integer witness is still
+available — see `Dpss/FenceInt.lean`.
+-/
+
+variable {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+
 /-! ## The vehicle contract
 
 Three numbers, all of them things a vehicle analysis measures. Nothing below
@@ -85,14 +105,15 @@ derives them; deriving `Dmax` from a dynamics model is S4's job, and keeping it
 a hypothesis is precisely what makes this result cheap. -/
 
 /-- What the proof needs to know about the airframe. -/
-structure Vehicle where
+structure Vehicle (α : Type*) [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+    where
   /-- The furthest the drone travels in one sample period. -/
-  Dmax : ℝ
+  Dmax : α
   /-- Overshoot allowance: how far a drone commanded to reverse may still drift
   the wrong way before the reversal takes effect. -/
-  turn : ℝ
+  turn : α
   /-- Position sensing error bound. -/
-  eps : ℝ
+  eps : α
   Dmax_nonneg : 0 ≤ Dmax
   turn_nonneg : 0 ≤ turn
   eps_nonneg : 0 ≤ eps
@@ -103,14 +124,14 @@ namespace Vehicle
 A leftward drone needs a whole sample period's travel plus the turn allowance;
 a rightward drone needs only the turn allowance, because that is all it can
 still lose. -/
-def margin (V : Vehicle) : Dir → ℝ
+def margin (V : Vehicle α) : Dir → α
   | Dir.left => V.Dmax + V.turn
   | Dir.right => V.turn
 
-@[simp] theorem margin_left (V : Vehicle) : V.margin Dir.left = V.Dmax + V.turn := rfl
-@[simp] theorem margin_right (V : Vehicle) : V.margin Dir.right = V.turn := rfl
+@[simp] theorem margin_left (V : Vehicle α) : V.margin Dir.left = V.Dmax + V.turn := rfl
+@[simp] theorem margin_right (V : Vehicle α) : V.margin Dir.right = V.turn := rfl
 
-theorem margin_nonneg (V : Vehicle) (d : Dir) : 0 ≤ V.margin d := by
+theorem margin_nonneg (V : Vehicle α) (d : Dir) : 0 ≤ V.margin d := by
   cases d
   · have := V.Dmax_nonneg; have := V.turn_nonneg; simp; linarith
   · simpa using V.turn_nonneg
@@ -121,21 +142,24 @@ end Vehicle
 
 /-- The fence controller. `req` is whatever heading the surveillance algorithm
 asked for; an observation at or below the margin overrides it. -/
-noncomputable def fenceDir (M : ℝ) (phat : ℝ) (req : Dir) : Dir :=
+def fenceDir (M phat : α) (req : Dir) : Dir :=
   if phat ≤ M then Dir.right else req
 
-@[simp] theorem fenceDir_of_le {M phat : ℝ} (h : phat ≤ M) (req : Dir) :
+omit [CommRing α] [IsStrictOrderedRing α] in
+@[simp] theorem fenceDir_of_le {M phat : α} (h : phat ≤ M) (req : Dir) :
     fenceDir M phat req = Dir.right := by
   unfold fenceDir; rw [if_pos h]
 
-@[simp] theorem fenceDir_of_gt {M phat : ℝ} (h : M < phat) (req : Dir) :
+omit [CommRing α] [IsStrictOrderedRing α] in
+@[simp] theorem fenceDir_of_gt {M phat : α} (h : M < phat) (req : Dir) :
     fenceDir M phat req = req := by
   unfold fenceDir; rw [if_neg (not_le.mpr h)]
 
+omit [CommRing α] [IsStrictOrderedRing α] in
 /-- A controller that leaves the drone heading left was not triggered, so the
 observation was strictly above the margin. This one-line fact is the entire
 content of the controller as far as the proof is concerned. -/
-theorem lt_obs_of_dir_left {M phat : ℝ} {req : Dir}
+theorem lt_obs_of_dir_left {M phat : α} {req : Dir}
     (h : fenceDir M phat req = Dir.left) : M < phat := by
   by_contra hc
   rw [not_lt] at hc
@@ -154,15 +178,16 @@ samples that the proof uses, and each is a statement an airframe analysis can
 discharge. -/
 
 /-- A sampled trajectory of one drone under the fence controller. -/
-structure Traj (V : Vehicle) (M : ℝ) where
+structure Traj {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+    (V : Vehicle α) (M : α) where
   /-- Position at each sample. -/
-  p : ℕ → ℝ
+  p : ℕ → α
   /-- Heading flown on the leg from sample `k` to sample `k+1`. -/
   d : ℕ → Dir
   /-- The lowest position reached on that leg. -/
-  low : ℕ → ℝ
+  low : ℕ → α
   /-- What the drone's sensor reported at sample `k`. -/
-  obs : ℕ → ℝ
+  obs : ℕ → α
   /-- What the surveillance algorithm asked for at sample `k`. -/
   req : ℕ → Dir
   /-- Sensing is accurate to `eps`. -/
@@ -184,7 +209,7 @@ structure Traj (V : Vehicle) (M : ℝ) where
 
 namespace Traj
 
-variable {V : Vehicle} {M : ℝ}
+variable {V : Vehicle α} {M : α}
 
 /-- The invariant: the drone holds the clearance its current heading requires. -/
 def Safe (T : Traj V M) (k : ℕ) : Prop := V.margin (T.d k) ≤ T.p k
@@ -285,11 +310,11 @@ induction. -/
 
 /-- The right-hand fence controller: an observation at or above `L - M`
 commands leftward, overriding whatever was requested. -/
-noncomputable def fenceDirR (L M : ℝ) (phat : ℝ) (req : Dir) : Dir :=
+def fenceDirR (L M phat : α) (req : Dir) : Dir :=
   if L - M ≤ phat then Dir.left else req
 
 /-- The two controllers are the same controller, seen from the two ends. -/
-theorem flip_fenceDirR (L M phat : ℝ) (req : Dir) :
+theorem flip_fenceDirR (L M phat : α) (req : Dir) :
     (fenceDirR L M phat req).flip = fenceDir M (L - phat) req.flip := by
   unfold fenceDirR fenceDir
   by_cases h : L - M ≤ phat
@@ -298,11 +323,12 @@ theorem flip_fenceDirR (L M phat : ℝ) (req : Dir) :
 
 /-- A sampled trajectory against the **right** fence. `high` is the *highest*
 position reached on the leg from sample `k` to sample `k+1`. -/
-structure TrajR (V : Vehicle) (L M : ℝ) where
-  p : ℕ → ℝ
+structure TrajR {α : Type*} [CommRing α] [LinearOrder α] [IsStrictOrderedRing α]
+    (V : Vehicle α) (L M : α) where
+  p : ℕ → α
   d : ℕ → Dir
-  high : ℕ → ℝ
-  obs : ℕ → ℝ
+  high : ℕ → α
+  obs : ℕ → α
   req : ℕ → Dir
   obs_close : ∀ k, |obs k - p k| ≤ V.eps
   control : ∀ k, d k = fenceDirR L M (obs k) (req k)
@@ -314,10 +340,10 @@ structure TrajR (V : Vehicle) (L M : ℝ) where
 
 namespace TrajR
 
-variable {V : Vehicle} {L M : ℝ}
+variable {V : Vehicle α} {L M : α}
 
 /-- The reflection. -/
-noncomputable def mirror (T : TrajR V L M) : Traj V M where
+def mirror (T : TrajR V L M) : Traj V M where
   p := fun k => L - T.p k
   d := fun k => (T.d k).flip
   low := fun k => L - T.high k
@@ -391,10 +417,10 @@ unconditional rather than restricted to a window of `M`. -/
 
 namespace Sharp
 
-variable (V : Vehicle) (p0 : ℝ) (m : ℕ)
+variable (V : Vehicle α) (p0 : α) (m : ℕ)
 
 /-- Position at sample `k`: one `Dmax` per leftward leg, then held. -/
-noncomputable def pos (k : ℕ) : ℝ :=
+def pos (k : ℕ) : α :=
   if k ≤ m then p0 - V.Dmax * k else p0 - V.Dmax * m
 
 /-- Heading: left for the first `m` legs, right thereafter. -/
@@ -403,12 +429,12 @@ def dir (k : ℕ) : Dir := if k < m then Dir.left else Dir.right
 /-- Sensing is exactly `eps` adverse at every sample: high while the drone is
 still heading for the fence (so the controller does not fire), low once it is
 past (so the controller cannot be blamed for firing late). -/
-noncomputable def obs (k : ℕ) : ℝ :=
+def obs (k : ℕ) : α :=
   if k < m then pos V p0 m k + V.eps else pos V p0 m k - V.eps
 
 /-- The low-water mark: a full `Dmax` on a leftward leg, the full turn
 allowance on the reversal. -/
-noncomputable def low (k : ℕ) : ℝ :=
+def low (k : ℕ) : α :=
   if k < m then pos V p0 m k - V.Dmax else pos V p0 m k - V.turn
 
 variable {V p0 m}
@@ -446,7 +472,7 @@ construction needs, and `margin_sharp` below supplies them.
 * `hb` — the observation on the reversal leg reads at or below it, so the
   controller does fire;
 * `hc` — the trajectory starts with the clearance the invariant demands. -/
-noncomputable def traj (M : ℝ) (hm : 0 < m)
+def traj (M : α) (hm : 0 < m)
     (ha : M < p0 - V.Dmax * (m - 1 : ℕ) + V.eps)
     (hb : p0 - V.Dmax * m - V.eps ≤ M) :
     Traj V M where
@@ -470,10 +496,10 @@ noncomputable def traj (M : ℝ) (hm : 0 < m)
     by_cases hk : k < m
     · -- still heading for the fence: the observation reads above the margin
       rw [if_pos hk, dir_of_lt hk]
-      have hkm : (k : ℝ) ≤ ((m - 1 : ℕ) : ℝ) := by
+      have hkm : (k : α) ≤ ((m - 1 : ℕ) : α) := by
         have : k ≤ m - 1 := by omega
         exact_mod_cast this
-      have hle : V.Dmax * (k : ℝ) ≤ V.Dmax * ((m - 1 : ℕ) : ℝ) :=
+      have hle : V.Dmax * (k : α) ≤ V.Dmax * ((m - 1 : ℕ) : α) :=
         mul_le_mul_of_nonneg_left hkm V.Dmax_nonneg
       have hpos : pos V p0 m k = p0 - V.Dmax * k := pos_of_le (le_of_lt hk)
       exact (fenceDir_of_gt (by rw [hpos]; linarith) _).symm
@@ -493,7 +519,7 @@ noncomputable def traj (M : ℝ) (hm : 0 < m)
     by_cases hk : k < m
     · rw [if_pos hk, pos_of_le (le_of_lt hk), pos_of_le (by omega : k + 1 ≤ m)]
       push_cast
-      have hexp : V.Dmax * ((k : ℝ) + 1) = V.Dmax * (k : ℝ) + V.Dmax := by ring
+      have hexp : V.Dmax * ((k : α) + 1) = V.Dmax * (k : α) + V.Dmax := by ring
       rw [hexp]; linarith
     · rw [if_neg hk, pos_of_ge (not_lt.mp hk), pos_of_ge (by omega : m ≤ k + 1)]
       have := V.turn_nonneg; linarith
@@ -522,7 +548,7 @@ smaller number works, and that one does.
 Note what the hypotheses are *not*. There is no restriction on which of the
 three terms is deficient and no window of `M` in which the result is stated —
 only that the drone can move at all. -/
-theorem margin_sharp (V : Vehicle) (M : ℝ) (hD : 0 < V.Dmax)
+theorem margin_sharp (V : Vehicle ℝ) (M : ℝ) (hD : 0 < V.Dmax)
     (hlt : M < V.Dmax + V.turn + V.eps) :
     ∃ (T : Traj V M) (k : ℕ), T.Safe 0 ∧ T.low k < 0 := by
   have hgpos : 0 < V.Dmax + V.turn + V.eps - M := by linarith
