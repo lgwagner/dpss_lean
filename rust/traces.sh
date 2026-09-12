@@ -46,14 +46,27 @@ if ! diff -u "$REPO/rust/traces.expected" "$BIN.out"; then
 fi
 echo "the binary reproduces the recorded traces"
 
+# The generated half (S7c). Same arrangement: the binary is checked against the
+# recorded file here, Lean is checked against it by scripts/check_sweep.py, and
+# the two meet on the file. Ten hand-chosen configurations became every valid
+# configuration of five small teams.
+"$BIN" sweep > "$BIN.sweep"
+if ! diff -u "$REPO/rust/sweep.expected" "$BIN.sweep"; then
+  echo "::error::the verified binary no longer reproduces the recorded sweep"
+  exit 1
+fi
+echo "the binary reproduces the recorded sweep"
+
 # The other side of the differential test needs a Lean toolchain, which the
 # Verus CI job deliberately does not have -- it pins Verus, Rust and Z3 and
 # nothing else. So run it when `lake` is here (which is every local run), and
 # leave it to the Lean job otherwise, where it is a step of its own.
 if command -v lake >/dev/null 2>&1; then
   python3 "$REPO/scripts/check_traces.py"
-  echo "traces agree with Lean"
+  python3 "$REPO/scripts/check_sweep.py"
+  echo "traces and sweep agree with Lean"
 else
   echo "note: no lake on PATH, so the Lean side was not checked here."
-  echo "      scripts/check_traces.py does it, and Lean CI runs it."
+  echo "      scripts/check_traces.py and scripts/check_sweep.py do it, and"
+  echo "      Lean CI runs both."
 fi

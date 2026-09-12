@@ -59,6 +59,16 @@ pub mod comms;
 fn main() {
     use crate::dir::Dir;
 
+    // `dpss sweep` prints the generated state-space sweep instead of the
+    // recorded traces. Two files, because they answer different questions and
+    // are checked by different scripts: rust/traces.expected is ten hand-chosen
+    // configurations read by a human, rust/sweep.expected is every valid
+    // configuration of five small teams and is read by nothing but a diff.
+    if std::env::args().any(|a| a == "sweep") {
+        sweep();
+        return;
+    }
+
     // The scaled image of `ThreeConverge.cfgS` at resolution K = 1: three drones
     // on their own left endpoints, all heading right. Lean proves this run step by
     // step in `Dpss/IntModel.lean` (`cfgSI_run_1` .. `cfgSI_run_4`), and the real
@@ -133,6 +143,106 @@ fn main() {
     // sample where the controller commands the reversal.
     fence_violation("fence, vehicle contract violated (a reversal that loses ground)",
                     10, 3, 2, 15, 44, 6);
+}
+
+/// The state-space sweep (S7c).
+///
+/// For each `(n, K)`, every position vector in `[0, 2Kn]^n` and every heading
+/// vector, filtered to those satisfying the standing conditions and
+/// `apart_on_boundaries` — which is exactly `step_ex`'s precondition, so the
+/// filter is also what makes the calls below legitimate.
+///
+/// The enumeration is duplicated rather than handed over from Lean, and that is
+/// deliberate: each side decides membership with its own implementation of the
+/// standing conditions, so a disagreement about which configurations are valid
+/// changes the line count and the diff reports it before any trajectory is
+/// compared. `EmitSweep.lean` is the other half; the order here must match it
+/// exactly — positions lexicographic with the first coordinate slowest, then
+/// headings by a counter whose bit `i` is drone `i`.
+#[verifier::external]
+fn sweep() {
+    for &(n, k, steps) in &[(2usize, 1i64, 6usize), (2, 2, 6), (3, 1, 6), (3, 2, 6), (4, 1, 6)] {
+        sweep_for(n, k, steps);
+    }
+}
+
+/// Every heading vector for `n` drones; bit `i` of `m` is drone `i`, set = Left.
+#[verifier::external]
+fn dir_vectors(n: usize) -> Vec<Vec<crate::dir::Dir>> {
+    use crate::dir::Dir;
+    (0..(1usize << n))
+        .map(|m| (0..n).map(|i| if (m >> i) % 2 == 1 { Dir::Left } else { Dir::Right }).collect())
+        .collect()
+}
+
+/// One state, reduced to a nonnegative integer. Mirrors `rowVal` in
+/// `EmitSweep.lean`; every term is nonnegative, which is what makes the `%`
+/// below the same operation there and here.
+#[verifier::external]
+fn row_val(t: i64, pos: &[i64], dir: &[crate::dir::Dir]) -> i64 {
+    use crate::dir::Dir;
+    let mut a = t;
+    for i in 0..pos.len() {
+        a += (pos[i] + 1) * (i as i64 + 1);
+        a += (if dir[i] == Dir::Left { 1 } else { 2 }) * (i as i64 + 11);
+    }
+    a
+}
+
+#[verifier::external]
+fn render_pos(pos: &[i64]) -> String {
+    pos.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(",")
+}
+
+#[verifier::external]
+fn render_dir(dir: &[crate::dir::Dir]) -> String {
+    use crate::dir::Dir;
+    dir.iter().map(|d| if *d == Dir::Left { "<" } else { ">" })
+        .collect::<Vec<_>>().join(",")
+}
+
+#[verifier::external]
+fn sweep_for(n: usize, k: i64, steps: usize) {
+    use crate::exec::{Ensemble, inv_ex, apart_on_boundaries_ex, step_ex, time_to_next_event_ex};
+    let perim = 2 * k * (n as i64);
+    let base = (perim + 1) as usize;
+    let total_pos = base.pow(n as u32);
+    let dirs = dir_vectors(n);
+    let mut lines: Vec<String> = Vec::new();
+
+    for idx in 0..total_pos {
+        // base-(perim+1) digits, most significant first, so the FIRST
+        // coordinate varies slowest -- the order `posVectors` produces
+        let mut pos = vec![0i64; n];
+        let mut r = idx;
+        for j in (0..n).rev() {
+            pos[j] = (r % base) as i64;
+            r /= base;
+        }
+        for d in &dirs {
+            let probe = Ensemble { k, pos: pos.clone(), dir: d.clone(), time: Ghost::assume_new() };
+            if !inv_ex(&probe) || !apart_on_boundaries_ex(&probe) {
+                continue;
+            }
+            // the filter just discharged `step_ex`'s precondition
+            let mut e = Ensemble { k, pos: pos.clone(), dir: d.clone(), time: Ghost::assume_new() };
+            let mut t: i64 = 0;
+            let mut h: i64 = row_val(t, &e.pos, &e.dir) % 1_000_003;
+            for _ in 0..steps {
+                t += time_to_next_event_ex(&e);
+                step_ex(&mut e);
+                h = (h * 131 + row_val(t, &e.pos, &e.dir)) % 1_000_003;
+            }
+            lines.push(format!(
+                "pos=[{}] dir=[{}] -> t={} end=[{}] dirs=[{}] h={}",
+                render_pos(&pos), render_dir(d), t, render_pos(&e.pos), render_dir(&e.dir), h));
+        }
+    }
+    println!("--- sweep n={} K={} steps={} (valid={} of {}) ---",
+             n, k, steps, lines.len(), total_pos * (1usize << n));
+    for l in lines {
+        println!("{}", l);
+    }
 }
 
 /// `T`/`F`, as the harness prints a verdict.

@@ -38,6 +38,12 @@ jobs:
       - name: The recorded traces agree with Lean
         run: python3 scripts/check_traces.py
 
+      # The generated half (S7c): every valid configuration of five small teams,
+      # run and compared. Slower than the traces -- a couple of minutes -- because
+      # it filters ~126k candidate configurations to the 1816 valid ones.
+      - name: The recorded sweep agrees with Lean
+        run: python3 scripts/check_sweep.py
+
       # STATUS.md's generated blocks and GUIDE.md's deep links both claim to
       # describe the code. Both scripts self-check and fail if they no longer do.
       - name: Generated documentation is current

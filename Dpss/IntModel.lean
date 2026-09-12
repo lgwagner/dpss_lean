@@ -370,6 +370,47 @@ theorem invariantB_iff (K : ℕ) : c.invariantB K = true ↔ c.Invariant K := by
   · rintro ⟨⟨⟨hp, ha⟩, he⟩, hl⟩; exact ⟨hp, ha, he, hl⟩
   · rintro ⟨hp, ha, he, hl⟩; exact ⟨⟨⟨hp, ha⟩, he⟩, hl⟩
 
+/-! ### `ApartOnBoundaries`, over the integers
+
+`Dpss/Reachable.lean` states this over the real-valued `Config`. The Rust
+carries its own transcription in `rust/src/inv.rs` and it is the other half of
+`step_ex`'s precondition, so a sweep of the state space has to filter by it —
+and until now the Lean side had nothing at this resolution to filter by.
+
+`embed_apartOnBoundaries` below is what makes this the same condition rather
+than a second one, which is the move S6a made for the fence. Transcribing it
+would have added exactly the kind of unchecked second definition the rest of
+this file exists to avoid. -/
+
+def ApartOnBoundary (K : ℕ) (i : Fin n) (h : i.val + 1 < n) : Prop :=
+  c.CoLocated i h = true → c.dir i = Dir.left →
+    c.dir (Config.nextIdx i h) = Dir.right → c.pos i = intCommonEnd K i
+
+def ApartOnBoundaries (K : ℕ) : Prop :=
+  ∀ (i : Fin n) (h : i.val + 1 < n), c.ApartOnBoundary K i h
+
+/-- `ApartOnBoundaries`, decided. -/
+def apartOnBoundariesB (K : ℕ) : Bool :=
+  (List.finRange n).all fun i =>
+    if h : i.val + 1 < n then
+      decide (c.CoLocated i h = true → c.dir i = Dir.left →
+        c.dir (Config.nextIdx i h) = Dir.right → c.pos i = intCommonEnd K i)
+    else true
+
+theorem apartOnBoundariesB_iff (K : ℕ) :
+    c.apartOnBoundariesB K = true ↔ c.ApartOnBoundaries K := by
+  simp only [apartOnBoundariesB, List.all_eq_true, List.mem_finRange,
+    ApartOnBoundaries, ApartOnBoundary, forall_const]
+  constructor
+  · intro h i hi
+    have hd := h i
+    rw [dif_pos hi] at hd
+    exact of_decide_eq_true hd
+  · intro h i
+    split
+    · exact decide_eq_true (h i ‹_›)
+    · rfl
+
 
 /-! ## The lattice is closed under a step
 
@@ -566,6 +607,24 @@ theorem embed_atSeparation (hK : 0 < K) (hn : 0 < n) (i : Fin n)
   rw [Bool.and_eq_true, ← embed_coLocated c hK hn i h, embed_commonEnd hK hn,
     embed_pos, div_eq_div_iff_pos hS]
   simp
+
+/-- The integer `ApartOnBoundaries` is the real one, so it is not a second
+definition. This is what lets a state-space sweep filter on the Lean side by the
+same condition `step_ex` requires on the Rust side. -/
+theorem embed_apartOnBoundaries (hK : 0 < K) (hn : 0 < n) :
+    (embed K c).ApartOnBoundaries ↔ c.ApartOnBoundaries K := by
+  have hS := scaleR_pos (K := K) (n := n) hK hn
+  unfold Config.ApartOnBoundaries IntConfig.ApartOnBoundaries
+    Config.ApartOnBoundary IntConfig.ApartOnBoundary
+  constructor
+  · intro h i hi hco hL hR
+    have hp := h i hi ((embed_coLocated c hK hn i hi).mpr hco) hL hR
+    rw [embed_pos, embed_commonEnd hK hn, div_eq_div_iff_pos hS] at hp
+    exact_mod_cast hp
+  · intro h i hi hco hL hR
+    have hp := h i hi ((embed_coLocated c hK hn i hi).mp hco) hL hR
+    rw [embed_pos, embed_commonEnd hK hn, div_eq_div_iff_pos hS]
+    exact_mod_cast hp
 
 theorem embed_atLeftBorder (hK : 0 < K) (hn : 0 < n) (i : Fin n) :
     (embed K c).AtLeftBorder i ↔ c.AtLeftBorder i = true := by

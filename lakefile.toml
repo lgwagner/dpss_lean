@@ -16,3 +16,11 @@ rev = "v4.33.1"
 
 [[lean_lib]]
 name = "Dpss"
+
+[[lean_exe]]
+name = "emit_traces"
+root = "EmitTraces"
+
+[[lean_exe]]
+name = "emit_sweep"
+root = "EmitSweep"

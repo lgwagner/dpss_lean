@@ -44,7 +44,7 @@ FIRST_BLOCK = "--- cfgS  (n=3, K=1) ---"
 def lean_side() -> list[str]:
     env = dict(os.environ)
     env["PATH"] = os.path.expanduser("~/.elan/bin") + os.pathsep + env.get("PATH", "")
-    r = subprocess.run(["lake", "env", "lean", "--run", str(EMITTER)],
+    r = subprocess.run(["lake", "exe", "emit_traces"],
                        cwd=REPO, capture_output=True, text=True, env=env)
     if r.returncode != 0:
         print(r.stdout + r.stderr, file=sys.stderr)
