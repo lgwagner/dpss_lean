@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `d7a7147e3d23`  
+**Commit at time of writing:** `5ec2469cf38d`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**431 theorems**, all `sorry`-free, across 24 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 207 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**443 theorems**, all `sorry`-free, across 25 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 207 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -882,6 +882,38 @@ since `pairPhase_run` proves it is preserved. 3.2 and 3.3 are unconditional;
 3.4 is conditional on an invariant rather than on an obstruction, which is a
 strictly better position than before.
 
+### 3.25 `Dpss/Meeting.lean` — **B3: Lemma 3.5**
+
+> `exists_coLocated_within_one` — every adjacent pair becomes co-located within
+> **one unit of time**.
+
+The uniform timing result that makes the bound `n`-independent. Without it the
+argument degrades to linear in `n`, which is what Kingston et al.'s original
+proof gave.
+
+**Why it goes through cleanly.** A fact that fell out of Lemma 3.2's work: a
+drone heading right can only reverse by becoming co-located with its
+**right-hand** neighbour, and one heading left only with its **left-hand** one.
+So while an approaching pair stays apart, *neither drone can turn* — their gap
+closes at a steady rate 2 and non-Zeno gets the clock to zero.
+
+**The phase accounting.** With `x ≤ y` the starting positions, `w` where the
+left drone first heads right and `z` where the right one first heads left: the
+gap grows until the **first** of the two turns and is constant until the
+**second**, after which the pair approaches. The elapsed times add and the
+bound collapses to
+
+    (z − w) + (x − y)/2  ≤  1
+
+using only that positions lie in `[0,1]` and `x ≤ y`. **Which drone turns first
+does not matter** — the two orderings give the same total.
+
+Supporting: `gap_sub_eq_of_dirsConst` (one equation for every phase — the gap
+moves at the *difference* of the two velocities, where the balance moves at
+their *sum*), and `exists_firstRight`/`exists_firstLeft`, which give the first
+turn **and exactly when it happens**. The exactness is essential: the bound
+comes out at exactly 1, so a chain of inequalities would not have closed.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -891,9 +923,8 @@ This is the honest gap list, ordered by importance.
 1. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for specific
    `n = 2` and `n = 3` configurations. **Lemmas 3.1, 3.2, 3.3 and 3.6 are done
    and unconditional**; 3.4 is conditional on the phase invariant, which is
-   proved preserved. **3.5 and 3.7 are untouched.** Lemma 3.5 ("every adjacent
-   pair has met by time 1") is the uniform timing result that makes the bound
-   `n`-independent, and it is the remaining **L**.
+   proved preserved. **3.5 is done.** **3.7 is untouched**, and is the last lemma
+   before the assembly.
 
 2. ~~**The symmetric half is not started.**~~ **Closed** — §3.23. The
    reflection principle is proved, so right synchronization transfers from left
@@ -1286,6 +1317,18 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.haveMetBy_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_of_start' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_of_meet_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_right_of_no_turnsLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.dir_left_of_no_turnsRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_turnsRightAt_of_never_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_of_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_coLocated_of_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_firstRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_firstLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_sub_eq_of_dirsConst' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_of_separating' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_of_parallel' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_coLocated_within_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.haveMetBy_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.mirrorIdx_val' depends on axioms: [propext, Quot.sound]
 'DPSS.mirrorIdx_mirrorIdx' depends on axioms: [propext, Quot.sound]
 'DPSS.mirrorIdx_le_mirrorIdx' depends on axioms: [propext, Quot.sound]
@@ -1460,7 +1503,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**431/431 clean — `sorryAx` appears zero times.**
+**443/443 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1510,6 +1553,10 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+5ec2469  2026-09-12  feat: how a gap evolves under fixed headings (B3, part 3)
+148a893  2026-09-12  feat: the first turn, timed exactly (B3, part 2)
+a80cdee  2026-09-12  feat: an approaching pair meets, within half its gap (B3, part 1)
+87463f2  2026-09-12  feat: B1 complete -- Lemma 3.2, unconditional
 d7a7147  2026-09-12  docs: refresh STATUS.md generated blocks
 56882f2  2026-09-12  docs: PLAN.md records what each completed item built and taught
 b91c5a2  2026-09-12  docs: PLAN.md is now the roadmap of work yet to be done
@@ -1655,7 +1702,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | **B** | **Theorem 2.1** | | *the headline* |
 | **B1** | ~~Lemma 3.2~~ | ✅ | **§3.24 — done.** `leftSync_of_separation`, unconditional |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
-| B3 | Lemma 3.5 — every pair has met by time 1 | **L** | §3.22 supplies the turning lemmas; the meeting argument is not done |
+| **B3** | ~~Lemma 3.5~~ | ✅ | **§3.25 — done.** `exists_coLocated_within_one` |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` (left half) | S | |

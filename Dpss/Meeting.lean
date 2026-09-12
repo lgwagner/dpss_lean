@@ -319,9 +319,125 @@ theorem gap_of_parallel {c : Config n} (hn : 0 < n) (i : Fin n)
   simp at hk
   linarith
 
+/-! ## Lemma 3.5
+
+Every adjacent pair meets within one unit of time.
+
+The accounting, in the paper's notation: `x ≤ y` are the two starting
+positions, `w` is where the left drone first heads right, `z` where the right
+drone first heads left. The pair is apart for as long as one of them has yet to
+turn, so the gap grows until the **first** of the two turns and is constant
+until the **second**; after that they approach and part 1 applies. The two
+elapsed times add, and the bound collapses to
+
+    (z − w) + (x − y)/2  ≤  1
+
+using only that positions lie in `[0, 1]` and `x ≤ y`. Which drone turns first
+does not matter: the two orderings give the same total. -/
+
+/-- **Lemma 3.5.** Every adjacent pair becomes co-located within one unit of
+time. -/
+theorem exists_coLocated_within_one {c : Config n} (hn : 0 < n)
+    (hi : c.Invariant) (i : Fin n) (h : i.val + 1 < n) (a : ℕ) :
+    ∃ m, a ≤ m ∧ (c.run hn m).CoLocated i h ∧
+      (c.run hn m).time ≤ (c.run hn a).time + 1 := by
+  classical
+  obtain ⟨a1, ha1, hd1, hb1, ht1⟩ := exists_firstRight hn hi i a
+  obtain ⟨a2, ha2, hd2, hb2, ht2⟩ := exists_firstLeft hn hi (nextIdx i h) a
+  set A := max a1 a2 with hA
+  set B := min a1 a2 with hB
+  -- the perimeter bounds that make the arithmetic work
+  have hw0 : 0 ≤ (c.run hn a1).pos i := (onPerimeter_run hn hi a1 i).1
+  have hz1 : (c.run hn a2).pos (nextIdx i h) ≤ 1 :=
+    (onPerimeter_run hn hi a2 (nextIdx i h)).2
+  have hx0 : 0 ≤ (c.run hn a).pos i := (onPerimeter_run hn hi a i).1
+  have hy1 : (c.run hn a).pos (nextIdx i h) ≤ 1 :=
+    (onPerimeter_run hn hi a (nextIdx i h)).2
+  have hgap0 : 0 ≤ (c.run hn a).gap i h := (invariant_run hn hi a).adjOrdered i h
+  have hgapdef : (c.run hn a).gap i h
+      = (c.run hn a).pos (nextIdx i h) - (c.run hn a).pos i := rfl
+  -- the time at `A` is bounded either way
+  have htA : (c.run hn A).time ≤ (c.run hn a).time + 1 := by
+    rcases le_total a1 a2 with hle | hle
+    · have : A = a2 := by simp [hA, max_eq_right hle]
+      rw [this]; linarith
+    · have : A = a1 := by simp [hA, max_eq_left hle]
+      rw [this]; linarith
+  by_cases hmeet : ∃ p, a ≤ p ∧ p ≤ A ∧ (c.run hn p).CoLocated i h
+  · obtain ⟨p, hp1, hp2, hp3⟩ := hmeet
+    exact ⟨p, hp1, hp3, le_trans (time_mono_run' hn hi hp2) htA⟩
+  · -- no meeting yet: the pair is approaching at `A`, with a computable gap
+    simp only [not_exists, not_and] at hmeet
+    have hnc : ∀ p, a < p → p ≤ A → ¬ (c.run hn p).CoLocated i h :=
+      fun p hp1 hp2 => hmeet p (by omega) hp2
+    -- headings at `A`
+    have hdA1 : (c.run hn A).dir i = Dir.right := by
+      refine dir_right_of_no_turnsLeft hn (b := A) (by omega)
+        (not_turnsLeftAt_of_never_coLocated hn hi
+          (fun p hp1 hp2 => hnc p (by omega) hp2)) hd1 A (by omega) le_rfl
+    have hdA2 : (c.run hn A).dir (nextIdx i h) = Dir.left := by
+      refine dir_left_of_no_turnsRight hn (b := A) (by omega)
+        (not_turnsRightAt_of_never_coLocated hn hi
+          (fun p hp1 hp2 => hnc p (by omega) hp2)) hd2 A (by omega) le_rfl
+    -- gap at `B`: the pair headed apart until the first turn
+    have hgapB : (c.run hn B).gap i h
+        = (c.run hn a).gap i h
+          + 2 * ((c.run hn B).time - (c.run hn a).time) := by
+      have := gap_of_separating hn i h a (B - a)
+        (fun p hp1 hp2 => hb1 p hp1 (by omega))
+        (fun p hp1 hp2 => hb2 p hp1 (by omega))
+      rwa [show a + (B - a) = B from by omega] at this
+    -- gap at `A`: constant from `B` to `A`, both drones heading the same way
+    have hgapA : (c.run hn A).gap i h = (c.run hn B).gap i h := by
+      rcases le_total a1 a2 with hle | hle
+      · have hBa : B = a1 := by simp [hB, min_eq_left hle]
+        have hAa : A = a2 := by simp [hA, max_eq_right hle]
+        have := gap_of_parallel hn i h B (A - B) Dir.right
+          (fun p hp1 hp2 => by
+            refine dir_right_of_no_turnsLeft hn (b := A) (by omega)
+              (not_turnsLeftAt_of_never_coLocated hn hi
+                (fun q hq1 hq2 => hnc q (by omega) hq2)) (hBa ▸ hd1) p
+              (by omega) (by omega))
+          (fun p hp1 hp2 => hb2 p (by omega) (by omega))
+        rwa [show B + (A - B) = A from by omega] at this
+      · have hBa : B = a2 := by simp [hB, min_eq_right hle]
+        have hAa : A = a1 := by simp [hA, max_eq_left hle]
+        have := gap_of_parallel hn i h B (A - B) Dir.left
+          (fun p hp1 hp2 => hb1 p (by omega) (by omega))
+          (fun p hp1 hp2 => by
+            refine dir_left_of_no_turnsRight hn (b := A) (by omega)
+              (not_turnsRightAt_of_never_coLocated hn hi
+                (fun q hq1 hq2 => hnc q (by omega) hq2)) (hBa ▸ hd2) p
+              (by omega) (by omega))
+        rwa [show B + (A - B) = A from by omega] at this
+    -- now they approach, and meet within half the gap
+    obtain ⟨m, hm1, hm2, hm3⟩ :=
+      exists_coLocated_of_approaching hn hi (a := A) hdA1 hdA2
+    refine ⟨m, by omega, hm2, ?_⟩
+    -- the two elapsed times add, whichever drone turned first
+    have hsum : (c.run hn A).time + (c.run hn B).time
+        = (c.run hn a1).time + (c.run hn a2).time := by
+      rcases le_total a1 a2 with hle | hle
+      · rw [show A = a2 from by simp [hA, max_eq_right hle],
+          show B = a1 from by simp [hB, min_eq_left hle]]
+        ring
+      · rw [show A = a1 from by simp [hA, max_eq_left hle],
+          show B = a2 from by simp [hB, min_eq_right hle]]
+    rw [hgapA, hgapB] at hm3
+    rw [hgapdef] at hm3
+    linarith
+
+/-- **Lemma 3.5, in the `HaveMetBy` vocabulary.** -/
+theorem haveMetBy_one {c : Config n} (hn : 0 < n) (hi : c.Invariant)
+    (i : Fin n) (h : i.val + 1 < n) :
+    HaveMetBy c hn i h (c.time + 1) := by
+  obtain ⟨m, -, hco, ht⟩ := exists_coLocated_within_one hn hi i h 0
+  exact ⟨m, by simpa using ht, hco⟩
+
 end Config
 
 end DPSS
+
 
 
 

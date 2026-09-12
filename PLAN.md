@@ -32,44 +32,10 @@ and proved at `n = 1` and for specific `n = 2`, `n = 3` configurations.
 
 ## Critical path
 
-### 1 — B3. Lemma 3.5: every pair has met by time 1  ⟨**L**⟩
+### 1 — B5. Lemma 3.7: the `+1/n` inductive step  ⟨M⟩
 
-**Target.** `HaveMetBy c hn i h (c.time + 1)` for every adjacent pair.
-
-**Now the only remaining L.** This is the result that makes
-the bound `n`-independent; without it the argument degrades to linear in `n`,
-which is what Kingston et al.'s original proof gave.
-
-**Approach (the paper's).** Let `w` be where drone `j` sits when it first heads
-right, `z` where `j+1` sits when it first heads left. Total distance covered
-before they meet is `2(z − w) − (y − x)`, so they meet by `z − w ≤ 1`.
-
-**Ingredients.** `exists_dir_right_of_dir_left` and its mirror (every drone
-eventually turns — this is where non-Zeno pays for itself);
-`time_bound_of_dir_left`/`_right` (the quantitative `w` and `z` bounds);
-`pos_sub_eq_of_dirConst`; `onPerimeter_run`.
-
-**Steps.**
-1. Define the first-turn indices via `Nat.find`, as `exists_first_turn_after`
-   already does for a different purpose.
-2. Show the pair is approaching once both have turned.
-3. Bound the meeting time; conclude `HaveMetBy`.
-
-**Done when.** The statement holds for all `i`, `h`, with no hypothesis beyond
-`Invariant`.
-
-**Hazard.** Watch the index-versus-time friction (see item 3 below). The
-conclusion is a bound on *time*, so state it that way and let indices follow.
-
-**On completion, record:** whether the paper's distance computation survived
-formalization intact, and whether `HaveMetBy` needed to become locally
-checkable (D2).
-
----
-
-### 2 — B5. Lemma 3.7: the `+1/n` inductive step  ⟨M⟩
-
-**Depends on:** B3 (for `have met`). B1 is done.
+**Depends on:** nothing outstanding. B1 and B3 are done; this is the last
+lemma before the assembly.
 
 **Target.** Drones `1..j` left synchronized and the pair `(j, j+1)` having met
 ⟹ `j+1` left synchronized by `t + 1/n`.
@@ -81,7 +47,7 @@ checkable (D2).
 - `j` heading left and apart ⟹ Lemma 3.6 reaches back to the last co-location,
   then Lemma 3.2.
 
-**Hazard — resolve before starting.** `LeftSync` is indexed by **step**, but
+**This is the next item.** Hazard — resolve before starting: `LeftSync` is indexed by **step**, but
 `+1/n` bounds **time**. A drone can cross its right endpoint mid-step, so the
 natural index arrives too late. Add a time-indexed
 `LeftSyncFrom (T : ℝ) := ∀ j, T ≤ (run j).time → leftEnd i ≤ (run j).pos i`
@@ -93,7 +59,7 @@ the primary one from the start.
 
 ---
 
-### 3 — B6. Assemble Theorem 2.1  ⟨S⟩
+### 2 — B6. Assemble Theorem 2.1  ⟨S⟩
 
 **Depends on:** B5, and B7 (done).
 
@@ -268,6 +234,34 @@ principle `rightSync_iff_leftSync_mirror`.
   symmetric; a strict inequality is not.
 
 ---
+
+### B3 — Lemma 3.5  ✅
+
+**Built.** `exists_coLocated_within_one` — every adjacent pair becomes
+co-located within one unit of time — plus `exists_coLocated_of_approaching`,
+`gap_sub_eq_of_dirsConst`, and `exists_firstRight`/`exists_firstLeft`.
+
+**Insights.**
+
+- **The paper's distance computation survived intact.** The bound
+  `(z − w) + (x − y)/2 ≤ 1` formalizes exactly as written. What it needed was
+  the *exact* elapsed time to each drone's first turn, not a bound on it — the
+  result comes out at exactly 1, so a chain of inequalities would not close.
+- **Which drone turns first does not matter.** The two orderings give the same
+  total, so the proof needs no case split on that — only on which index is
+  larger, to name the phases. That halved the work.
+- **Lemma 3.2's by-product carried it.** *A drone heading right can only
+  reverse by becoming co-located with its right-hand neighbour* — proved months
+  of commits earlier for a different purpose — is what makes an approaching
+  pair's gap close at a steady rate: neither drone can turn while they are
+  apart. That single lemma has now paid for itself four times.
+- **`HaveMetBy` did **not** need to become locally checkable.** The
+  history-shaped definition was adequate here; D2 stays optional. Whether B5
+  needs it is still open.
+- **Gap and balance are the difference and the sum.** The gap moves at the
+  difference of the two velocities, the balance at their sum. That is why a
+  pair heading apart has a growing gap and a constant balance — B1's key
+  observation, seen from the other side.
 
 ### B1 — Lemma 3.2  ✅
 
