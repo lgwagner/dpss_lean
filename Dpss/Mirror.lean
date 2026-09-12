@@ -140,6 +140,176 @@ theorem mirror_pos_le_rightEnd_iff {c : Config n} (i : Fin n) :
   rw [leftEnd_mirrorIdx i]
   constructor <;> intro hx <;> linarith
 
+/-! ## Reflected indices
+
+Reflection turns "the drone to my right" into "the drone to my left". These
+identities carry that, and they are the fiddly part of the whole construction.
+-/
+
+theorem mirrorIdx_pos {i : Fin n} (h : i.val + 1 < n) : 0 < (mirrorIdx i).val := by
+  simp only [mirrorIdx_val]; omega
+
+theorem mirrorIdx_lt {i : Fin n} (h : 0 < i.val) : (mirrorIdx i).val + 1 < n := by
+  have := i.isLt; simp only [mirrorIdx_val]; omega
+
+/-- The reflection of a pair, indexed from its other end. -/
+theorem mirror_next_lt (i : Fin n) (h : i.val + 1 < n) :
+    (mirrorIdx (nextIdx i h)).val + 1 < n := by
+  have := i.isLt
+  simp only [mirrorIdx_val, nextIdx_val]
+  omega
+
+/-- **The identity everything else rests on.** Reflecting a pair and then
+taking its right-hand member gives the reflection of its left-hand member. -/
+theorem nextIdx_mirrorIdx_next (i : Fin n) (h : i.val + 1 < n) :
+    nextIdx (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) = mirrorIdx i := by
+  apply Fin.ext
+  have := i.isLt
+  simp only [nextIdx_val, mirrorIdx_val]
+  omega
+
+/-! ## Reflected local quantities -/
+
+/-- A gap in the mirrored world is the corresponding gap here. -/
+theorem gap_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.gap i h = c.gap (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  unfold gap
+  simp only [mirror_pos]
+  rw [nextIdx_mirrorIdx_next i h]
+  ring
+
+/-- A separation rate in the mirrored world is the corresponding one here.
+Both headings flip and the pair order reverses; the two effects cancel. -/
+theorem sepRate_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.sepRate i h
+      = c.sepRate (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  unfold sepRate
+  simp only [mirror_dir, Dir.sign_flip]
+  rw [nextIdx_mirrorIdx_next i h]
+  ring
+
+/-- Co-location is preserved. -/
+theorem coLocated_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.CoLocated i h
+      ↔ c.CoLocated (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  unfold CoLocated
+  rw [gap_mirror]
+
+/-- Approaching is preserved: both drones reverse, and so does their order. -/
+theorem approaching_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.Approaching i h
+      ↔ c.Approaching (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  unfold Approaching
+  simp only [mirror_dir]
+  rw [nextIdx_mirrorIdx_next i h]
+  constructor
+  · rintro ⟨h1, h2⟩
+    refine ⟨?_, ?_⟩
+    · rcases Dir.eq_left_or_right (c.dir (mirrorIdx (nextIdx i h))) with hx | hx
+      · rw [hx] at h2; exact absurd h2 (fun hc => Dir.noConfusion hc)
+      · exact hx
+    · rcases Dir.eq_left_or_right (c.dir (mirrorIdx i)) with hx | hx
+      · exact hx
+      · rw [hx] at h1; exact absurd h1 (fun hc => Dir.noConfusion hc)
+  · rintro ⟨h1, h2⟩
+    rw [h1, h2]
+    exact ⟨rfl, rfl⟩
+
+/-- Escorting is preserved. -/
+theorem escorting_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.Escorting i h
+      ↔ c.Escorting (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  unfold Escorting
+  rw [coLocated_mirror]
+  simp only [mirror_dir]
+  rw [nextIdx_mirrorIdx_next i h]
+  constructor
+  · rintro ⟨hc, hd⟩
+    refine ⟨hc, ?_⟩
+    have := congrArg Dir.flip hd
+    simpa using this.symm
+  · rintro ⟨hc, hd⟩
+    refine ⟨hc, ?_⟩
+    rw [hd]
+
+/-! ## Reflected borders and deadlines
+
+The two perimeter ends swap, and so do the two border events. -/
+
+theorem flip_eq_left_iff (d : Dir) : d.flip = Dir.left ↔ d = Dir.right := by
+  cases d <;> simp [Dir.flip]
+
+theorem flip_eq_right_iff (d : Dir) : d.flip = Dir.right ↔ d = Dir.left := by
+  cases d <;> simp [Dir.flip]
+
+/-- Reaching the left border in the mirrored world is reaching the right
+border here. -/
+theorem atLeftBorder_mirror (c : Config n) (i : Fin n) :
+    c.mirror.AtLeftBorder i ↔ c.AtRightBorder (mirrorIdx i) := by
+  unfold AtLeftBorder AtRightBorder
+  simp only [mirror_pos, mirror_dir, flip_eq_left_iff]
+  constructor
+  · rintro ⟨hp, hd⟩; exact ⟨by linarith, hd⟩
+  · rintro ⟨hp, hd⟩; exact ⟨by rw [hp]; ring, hd⟩
+
+theorem atRightBorder_mirror (c : Config n) (i : Fin n) :
+    c.mirror.AtRightBorder i ↔ c.AtLeftBorder (mirrorIdx i) := by
+  unfold AtLeftBorder AtRightBorder
+  simp only [mirror_pos, mirror_dir, flip_eq_right_iff]
+  constructor
+  · rintro ⟨hp, hd⟩; exact ⟨by linarith, hd⟩
+  · rintro ⟨hp, hd⟩; exact ⟨by rw [hp]; ring, hd⟩
+
+/-- **A drone's time to its border is unchanged by reflection.** Which border
+it is heading for swaps, and so does its distance to it — the two cancel. -/
+theorem borderTime_mirror (c : Config n) (i : Fin n) :
+    c.mirror.borderTime i = c.borderTime (mirrorIdx i) := by
+  unfold borderTime
+  rcases Dir.eq_left_or_right (c.dir (mirrorIdx i)) with hx | hx
+  · have h1 : c.mirror.dir i = Dir.right := by simp only [mirror_dir, hx]; rfl
+    rw [if_neg (by rw [h1]; exact fun hc => Dir.noConfusion hc), if_pos hx]
+    simp only [mirror_pos]; ring
+  · have h1 : c.mirror.dir i = Dir.left := by simp only [mirror_dir, hx]; rfl
+    rw [if_pos h1, if_neg (by rw [hx]; exact fun hc => Dir.noConfusion hc)]
+    simp only [mirror_pos]
+
+/-- Meeting times correspond. -/
+theorem meetTime_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    c.mirror.meetTime i h
+      = c.meetTime (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) := by
+  unfold meetTime
+  rw [gap_mirror]
+
+/-- **Separation deadlines correspond**, for an escorting pair — which is the
+only case the scheduler consults them in. The reflected pair escorts to the
+reflection of the boundary the original escorts to. -/
+theorem separationTime_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n)
+    (he : c.mirror.Escorting i h) :
+    c.mirror.separationTime i
+      = c.separationTime (mirrorIdx (nextIdx i h)) := by
+  have hco : c.CoLocated (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) :=
+    (coLocated_mirror c i h).mp he.1
+  have hsame : c.pos (mirrorIdx i) = c.pos (mirrorIdx (nextIdx i h)) := by
+    unfold CoLocated gap at hco
+    rw [nextIdx_mirrorIdx_next i h] at hco
+    linarith
+  have hdir : c.mirror.dir i = c.mirror.dir (nextIdx i h) := he.2
+  have hd : c.dir (mirrorIdx (nextIdx i h)) = c.dir (mirrorIdx i) := by
+    simp only [mirror_dir] at hdir
+    have hf := congrArg Dir.flip hdir
+    have h2 : c.dir (mirrorIdx i) = c.dir (mirrorIdx (nextIdx i h)) := by simpa using hf
+    exact h2.symm
+  unfold separationTime
+  simp only [mirror_pos, mirror_dir, Dir.sign_flip]
+  rw [show commonEnd i = rightEnd i from rfl,
+    show commonEnd (mirrorIdx (nextIdx i h)) = rightEnd (mirrorIdx (nextIdx i h)) from rfl]
+  have hkey : rightEnd (mirrorIdx (nextIdx i h)) = 1 - leftEnd (nextIdx i h) :=
+    rightEnd_mirrorIdx _
+  have hkey2 : leftEnd (nextIdx i h) = rightEnd i :=
+    (rightEnd_eq_leftEnd_succ i h).symm
+  rw [hkey, hkey2, hsame, hd]
+  ring
+
 end Config
 
 end DPSS
