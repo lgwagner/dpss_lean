@@ -33,4 +33,9 @@
 pub mod dir;
 pub mod view;
 pub mod spec;
+pub mod inv;
+pub mod geometry;
+pub mod schedule;
 pub mod facts;
+pub mod step_lemmas;
+pub mod coherence;
