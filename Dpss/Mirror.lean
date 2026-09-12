@@ -310,6 +310,97 @@ theorem separationTime_mirror (c : Config n) (i : Fin n) (h : i.val + 1 < n)
   rw [hkey, hkey2, hsame, hd]
   ring
 
+/-! ## The global deadline is unchanged
+
+Per-drone deadlines do **not** correspond: `droneNextTime i` consults the pair
+to `i`'s right, while its reflection consults the pair to the reflected drone's
+*left*. But the two candidate *sets* agree — every border and every pair event
+appears on both sides, just indexed from the other end — so the minima agree.
+
+The argument is one-sided: proving `mirror` never has a *later* deadline, then
+applying that to `mirror c` and using the involution gives equality. -/
+
+/-- The reflected pair whose events are those of the pair `(j, j+1)`. -/
+theorem gap_mirror_pair (c : Config n) (j : Fin n) (hj : j.val + 1 < n) :
+    c.mirror.gap (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj) = c.gap j hj := by
+  rw [gap_mirror]
+  congr 1
+  rw [nextIdx_mirrorIdx_next, mirrorIdx_mirrorIdx]
+
+/-- Re-indexing a pair predicate along an index equality. Needed because the
+index appears inside a proof argument, which blocks `rw`. -/
+theorem approaching_congr (c : Config n) {i i' : Fin n} (h : i.val + 1 < n)
+    (h' : i'.val + 1 < n) (hii : i = i') :
+    c.Approaching i h ↔ c.Approaching i' h' := by
+  subst hii; exact Iff.rfl
+
+theorem escorting_congr (c : Config n) {i i' : Fin n} (h : i.val + 1 < n)
+    (h' : i'.val + 1 < n) (hii : i = i') :
+    c.Escorting i h ↔ c.Escorting i' h' := by
+  subst hii; exact Iff.rfl
+
+theorem mirror_pair_idx (j : Fin n) (hj : j.val + 1 < n) :
+    mirrorIdx (nextIdx (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj)) = j := by
+  rw [nextIdx_mirrorIdx_next, mirrorIdx_mirrorIdx]
+
+theorem approaching_mirror_pair (c : Config n) (j : Fin n) (hj : j.val + 1 < n) :
+    c.mirror.Approaching (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj)
+      ↔ c.Approaching j hj := by
+  rw [approaching_mirror]
+  exact approaching_congr c _ hj (mirror_pair_idx j hj)
+
+theorem escorting_mirror_pair (c : Config n) (j : Fin n) (hj : j.val + 1 < n) :
+    c.mirror.Escorting (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj)
+      ↔ c.Escorting j hj := by
+  rw [escorting_mirror]
+  exact escorting_congr c _ hj (mirror_pair_idx j hj)
+
+theorem meetTime_mirror_pair (c : Config n) (j : Fin n) (hj : j.val + 1 < n) :
+    c.mirror.meetTime (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj)
+      = c.meetTime j hj := by
+  unfold meetTime
+  rw [gap_mirror_pair]
+
+theorem separationTime_mirror_pair (c : Config n) (j : Fin n)
+    (hj : j.val + 1 < n) (he : c.Escorting j hj) :
+    c.mirror.separationTime (mirrorIdx (nextIdx j hj)) = c.separationTime j := by
+  have he' : c.mirror.Escorting (mirrorIdx (nextIdx j hj)) (mirror_next_lt j hj) :=
+    (escorting_mirror_pair c j hj).mpr he
+  rw [separationTime_mirror c _ (mirror_next_lt j hj) he']
+  congr 1
+  rw [nextIdx_mirrorIdx_next, mirrorIdx_mirrorIdx]
+
+/-- **Reflection never makes the next event later.** -/
+theorem timeToNextEvent_mirror_le (c : Config n) (hn : 0 < n) :
+    c.mirror.timeToNextEvent hn ≤ c.timeToNextEvent hn := by
+  refine Finset.le_inf' _ _ (fun j _ => ?_)
+  -- every candidate of `droneNextTime c j` is matched on the mirror side
+  have hborder : c.mirror.timeToNextEvent hn ≤ c.borderTime j := by
+    refine le_trans (timeToNextEvent_le hn (mirrorIdx j)) ?_
+    refine le_trans (droneNextTime_le_borderTime c.mirror (mirrorIdx j)) ?_
+    rw [borderTime_mirror, mirrorIdx_mirrorIdx]
+  unfold droneNextTime
+  split_ifs with hj hA hE
+  · refine le_min hborder ?_
+    refine le_trans (timeToNextEvent_le hn (mirrorIdx (nextIdx j hj))) ?_
+    refine le_trans (droneNextTime_le_meetTime
+      ((approaching_mirror_pair c j hj).mpr hA)) ?_
+    rw [meetTime_mirror_pair]
+  · refine le_min hborder ?_
+    refine le_trans (timeToNextEvent_le hn (mirrorIdx (nextIdx j hj))) ?_
+    refine le_trans (droneNextTime_le_separationTime
+      ((escorting_mirror_pair c j hj).mpr hE)) ?_
+    rw [separationTime_mirror_pair c j hj hE]
+  · exact hborder
+  · exact hborder
+
+/-- **The global deadline is invariant under reflection.** -/
+theorem timeToNextEvent_mirror (c : Config n) (hn : 0 < n) :
+    c.mirror.timeToNextEvent hn = c.timeToNextEvent hn := by
+  refine le_antisymm (timeToNextEvent_mirror_le c hn) ?_
+  have h := timeToNextEvent_mirror_le c.mirror hn
+  rwa [mirror_mirror] at h
+
 end Config
 
 end DPSS
