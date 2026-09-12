@@ -139,4 +139,312 @@ pub fn separation_time_ex(e: &Ensemble, i: usize) -> (r: i64)
     }
 }
 
+/// `co_located`, computed.
+pub fn co_located_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i, i + 1 < e.pos.len()
+    ensures r == co_located(view_of(*e), i as int)
+{
+    gap_ex(e, i) == 0
+}
+
+/// `approaching`, computed.
+pub fn approaching_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i, i + 1 < e.pos.len()
+    ensures r == approaching(view_of(*e), i as int)
+{
+    e.dir[i] == Dir::Right && e.dir[i + 1] == Dir::Left
+}
+
+/// `escorting`, computed.
+pub fn escorting_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i, i + 1 < e.pos.len()
+    ensures r == escorting(view_of(*e), i as int)
+{
+    co_located_ex(e, i) && e.dir[i] == e.dir[i + 1]
+}
+
+/// `at_separation`, computed.
+pub fn at_separation_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i, i + 1 < e.pos.len()
+    ensures r == at_separation(view_of(*e), i as int)
+{
+    proof {
+        lemma_view_pos(*e, i as int);
+        crate::geometry::lemma_common_le_perimeter(view_of(*e), i as int);
+    }
+    let ce: i64 = 2 * e.k * ((i as i64) + 1);
+    co_located_ex(e, i) && e.pos[i] == ce
+}
+
+/// `at_left_border`, computed.
+pub fn at_left_border_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == at_left_border(view_of(*e), i as int)
+{
+    proof { lemma_view_pos(*e, i as int); }
+    e.pos[i] == 0 && e.dir[i] == Dir::Left
+}
+
+/// `at_right_border`, computed.
+pub fn at_right_border_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == at_right_border(view_of(*e), i as int)
+{
+    proof { lemma_view_pos(*e, i as int); }
+    let perim = perimeter_ex(e);
+    e.pos[i] == perim && e.dir[i] == Dir::Right
+}
+
+/// `sep_right`, computed.
+pub fn sep_right_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == sep_right(view_of(*e), i as int)
+{
+    if i + 1 < e.pos.len() { at_separation_ex(e, i) } else { false }
+}
+
+/// `sep_left`, computed.
+pub fn sep_left_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == sep_left(view_of(*e), i as int)
+{
+    if i > 0 { at_separation_ex(e, i - 1) } else { false }
+}
+
+/// `meet_right`, computed.
+pub fn meet_right_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == meet_right(view_of(*e), i as int)
+{
+    if i + 1 < e.pos.len() { co_located_ex(e, i) && approaching_ex(e, i) } else { false }
+}
+
+/// `meet_left`, computed.
+pub fn meet_left_ex(e: &Ensemble, i: usize) -> (r: bool)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == meet_left(view_of(*e), i as int)
+{
+    if i > 0 { co_located_ex(e, i - 1) && approaching_ex(e, i - 1) } else { false }
+}
+
+/// `escort_dir`, computed.
+pub fn escort_dir_ex(e: &Ensemble, i: usize) -> (r: Dir)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == escort_dir(view_of(*e), i as int)
+{
+    proof {
+        lemma_view_pos(*e, i as int);
+        crate::geometry::lemma_common_le_perimeter(view_of(*e), i as int);
+    }
+    let ce: i64 = 2 * e.k * ((i as i64) + 1);
+    if e.pos[i] < ce { Dir::Right } else { Dir::Left }
+}
+
+/// `escort_dir_left`, computed.
+pub fn escort_dir_left_ex(e: &Ensemble, i: usize) -> (r: Dir)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == escort_dir_left(view_of(*e), i as int)
+{
+    proof {
+        lemma_view_pos(*e, i as int);
+        crate::geometry::lemma_left_end_nonneg(view_of(*e), i as int);
+        crate::geometry::lemma_common_le_perimeter(view_of(*e), i as int);
+        crate::geometry::lemma_segment_width(view_of(*e), i as int);
+    }
+    let le: i64 = 2 * e.k * (i as i64);
+    if e.pos[i] < le { Dir::Right } else { Dir::Left }
+}
+
+/// **The heading update, computed** — Algorithm A's priority order.
+pub fn new_dir_ex(e: &Ensemble, i: usize) -> (r: Dir)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures r == new_dir(view_of(*e), i as int)
+{
+    if at_left_border_ex(e, i) {
+        Dir::Right
+    } else if at_right_border_ex(e, i) {
+        Dir::Left
+    } else if sep_right_ex(e, i) {
+        Dir::Left
+    } else if sep_left_ex(e, i) {
+        Dir::Right
+    } else if meet_right_ex(e, i) {
+        escort_dir_ex(e, i)
+    } else if meet_left_ex(e, i) {
+        escort_dir_left_ex(e, i)
+    } else {
+        e.dir[i]
+    }
+}
+
+/// `drone_next_time`, computed.
+pub fn drone_next_time_ex(e: &Ensemble, i: usize) -> (r: i64)
+    requires repr_ok(*e), 0 <= i < e.pos.len()
+    ensures
+        r as int == drone_next_time(view_of(*e), i as int),
+        0 <= r <= 1_000_000_000,
+{
+    proof {
+        crate::schedule::lemma_drone_next_time_nonneg(view_of(*e), i as int);
+        crate::schedule::lemma_drone_le_border(view_of(*e), i as int);
+    }
+    let b = border_time_ex(e, i);
+    if i + 1 < e.pos.len() {
+        if approaching_ex(e, i) {
+            let m = meet_time_ex(e, i);
+            if b < m { b } else { m }
+        } else if escorting_ex(e, i) {
+            let sp = separation_time_ex(e, i);
+            if b < sp { b } else { sp }
+        } else {
+            b
+        }
+    } else {
+        b
+    }
+}
+
+/// **The step length, computed** — the earliest deadline across the team.
+///
+/// `min_deadline` is written as a recursion in the specification; this is the loop
+/// that computes it, and the invariant is the correspondence between them.
+pub fn time_to_next_event_ex(e: &Ensemble) -> (r: i64)
+    requires repr_ok(*e)
+    ensures
+        r as int == time_to_next_event(view_of(*e)),
+        0 <= r <= 1_000_000_000,
+{
+    let n = e.pos.len();
+    let mut best = drone_next_time_ex(e, 0);
+    let mut m: usize = 1;
+    while m < n
+        invariant
+            1 <= m <= n,
+            n == e.pos.len(),
+            repr_ok(*e),
+            best as int == min_deadline(view_of(*e), m as int),
+            0 <= best <= 1_000_000_000,
+        decreases n - m
+    {
+        let d = drone_next_time_ex(e, m);
+        if d < best {
+            best = d;
+        }
+        m = m + 1;
+    }
+    best
+}
+
+/// **One step of the system, executed — and proved to be *the* step.**
+///
+/// This is the obligation the whole crate exists to discharge: the executable
+/// ensemble ends up in exactly the configuration the specification says it should,
+/// with both standing conditions intact and no arithmetic overflow anywhere.
+///
+/// The clock is advanced first, so that once the drones have flown the ensemble's
+/// view is exactly `flown(c0)` — which is the configuration the headings must be
+/// computed from. Getting that order wrong is the off-by-one `Dpss/NonZeno.lean`
+/// warns about.
+pub fn step_ex(e: &mut Ensemble)
+    requires
+        repr_ok(*old(e)),
+        apart_on_boundaries(view_of(*old(e))),
+    ensures
+        repr_ok(*final(e)),
+        apart_on_boundaries(view_of(*final(e))),
+        view_of(*final(e)) == spec_step(view_of(*old(e))),
+{
+    let ghost c0 = view_of(*old(e));
+    proof {
+        crate::step_lemmas::lemma_inv_flown(c0);
+        crate::step_lemmas::lemma_inv_step(c0);
+        crate::reachable::lemma_apart_on_boundaries_step(c0);
+    }
+    let dt = time_to_next_event_ex(e);
+    let n = e.pos.len();
+    e.time = Ghost(c0.time + dt as int);
+
+    // fly to the next event
+    let mut j: usize = 0;
+    while j < n
+        invariant
+            0 <= j <= n,
+            n == e.pos.len(),
+            e.pos.len() == e.dir.len(),
+            e.dir@ == c0.dir,
+            e.k as int == c0.k,
+            e.time@ == c0.time + dt as int,
+            dt as int == time_to_next_event(c0),
+            inv(c0),
+            fits(c0),
+            inv(flown(c0)),
+            forall|t: int| 0 <= t < j ==> #[trigger] e.pos@[t] as int == flown(c0).pos[t],
+            forall|t: int| j <= t < n ==> #[trigger] e.pos@[t] as int == c0.pos[t],
+        decreases n - j
+    {
+        proof {
+            assert(0 <= flown(c0).pos[j as int] <= perimeter(flown(c0)));
+            assert(flown(c0).pos[j as int]
+                == c0.pos[j as int] + isign(c0.dir[j as int]) * dt as int);
+        }
+        let s: i64 = if e.dir[j] == Dir::Left { -1 } else { 1 };
+        let v = e.pos[j] + s * dt;
+        e.pos.set(j, v);
+        j = j + 1;
+    }
+    // struct equality is field-by-field; only the sequences need extensionality
+    assert(view_of(*e).pos =~= flown(c0).pos);
+    assert(view_of(*e).dir =~= flown(c0).dir);
+    assert(view_of(*e) == flown(c0));
+
+    // then let every due event fire
+    let mut nd: Vec<Dir> = Vec::new();
+    let mut m: usize = 0;
+    while m < n
+        invariant
+            0 <= m <= n,
+            n == e.pos.len(),
+            view_of(*e) == flown(c0),
+            repr_ok(*e),
+            nd.len() == m,
+            forall|t: int| 0 <= t < m ==> #[trigger] nd@[t] == new_dir(flown(c0), t),
+        decreases n - m
+    {
+        let d = new_dir_ex(e, m);
+        nd.push(d);
+        m = m + 1;
+    }
+    e.dir = nd;
+    assert(view_of(*e).pos =~= spec_step(c0).pos);
+    assert(view_of(*e).dir =~= spec_step(c0).dir);
+    assert(view_of(*e) == spec_step(c0));
+}
+
+/// **A run, executed** — and proved to be *the* run.
+///
+/// `Dpss/IntModel.lean`, `DPSS.IntConfig.run`.
+pub fn run_ex(e: &mut Ensemble, steps: usize)
+    requires
+        repr_ok(*old(e)),
+        apart_on_boundaries(view_of(*old(e))),
+    ensures
+        repr_ok(*final(e)),
+        apart_on_boundaries(view_of(*final(e))),
+        view_of(*final(e)) == spec_run(view_of(*old(e)), steps as nat),
+{
+    let ghost c0 = view_of(*old(e));
+    let mut t: usize = 0;
+    while t < steps
+        invariant
+            0 <= t <= steps,
+            repr_ok(*e),
+            apart_on_boundaries(view_of(*e)),
+            view_of(*e) == spec_run(c0, t as nat),
+        decreases steps - t
+    {
+        step_ex(e);
+        t = t + 1;
+    }
+}
+
 } // verus!

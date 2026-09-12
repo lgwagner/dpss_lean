@@ -193,4 +193,30 @@ pub proof fn lemma_escorts_coherent_step(c: Snapshot)
     }
 }
 
+/// **Escorts are coherent in mid-step too** — after the flight, before the events.
+///
+/// The executable step passes through that configuration, so it has to satisfy the
+/// standing conditions as well. An escorting pair in the flown configuration was
+/// escorting before it, because the headings have not changed and a pair heading
+/// the same way keeps its gap; and the deadline it was given has only been
+/// consumed by `dt`.
+pub proof fn lemma_escorts_coherent_flown(c: Snapshot)
+    requires inv(c)
+    ensures escorts_coherent(flown(c))
+{
+    let dt = time_to_next_event(c);
+    lemma_step_nonneg(c);
+    assert forall|i: int|
+        0 <= i && i + 1 < c.n && #[trigger] escorting(flown(c), i)
+            implies 0 <= separation_time(flown(c), i) by
+    {
+        assert(c.dir[i] == c.dir[i + 1]);
+        lemma_gap_unchanged_of_same_dir(c, i);
+        assert(escorting(c, i));
+        lemma_step_le_drone(c, i);
+        lemma_drone_le_separation(c, i);
+        lemma_separation_time_advance(c, dt, i);
+    }
+}
+
 } // verus!

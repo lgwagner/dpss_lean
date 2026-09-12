@@ -15,8 +15,8 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 | **M1** | The integer model, in Lean | ✅ `embed_step`, `embed_run`, `intRun_converges` |
 | **M2** | The generator | ✅ 24 spec fns, fail-loud, CI-checked |
 | **M3** | Verus spec and invariants | ✅ both invariants preserved, and along a run |
-| **M4** | Executable code and the key equivalence | **next** |
-| **M5** | Differential testing | not started |
+| **M4** | Executable code and the key equivalence | ✅ `80 verified, 0 errors` |
+| **M5** | Differential testing | **next** |
 | **M6** | The controller, scoped not built | not started |
 
 **Toolchain, as pinned** (`rust/toolchain-versions.txt`, installed by
@@ -48,6 +48,10 @@ so a bump or a restart does not rediscover them:
   `Finset.inf'`), the four standing conditions (quantifiers with a dependent proof
   argument), and `Dir` itself. None is arithmetic, which is where a transcription
   error would hide.
+- In an `ensures` that also mentions `old(e)`, the final value of a `&mut`
+  parameter must be written `*final(e)` — plain `*e` is refused as ambiguous.
+- `=~=` is sequence extensionality, not struct equality. For a struct, assert the
+  sequence fields with `=~=` and then the struct with `==`.
 - The ghost configuration type cannot be called `View`: that shadows `vstd`'s
   `View` trait and `Vec@` silently stops resolving. It is `Snapshot`.
 - A `proof { ... }` block establishing a bound must come **before** the arithmetic

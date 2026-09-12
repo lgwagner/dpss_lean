@@ -144,6 +144,31 @@ pub proof fn lemma_adj_ordered_step(c: Snapshot)
     }
 }
 
+/// **The standing invariant holds in mid-step**, after the flight and before the
+/// events fire. The executable step passes through that configuration, so it has
+/// to hold there as well as at the ends.
+pub proof fn lemma_inv_flown(c: Snapshot)
+    requires inv(c)
+    ensures inv(flown(c))
+{
+    lemma_on_perimeter_step(c);
+    lemma_adj_ordered_step(c);
+    lemma_on_lattice_step(c);
+    crate::coherence::lemma_escorts_coherent_flown(c);
+    assert forall|i: int| 0 <= i < c.n implies
+            0 <= #[trigger] flown(c).pos[i] <= perimeter(flown(c)) by {
+        lemma_step_pos(c, i);
+    }
+    assert forall|i: int| 0 <= i && i + 1 < c.n implies
+            0 <= #[trigger] gap(flown(c), i) by {
+        lemma_step_gap(c, i);
+    }
+    assert forall|i: int| 0 <= i && i + 1 < c.n implies
+            #[trigger] gap(flown(c), i) % 2 == 0 by {
+        lemma_step_gap(c, i);
+    }
+}
+
 /// The step leaves the shape of the ensemble alone.
 pub proof fn lemma_wf_step(c: Snapshot)
     requires c.wf()
