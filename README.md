@@ -10,8 +10,20 @@ continuous real time, `n` drones on the unit interval.
 
 ## Status
 
-**Non-Zeno is proved** — the system cannot pack infinitely many events into a
-finite stretch of time:
+**Theorem 2.1 is proved.** For every `n`, from any legitimate starting
+configuration, all drones are confined to their own segments by time `2 − 1/n`:
+
+```lean
+theorem convergesBy (hn : 0 < n) (hi : c.Invariant)
+    (hab : c.ApartOnBoundaries) : ConvergesBy c hn
+```
+
+and in the stronger real-time form — at every *instant* from `2 − 1/n` on, not
+merely at the event times (`sync_at_of_time`). The bound is **exact**, and
+`bound_sharp` shows it is attained: no smaller constant is correct.
+
+**Non-Zeno is proved** too — the system cannot pack infinitely many events into
+a finite stretch of time:
 
 ```lean
 theorem nonZeno : NonZeno c hn        -- ∀ T : ℝ, ∃ k, T < (c.run hn k).time
@@ -22,14 +34,18 @@ hypothesis* (`step-time-always-terminates`), and which Avigad–van Doorn argue
 for but never mechanize.
 
 Also proved: the model's invariants along any run (drones stay on the
-perimeter, never overtake, escorts stay coherent), **Lemma 3.1** of the paper,
-complete traces at `n = 2` and `n = 3` checked against the paper's own numbers,
-and Theorem 2.1 at `n = 1`.
-
-**Theorem 2.1 (`2 − 1/n`) is stated but not proved in general.** Lemma 3.2 is
-most of the way; Lemmas 3.3–3.8 are untouched.
+perimeter, never overtake, escorts stay coherent), **Lemmas 3.1 through 3.7**,
+complete traces at `n = 2` and `n = 3` checked against the paper's own numbers
+— steady, converging, and one with a genuine three-way meeting — and a
+measurement of exactly how much of the model's event-priority order is a real
+choice (seven of eight competing cases: none).
 
 Everything is `sorry`-free and CI enforces it.
+
+**What is not done** is in `STATUS.md` §4, which is written to be read: the
+nondeterminism the paper allows in *which* neighbour a middle drone escorts is
+still resolved one way rather than quantified over, and sharpness is checked
+at `n = 2` rather than for every `n`.
 
 ## Where to look
 

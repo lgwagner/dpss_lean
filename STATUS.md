@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `5ec2469cf38d`  
+**Commit at time of writing:** `e969f317a652`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -42,8 +42,8 @@ Target theorem, from Avigad–van Doorn (arXiv:2008.04262) Theorem 2.1:
 | 0 | Toolchain, Mathlib project, papers read, `[verify]` items resolved | **done** |
 | 1 | Definitional layer: state, events, runs, order invariant, non-Zeno | **done** |
 | 2 | `Synchronized` defined; Theorem 2.1 stated | **done** |
-| 3 | Sanity tests at `n = 2, 3` | both traced; the phase-1 refutation is out of scope, see gap 6 |
-| 4 | Close the `2 − 1/n` proof | Lemma 3.1 done; 3.2–3.8 not started |
+| 3 | Sanity tests at `n = 2, 3` | both traced, converging and steady; the phase-1 refutation is out of scope, see gap 6 |
+| 4 | Close the `2 − 1/n` proof | **done** — `convergesBy`, §3.29. Lemmas 3.1–3.7 all proved |
 | 5 | Phase-1 upper bound (open problem) | explicitly out of scope |
 
 Stage 1 broken down:
@@ -69,13 +69,17 @@ Stage 1 broken down:
 | Converging `n = 2` trace, checked against the bound | done |
 | `n = 3` steady state; period `2/n`; simultaneous events | done |
 | **Non-Zeno** (`nonZeno`) | **done** |
+| Reading the system **between** events (real time) | done |
+| Lemmas 3.2–3.7 | done |
+| **Theorem 2.1** (`convergesBy`) | **done** |
+| The bound is **attained**, not merely proved | done at `n = 2` |
 
 ---
 
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**443 theorems**, all `sorry`-free, across 25 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 207 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**565 theorems**, all `sorry`-free, across 31 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 551 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -916,61 +920,284 @@ comes out at exactly 1, so a chain of inequalities would not have closed.
 
 ---
 
+### 3.26 `Dpss/RealTime.lean` — reading the system between events
+
+`LeftSync` and `RightSync` quantify over **step indices**. Lemma 3.7's
+conclusion is a deadline in **real time**, and its proof reads drone `j`'s
+heading and position at the instant `t`, which is in general strictly inside a
+step. The two readings are not the same, and the index one is the weaker
+exactly where the lemma needs strength: a drone heading right can sit left of
+its endpoint mid-step and be back inside its interval by the next event.
+
+So this file adds the real-time layer, with no choice and no partial function:
+
+    posIn p i s = pos_p i + sign (dir_p i) · (s − time_p)
+    InStep p s  = time_p ≤ s ≤ time_{p+1}
+
+`exists_lastBefore` (non-Zeno again) supplies a step for every instant, so
+nothing is lost by never naming *the* step of `s`.
+
+One fact carries the file. **A linear function nonnegative at both ends of an
+interval is nonnegative throughout it** (`nonneg_of_endpoints`). Position, gap
+and balance are all affine in time within a step, so every "it holds at the
+events, therefore it holds in between" argument is that lemma with different
+names substituted.
+
+A second small tool used everywhere afterwards: **if the clock does not move
+between two indices, no drone moves either** (`pos_eq_of_time_le`). Steps of
+zero length are routine — an event already due costs no time — and this is what
+lets index order and time order be traded against each other.
+
+`LeftSyncAt` / `RightSyncAt` are the real-time predicates, related to the
+index-shaped ones in both directions.
+
+---
+
+### 3.27 `Dpss/InductionStep.lean` — **B5: Lemma 3.7**
+
+> `leftSyncAt_next` — drone `i` left synchronized from time `T`, and the pair
+> `(i, i+1)` having met by then, gives drone `i+1` left synchronized from
+> `T + 1/n`.
+
+The last lemma before the assembly. Two cases, on what drone `i` is doing at
+the instant `T`:
+
+* **heading right.** Within `1/n` it is at or beyond the boundary it shares
+  with `i+1` — it started at or right of its own left endpoint and that
+  boundary is `1/n` further on — and ordering then carries `i+1` past its own
+  left endpoint. When drone `i` finally does turn, it turns *onto* its
+  neighbour (`coLocated_of_turnsLeft`), and the pivot lemma below takes over.
+* **heading left.** Take the **last index at or before `T` at which the pair
+  was co-located**, which exists precisely because they have met. Lemma 3.6
+  says `i` has been heading left ever since, so it was at least as far right
+  then as it is now, hence already left synchronized there.
+
+The paper splits the leftward case by whether the pair is together *now*. Here
+both halves are one argument, with an empty range when they are.
+
+**The pivot.** Both branches end at the same configuration — the pair
+co-located with the left drone heading left — and
+`leftSync_next_of_coLocated_left` discharges it as Lemma 3.3 (the pair is
+escorting) or Lemma 3.2 (it is separating), according to the right drone's
+heading.
+
+**The extra hypothesis.** The separating half needs to know the pair is on the
+boundary it shares, which is `ApartOnBoundary` — *false* pointwise (§3.20) and
+proved preserved by a step in §3.21. It therefore enters as a condition on the
+**starting** configuration, `ApartOnBoundaries`, and is propagated along the
+run. Two sufficient conditions are supplied: no two adjacent drones on the same
+point, or every drone heading the same way.
+
+---
+
+### 3.28 `Dpss/Convergence.lean` — **B6: Theorem 2.1**
+
+> `convergesBy (hn : 0 < n) (hi : c.Invariant) (hab : c.ApartOnBoundaries) :
+>  ConvergesBy c hn`
+
+The headline result. `Synchronization.lean` has carried the statement as a
+`Prop`-valued definition since the beginning precisely so that this day could
+come without a `sorry` in between; it is now a theorem.
+
+The assembly is the paper's own three lines with the pieces named:
+
+1. drone `0` is left synchronized always — its left endpoint is the perimeter's
+   left border, which `onPerimeter_run` says nobody crosses;
+2. every adjacent pair has met by time 1 — Lemma 3.5 (**B3**);
+3. each drone hands left synchronization to its right-hand neighbour at a cost
+   of `1/n` — Lemma 3.7 (**B5**);
+4. right synchronization is left synchronization of the reflected run —
+   `rightSyncAt_iff_leftSyncAt_mirror`, built on **B7**.
+
+**The bound is exact.** Drone `i` is left synchronized at `1 + i/n` in this
+development's 0-based indexing, and `i = n − 1` gives `1 + (n−1)/n = 2 − 1/n`.
+Nothing is lost anywhere, which had to be so — see §3.30.
+
+Also proved in the stronger real-time form, `sync_at_of_time`: every drone is
+inside its own interval at every **instant** from `2 − 1/n` on, not merely at
+the event times. That is the form the paper states.
+
+**Not vacuous.** Three concrete configurations discharge every hypothesis and
+the general theorem reproduces the conclusions their traces established by
+hand — including `cfgB`, whose left pair is co-located and heading apart, so
+`ApartOnBoundaries` is satisfied while *exercising* the case rather than
+avoiding it.
+
+---
+
+### 3.29 `Dpss/ThreeConverge.lean` — **C2: three drones that settle**
+
+§3.12 built the three-drone steady state and proved it cycles. Every trace
+there starts synchronized and stays so, so nothing showed the system ever
+*reaches* that state.
+
+`cfgS` is the configuration anyone writes down first — each drone on its own
+left endpoint, all heading right — and it is **not** synchronized:
+
+    t = 0     0 →     1/3 →    2/3 →
+    t = 1/3   1/3 →   2/3 →    1 ←      the right drone bounces
+    t = 1/2   1/2 →   5/6 ←    5/6 ←    middle and right meet, escort back
+    t = 2/3   2/3     2/3      2/3      all three at one point
+    t = 1     1/3 ←   1/3 →    1 ←      = the steady state `cfgB`
+
+Drone `0` is carried out of `[0, 1/3]` almost at once and reaches `2/3` before
+anything turns it round; `cfgS_not_sync_at_start` records that the run genuinely
+starts out of position. It settles at time 1 against a bound of `5/3`.
+
+**The three-way meeting.** Step 3 is the configuration two drones cannot
+produce and that the work package asked for by name — and it is where the
+paper's nondeterminism is visible. The middle drone is at once co-located with
+drone `0`, which is still heading right (a *meet*), and standing on the
+boundary it shares with drone `2` (a *separation*). `newDir` gives separation
+priority, so it turns left and takes drone `0` with it. See §3.31 for how much
+of that is really a choice.
+
+---
+
+### 3.30 `Dpss/Sharpness.lean` — **C3: the bound is attained**
+
+Gap 4 closed. §3.28 shows the drones are synchronized *by* `2 − 1/n`; the paper
+also claims that bound is **sharp**, and nothing here checked it. One
+configuration cannot: `spread` converges at `5/4` against `3/2`.
+
+A family can. `spreadE e` is the paper's own worst case at `n = 2` — drone `0`
+at the left border, drone `1` a distance `e` ahead, both heading out:
+
+| step | time | state |
+|---|---|---|
+| 0 | `0` | `0 →`, `e →` |
+| 1 | `1 − e` | `1−e →`, `1 ←` |
+| 2 | `1 − e/2` | both at `1 − e/2 ←` |
+| 3 | `3/2 − e` | both at `1/2`, separating |
+
+Drone `0` is outside `[0, 1/2]` for the whole return leg, so at the instant
+`3/2 − 2e` it sits at `1/2 + e`. Choosing `e` small pushes that instant as close
+to `3/2 = 2 − 1/2` as one likes:
+
+> `bound_sharp (B : ℝ) (hB : B < 2 − 1/2)` — some configuration satisfying
+> both standing conditions has a drone outside its own interval at an instant
+> at or after `B`.
+
+Sharpness **at `n = 2`**. The paper's construction works for every `n` and the
+general version needs an `n`-drone cascade, which is a much larger trace. What
+this settles is the thing that matters for judging the proof: the `2 − 1/n` in
+§3.28 is not slack a sharper argument could tighten.
+
+---
+
+### 3.31 `Dpss/Priority.lean` — **C1: measuring the nondeterminism**
+
+§3.6 records `newDir`'s priority order — `border > separation > meet >
+unchanged` — as *one resolution* of a choice the paper leaves open. This file
+checks that claim by brute force: for every pair of events that can be due at
+one drone at one instant, compute both answers and compare.
+
+Seven of the eight combinations are not choices at all.
+
+| both due | separation says | meet says | |
+|---|---|---|---|
+| right border + `MeetRight` | `left` | `left` | agree |
+| left border + `MeetLeft` | `right` | `right` | agree |
+| left border + `SepLeft` | — | — | **impossible** |
+| right border + `SepRight` | — | — | **impossible** |
+| `SepRight` + `MeetRight` | `left` | `left` | agree |
+| `SepRight` + `MeetLeft` | `left` | `left` | agree |
+| `SepLeft` + `MeetRight` | `right` | `right` | agree |
+| `SepLeft` + `MeetLeft` | `right` | `left` | **differ** |
+
+The reason the agreements happen is uniform: a separating drone is standing on
+a boundary, and from a boundary the escort heading is forced.
+
+The one disagreement is the paper's **bounce** — two drones meeting head-on
+exactly on the boundary they share — and it is not a free choice either.
+`newDirMeetFirst` is the alternative resolution, defined so that the comparison
+is a theorem rather than an argument, and `newDirMeetFirst_leaves_interval`
+shows it walks the drone off its own left endpoint. That is exactly the failure
+the `n = 2` trace caught (§3.11) and the reason `AtSeparation` does not demand
+that the pair be escorting.
+
+**What is left of gap 5 is therefore not the priority order.** It is what a
+*meet* is: here `MeetRight i` requires the pair to be *approaching*, so a drone
+co-located with both neighbours has at most one meet due and its own heading
+decides which. The paper treats meeting as positional, so a middle drone may
+pair with either neighbour whatever it was doing before.
+
+---
+
 ## 4. What is **not** proved — read this part
 
-This is the honest gap list, ordered by importance.
+This is the honest gap list, ordered by importance. It is much shorter than it
+was; the four items that used to head it are closed, and are kept struck
+through so that a reader can see what changed rather than having to diff.
 
-1. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for specific
-   `n = 2` and `n = 3` configurations. **Lemmas 3.1, 3.2, 3.3 and 3.6 are done
-   and unconditional**; 3.4 is conditional on the phase invariant, which is
-   proved preserved. **3.5 is done.** **3.7 is untouched**, and is the last lemma
-   before the assembly.
+1. ~~**Theorem 2.1 is not proved in general.**~~ **Closed** — §3.28.
+   `convergesBy` proves it for every `n`, with the bound exactly `2 − 1/n`, and
+   `sync_at_of_time` proves the stronger real-time form. Lemmas 3.1–3.7 are all
+   proved; 3.2, 3.3, 3.5, 3.6 unconditionally, 3.4 conditional on the phase
+   invariant which is proved preserved.
 
-2. ~~**The symmetric half is not started.**~~ **Closed** — §3.23. The
-   reflection principle is proved, so right synchronization transfers from left
-   for free. Kept as a record that I had not counted it as work.
+   One hypothesis beyond the standing `Invariant`: `ApartOnBoundaries` on the
+   **starting** configuration — a co-located pair heading apart sits on the
+   boundary it shares. §3.20 shows it is false as a pointwise fact about
+   arbitrary configurations, and §3.21 proves it preserved, so it is a genuine
+   condition on the start and nothing more. Any configuration with no two
+   adjacent drones on one point satisfies it, as does any with all drones
+   heading the same way.
 
-   Avigad–van Doorn dispose of this in four words — *"by symmetry it suffices
-   to show all the drones are left synchronized"* — and on paper that is
-   honest. **In Lean it is not free.** It needs either a **reflection map**
-   (`pos ↦ 1 − pos`, headings flipped, index `i ↦ n−1−i`) proved to commute
-   with `step`, after which right synchronization *is* left synchronization of
-   the mirrored run; or the whole chain duplicated. The reflection is the right
-   answer, and the index reversal is the fiddly part: `nextIdx` and `prevIdx`
-   swap, as do `leftEnd` and `rightEnd`.
+2. ~~**The symmetric half is not started.**~~ **Closed** — §3.23, and used in
+   §3.28. Kept as a record that it had not been counted as work: Avigad–van
+   Doorn dispose of it in four words — *"by symmetry it suffices to show all
+   the drones are left synchronized"* — and on paper that is honest. In Lean it
+   needed a reflection map proved to commute with `advance`, `step` and `run`,
+   reflection laws for every local quantity and every event, and invariance of
+   the global deadline.
 
-   Scattered hand-written mirrors exist (`coLocated_of_turnsRight` and
-   friends), but they are individual lemmas, not a symmetry principle.
+3. ~~**The `n = 3` work covers only the steady state.**~~ **Closed** — §3.29.
+   `cfgS` starts out of position, is proved not synchronized at the start,
+   passes through a genuine three-way meeting, and settles at time 1 against a
+   bound of `5/3`.
 
-3. **The `n = 3` work covers only the steady state.** §3.12 proves the
-   three-drone cycle and its period, which exercises the middle-drone and
-   simultaneous-event machinery. But there is **no converging `n = 3` trace**
-   — nothing that starts out of position and settles.
+4. ~~**The traces are single configurations, not the sharp worst case.**~~
+   **Closed at `n = 2`** — §3.30. `bound_sharp` shows no `B < 2 − 1/n` is a
+   correct bound, via an `ε`-family. The general-`n` version needs an `n`-drone
+   cascade and is not done.
 
-4. **The traces are single configurations, not the sharp worst case.** `spread`
-   converges at `5/4` against a bound of `3/2`. Closing that last quarter needs
-   the drones started *arbitrarily* close, i.e. a family parameterised by `ε`.
-   That would show the bound is **attained**, which the paper asserts and this
-   development does not check.
+5. **The nondeterminism is still not fully modelled** — but the gap is
+   narrower than it was. §3.31 proves that `newDir`'s **priority order** is
+   forced in seven of its eight competing cases, and that the eighth is the
+   paper's bounce, where the alternative resolution provably walks a drone out
+   of its own interval. What remains is the definition of a *meet*: here it
+   requires the pair to be **approaching**, so a drone co-located with both
+   neighbours has at most one meet due and its own heading decides which; the
+   paper treats meeting as positional and lets a middle drone pair with either
+   neighbour and escort to either endpoint.
 
-5. **The nondeterminism is not modelled.** When three or more drones converge
-   the paper leaves open which neighbour the middle one escorts, and notes the
-   strongest bound quantifies over all resolutions. `newDir` picks one. Every
-   result here, non-Zeno included, inherits that restriction.
+   Closing that means making `step` a **relation** and re-proving the
+   development over an arbitrary trajectory of it. That is not an `M`-sized
+   item: roughly thirty primitive lemmas unfold `newDir` and would have to be
+   re-derived from a specification instead, and every statement in the
+   development would gain the trajectory as a parameter. Every result here,
+   non-Zeno and Theorem 2.1 included, is a result about *this* resolution.
 
 6. **Stage 3's original headline goal is out of scope, and the plan was wrong
-   to list it.** `PLAN.md` §5.2 proposed refuting the false `3T` bound. That
-   bound is about **phase 1** — estimate propagation — which is Algorithm B.
-   This development models Algorithm A, where estimates are correct by
-   assumption and absent from `Config`. Unreachable here, not merely
+   to list it.** `PLAN-original.md` §5.2 proposed refuting the false `3T`
+   bound. That bound is about **phase 1** — estimate propagation — which is
+   Algorithm B. This development models Algorithm A, where estimates are
+   correct by assumption and absent from `Config`. Unreachable here, not merely
    unfinished. Recorded as a planning error.
 
-7. **Unused definitions.** `Config.Together` is defined but unused, and
-   `Config.Valid` has been superseded by `Config.Invariant` without removal.
+7. ~~**Unused definitions.**~~ **Closed** — `Config.Together` and
+   `Config.Valid` are removed. A dead predicate in a development like this is
+   not neutral: it invites a reader to prove something about the wrong one.
 
 8. **Algorithm B is entirely out of scope** — wrong estimates, changing
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
+
+9. **Sharpness for general `n` is not checked.** §3.30 does `n = 2`. The
+   paper's construction — all `n` drones released together at the left border,
+   peeling off the returning group one at a time — would show the bound
+   attained for every `n`.
 
 ### Known modelling risks
 
@@ -1090,8 +1317,6 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.leftEnd_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.rightEnd_last' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.ext' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Config.together_refl' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Config.together_symm' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.gap_advance_of_dir_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sepTime_nonneg_left_border' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1111,6 +1336,24 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.ordered_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_mono_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one'' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.posIn_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.inStep_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSyncAt_iff_leftSyncAt_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apartOnBoundaries_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSyncAt_index' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSyncAt_all' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSyncAt_all' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sync_at_of_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.convergesBy' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.allSync_of_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.convergesBy_of_distinct' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.convergesBy_of_dir_const' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_apartOnBoundaries' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_converges_general' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spread_converges_general' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgB_apartOnBoundaries' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgB_converges_general' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Counterexample.hn4' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Counterexample.h12' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Counterexample.nextIdx_f1' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1306,6 +1549,12 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.ExamplesThree.cfgB_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.ExamplesThree.cfgB_period' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.ExamplesThree.cfgB_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_greatest_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apartOnBoundaries_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apartOnBoundaries_of_not_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.apartOnBoundaries_of_dir_const' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_next_of_coLocated_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSyncAt_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_nonneg_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_nonneg_of_pos_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1444,11 +1693,44 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.pos_eq_commonEnd_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_commonEnd_of_sepLeft_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.meeting_pair_agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_sepLeft_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_sepRight_of_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDir_eq_left_of_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDirLeft_eq_right_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDir_eq_left_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDirLeft_eq_left_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDir_eq_right_of_sepLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDirLeft_eq_left_of_sepLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDirMeetFirst_eq_newDir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDirMeetFirst_of_bounce' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDirMeetFirst_leaves_interval' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apart_transfer' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_apart_of_meet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.dir_left_of_newDir_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.dir_right_of_newDir_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apartOnBoundary_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.nonneg_of_endpoints' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.inStep_start' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.inStep_end' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_succ_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_succ_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.posIn_start' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.posIn_end' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_succ_eq'' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.le_posIn' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.posIn_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.posIn_le_posIn_next' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_lastBefore' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_of_time_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_eq_of_time_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.coLocated_of_time_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSyncAt_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSyncAt_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_leftSyncAt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSync_of_rightSyncAt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSyncAt_of_leftSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSyncAt_of_rightSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSyncAt_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1464,6 +1746,31 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.meetTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_nonneg_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chaseE_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chaseE_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chaseE_dir_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chaseE_dir_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chaseE_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortE_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortE_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortE_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_apartOnBoundaries' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.chaseE_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.escortE_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_spreadE' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_chaseE' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_escortE' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spreadE_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spreadE_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_spreadE_3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.spreadE_outside' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.bound_sharp' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.prevIdx_val' depends on axioms: [propext, Quot.sound]
 'DPSS.Config.prevIdx_lt' depends on axioms: [propext, Quot.sound]
 'DPSS.Config.nextIdx_prevIdx' depends on axioms: [propext, Quot.sound]
@@ -1489,6 +1796,48 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.rightEnd_eq_one_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sync_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_pos_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_pos_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_pos_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_pos_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_pos_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_pos_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_dir_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_dir_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_dir_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_pos_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_pos_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_pos_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_dir_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_dir_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_dir_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS3_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS3_dir_e0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS3_dir_e1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS3_dir_e2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_apartOnBoundaries' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.step_cfgS' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS1_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.step_cfgS1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS2_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.step_cfgS2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS3_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.step_cfgS3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.run_cfgS_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.run_cfgS_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.run_cfgS_3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.run_cfgS_4' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_three_way_meeting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_not_sync_at_start' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.run_cfgB_at' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_in_intervals' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_allSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_within_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.ExamplesThree.cfgS_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_turnsLeftAt_of_never_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.dir_left_of_no_turnsLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.dir_left_since_of_never_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1503,7 +1852,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**443/443 clean — `sorryAx` appears zero times.**
+**565/565 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1553,6 +1902,14 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+e969f31  2026-09-12  feat: C1 -- measuring the nondeterminism instead of assuming it
+8fe6e93  2026-09-12  feat: C2 -- three drones that start out of position and settle
+b48f409  2026-09-12  feat: C3 -- the 2 - 1/n bound is attained, not merely proved
+9c2214d  2026-09-12  refactor: D1 -- remove two superseded definitions
+7753781  2026-09-12  feat: B6 -- Theorem 2.1, the 2 - 1/n bound, proved
+5816c6a  2026-09-12  feat: B5 complete -- Lemma 3.7, the +1/n inductive step
+20c9295  2026-09-12  feat: reading the system between events (B5, part 1)
+cb2b7ac  2026-09-12  feat: B3 complete -- Lemma 3.5, every pair meets within time 1
 5ec2469  2026-09-12  feat: how a gap evolves under fixed headings (B3, part 3)
 148a893  2026-09-12  feat: the first turn, timed exactly (B3, part 2)
 a80cdee  2026-09-12  feat: an approaching pair meets, within half its gap (B3, part 1)
@@ -1685,12 +2042,12 @@ the three-clause invariant and its preservation proof, assembled from them.
 
 ## 9. The work package
 
-> **The actionable roadmap now lives in `PLAN.md`** — target, ingredients,
-> approach and a checkable *done-when* for each item, in dependency order. The
-> table below is the summary; `PLAN.md` is what to work from.
+> **The actionable roadmap lives in `PLAN.md`** — target, ingredients, approach
+> and a checkable *done-when* for each item. The table below is the summary.
 
-What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 and
-3.7 all quote it.
+**Everything on the critical path is done.** Theorem 2.1 is proved, the bound
+is shown attained, and the remaining items are fidelity work that does not
+block it.
 
 | # | Item | Size | Notes |
 |---|---|---|---|
@@ -1698,20 +2055,41 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | A1 | ~~Every event turns at least one drone~~ | ✅ | `someDroneTurns_step`, unconditional |
 | A2 | ~~The minimum is attained by a genuine event~~ | ✅ | folded into A1; gap 2 closed |
 | A3 | ~~Consecutive turns `1/n` apart~~ | ✅ | §3.15 |
-| A4 | ~~Assemble `NonZeno`~~ | ✅ | **§3.16 — done** |
-| **B** | **Theorem 2.1** | | *the headline* |
-| **B1** | ~~Lemma 3.2~~ | ✅ | **§3.24 — done.** `leftSync_of_separation`, unconditional |
-| B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
-| **B3** | ~~Lemma 3.5~~ | ✅ | **§3.25 — done.** `exists_coLocated_within_one` |
+| A4 | ~~Assemble `NonZeno`~~ | ✅ | §3.16 |
+| **B** | ~~**Theorem 2.1**~~ | ✅ | **the headline, and it is proved** |
+| **B1** | ~~Lemma 3.2~~ | ✅ | §3.24 — `leftSync_of_separation`, unconditional |
+| B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17, §3.24 |
+| **B3** | ~~Lemma 3.5~~ | ✅ | §3.25 — `exists_coLocated_within_one` |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
-| B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
-| B6 | Assemble `2 − 1/n` (left half) | S | |
-| **B7** | ~~The symmetric half — right synchronization~~ | ✅ | **§3.23 — done.** `rightSync_iff_leftSync_mirror` |
+| **B5** | ~~Lemma 3.7 — the `+1/n` inductive step~~ | ✅ | §3.27 — `leftSyncAt_next`, on the real-time layer §3.26 |
+| **B6** | ~~Assemble `2 − 1/n`~~ | ✅ | **§3.28 — `convergesBy`** |
+| **B7** | ~~The symmetric half~~ | ✅ | §3.23 — `rightSync_iff_leftSync_mirror` |
 | **C** | **Fidelity** | | |
-| C1 | Nondeterminism: a relation, not a function | M | gap 5; §3.20 shows it biting |
-| C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 3 |
-| C3 | An `ε`-family showing the bound is *attained* | M | gap 4 |
-| **D** | Cleanup: unused definitions, `PLAN.md` scope fix | S | gaps 6, 7 |
+| C1 | ~~Nondeterminism: measure it~~ | ✅ | §3.31 — the priority order is forced in 7 of 8 cases |
+| C1′ | Nondeterminism: `step` as a **relation** | **L** | what is left of gap 5; see §4 item 5 for why it is not M |
+| C2 | ~~Converging `n = 3` trace; a genuine three-way meeting~~ | ✅ | §3.29 |
+| C3 | ~~An `ε`-family showing the bound is *attained*~~ | ✅ | §3.30, at `n = 2` |
+| C3′ | Sharpness for general `n` | M | gap 9 |
+| **D** | **Cleanup** | | |
+| D1 | ~~Remove unused definitions~~ | ✅ | `Config.Together`, `Config.Valid` gone |
+| D2 | ~~Make `HaveMetBy` locally checkable~~ | ✅ | **not needed** — B3 and B5 both went through with the history-shaped definition; see below |
 
 Sizes are relative: **S** is a sitting, **M** is a session, **L** is the kind of
 argument the paper spends a figure on and the ACL2 team spent 11K lines around.
+
+### D2, resolved by not doing it
+
+The ACL2 team reported that `have-met` phrased over execution *history* "drew
+heavily on human intuition about system behaviour and was difficult to work
+with in a mechanized proof", and that recasting it as a **locally checkable**
+predicate over a drone and its immediate neighbour was what made their
+development tractable. `HaveMetBy` here is the history-shaped one, and D2 was
+carried as a contingency in case Lemma 3.5 or 3.7 became unwieldy.
+
+Neither did. Lemma 3.5 produces the meeting index directly, and Lemma 3.7
+consumes it by taking the **last** co-located index at or before the deadline —
+which is a search over history, and a two-line one. The contingency is closed
+as unnecessary, which is worth recording precisely because the ACL2 experience
+predicted otherwise: what made history painful for them was presumably ACL2's
+untyped first-order setting, not the shape of the predicate.
+

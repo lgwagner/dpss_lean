@@ -21,79 +21,81 @@ picking up *this* roadmap needs.
 
 ## Where things stand
 
-**416 theorems, all `sorry`-free.** Non-Zeno is proved. Theorem 2.1 is stated
-and proved at `n = 1` and for specific `n = 2`, `n = 3` configurations.
+**565 theorems, all `sorry`-free.** Non-Zeno is proved. **Theorem 2.1 is
+proved** — `convergesBy`, for every `n`, with the bound exactly `2 − 1/n` — and
+shown attained at `n = 2`.
 
 | Done | Open |
 |---|---|
-| A (non-Zeno), B2 (L 3.3, 3.4), B4 (L 3.6), B7 (symmetry) | **B1**, **B3**, B5, B6, C, D |
+| A (non-Zeno), B1–B7 (**Theorem 2.1**), C1, C2, C3, D1, D2 | **C1′**, **C3′** |
+
+The critical path is empty. What is left is fidelity work that does not block
+anything, and one item of it is large.
 
 ---
 
 ## Critical path
 
-### 1 — B5. Lemma 3.7: the `+1/n` inductive step  ⟨M⟩
-
-**Depends on:** nothing outstanding. B1 and B3 are done; this is the last
-lemma before the assembly.
-
-**Target.** Drones `1..j` left synchronized and the pair `(j, j+1)` having met
-⟹ `j+1` left synchronized by `t + 1/n`.
-
-**Approach.** Three cases, all of whose tools now exist:
-- `j` heading right ⟹ within `1/n` it is at or beyond its right endpoint ⟹
-  Lemma 3.4;
-- `j` heading left and together with `j+1` ⟹ Lemma 3.3;
-- `j` heading left and apart ⟹ Lemma 3.6 reaches back to the last co-location,
-  then Lemma 3.2.
-
-**This is the next item.** Hazard — resolve before starting: `LeftSync` is indexed by **step**, but
-`+1/n` bounds **time**. A drone can cross its right endpoint mid-step, so the
-natural index arrives too late. Add a time-indexed
-`LeftSyncFrom (T : ℝ) := ∀ j, T ≤ (run j).time → leftEnd i ≤ (run j).pos i`
-alongside the existing predicate, and relate the two, *before* attempting the
-lemma.
-
-**On completion, record:** whether the time-indexed predicate should have been
-the primary one from the start.
+Nothing. Theorem 2.1 is proved and the statement `Synchronization.lean` has
+carried since the beginning is discharged.
 
 ---
 
-### 2 — B6. Assemble Theorem 2.1  ⟨S⟩
+## Open items
 
-**Depends on:** B5, and B7 (done).
+### C1′ — model the nondeterminism as a relation  ⟨L⟩
 
-**Steps.**
-1. Base case: drone `0` is always left synchronized — `leftEnd_zero` plus
-   `onPerimeter_run`. Not yet stated; it is two lines.
-2. Induct with B5: drones `1..i` left synchronized by `1 + (i−1)/n`.
-3. At `i = n`: left synchronization by `2 − 1/n`.
-4. Right synchronization via `rightSync_iff_leftSync_mirror` (B7).
-5. Discharge `ConvergesBy`, which needs both halves.
+**What is already done.** `Dpss/Priority.lean` (**C1**) measured the freedom
+instead of assuming it, and found much less than advertised: `newDir`'s
+priority order is **forced** in seven of its eight competing cases, and the
+eighth is the paper's bounce, where the alternative resolution provably walks a
+drone off its own left endpoint.
 
-**Done when.** `theorem convergesBy (hi : c.Invariant) : ConvergesBy c hn`
-exists and `scripts/audit.py` passes.
+**What is left.** Not the priority order — the definition of a *meet*. Here
+`MeetRight i` requires the pair to be **approaching**, so a drone co-located
+with both neighbours has at most one meet due and its own heading decides
+which. The paper treats meeting as positional and lets a middle drone pair with
+either neighbour and escort to either endpoint.
 
-**On completion, record:** the final shape of the induction, and how far the
-assembled bound is from the paper's `2 − 1/n` — it should be exact.
+**Approach.** Make `step` a relation `StepRel` and re-prove the development
+over an arbitrary trajectory of it — `IsRun f := f 0 = c ∧ ∀ k, StepRel (f k)
+(f (k+1))`.
+
+**Why this is L, not M.** Roughly thirty primitive lemmas unfold `newDir`
+(`newDir_left_cases`, `coLocated_of_turnsLeft`, `rightEnd_le_pos_of_turnsLeft`,
+`someDroneTurns_step`, …). Each would be re-derived from a *specification* of
+legitimate resolutions rather than from the definition — which is the honest
+and probably better design. But every statement in the development gains the
+trajectory as a parameter, so the edit reaches all 31 files. The earlier
+estimate of M was made before anyone had counted.
+
+**Done when.** `convergesBy` holds for every trajectory of `StepRel`, and
+`scripts/audit.py` passes.
 
 ---
 
-## Off the critical path
+### C3′ — sharpness for general `n`  ⟨M⟩
 
-Worth doing, in no particular order, and none of it blocks Theorem 2.1.
+**Depends on:** nothing. `Dpss/Sharpness.lean` does `n = 2`.
 
-| | Item | Size |
-|---|---|---|
-| **C1** | Model the nondeterminism as a *relation*. §3.20 shows it biting — `newDir` currently picks one resolution of the choice the paper leaves open, and every result here inherits that restriction. | M |
-| **C2** | A converging `n = 3` trace, and one with a genuine three-way meeting. | M |
-| **C3** | An `ε`-family showing the `2 − 1/n` bound is *attained*. The paper asserts it; nothing here checks it. | M |
-| **D1** | Remove `Config.Together` (unused) and `Config.Valid` (superseded by `Config.Invariant`). | S |
-| **D2** | Consider making `HaveMetBy` locally checkable rather than history-shaped, if B3 or B5 turns unwieldy — the ACL2 team reported this was what made their proof tractable. | M |
+**Target.** The paper's construction for every `n`: all `n` drones released
+arbitrarily close to the left border heading right; after nearly one unit of
+time they reach the right border; the rightmost turns and quickly meets the
+others; the group returns leftward, each drone peeling off at its own left
+endpoint, the last separation happening arbitrarily close to `2 − 1/n`.
+
+**The work.** An `n`-drone cascade rather than a four-configuration trace.
+The awkward part is that the group's departures are staggered, so the trace is
+`n` phases long and each phase has to be described by a formula in the phase
+index rather than by a literal configuration.
+
+**Done when.** `∀ B < 2 − 1/n, ∃ c, …` for every `n`, in the shape of
+`bound_sharp`.
 
 ---
 
 ## Completed
+
 
 What was built, and what it taught. In the order it happened.
 
@@ -316,10 +318,171 @@ preservation.
 
 ---
 
+### B5 — Lemma 3.7, and the real-time layer  ✅
+
+**Built.** `Dpss/RealTime.lean` — `posIn`, `InStep`, `LeftSyncAt`,
+`RightSyncAt`, and the bridges to the step-indexed notions — then
+`Dpss/InductionStep.lean` — `leftSyncAt_next`, plus `ApartOnBoundaries` and its
+propagation along a run.
+
+**Insights.**
+
+- **The hazard this item was flagged with was real, and the recommended fix was
+  the right one.** `LeftSync` is indexed by step; the lemma's conclusion is a
+  deadline in real time. Adding a time-indexed predicate alongside the existing
+  one, and relating the two *before* attempting the lemma, is exactly what
+  worked.
+- **Should the time-indexed predicate have been primary from the start? No.**
+  The recorded question has an answer, and it is the opposite of what the hazard
+  note expected. `ConvergesBy` — the target — is index-shaped, every earlier
+  lemma is index-shaped, and the real-time layer is needed *only* in Lemma 3.7,
+  where a drone's state is read strictly inside a step. Making it primary would
+  have taxed 500 theorems to pay for one. The right shape is what happened:
+  index-shaped throughout, with a thin real-time layer introduced where the
+  argument demands it and discharged back into indices immediately.
+- **The index-shaped reading is genuinely weaker, and weaker in the one place
+  it matters.** A drone heading right can sit left of its endpoint mid-step and
+  be back inside its interval by the next event. So a step-indexed Lemma 3.7 is
+  not merely inelegant — it looks false.
+- **One lemma carried the whole real-time layer.** A linear function
+  nonnegative at both ends of an interval is nonnegative throughout it.
+  Position, gap and balance are all affine in time within a step, so every
+  "true at the events, therefore true in between" argument is that lemma with
+  different names substituted. Three lines, used six times.
+- **"No time, no motion" is the trade between index order and time order.**
+  Steps of zero length are routine here, so `time_m ≤ time_k` does not give
+  `m ≤ k`. But it does give equal positions, and in every place the proof
+  wanted the index inequality what it actually needed was the position.
+- **The paper's two leftward cases are one case.** It splits on whether the
+  pair is together *now*; taking the last co-located index at or before the
+  deadline covers both, with an empty range when they are together. That halved
+  the case analysis.
+
+---
+
+### B6 — Theorem 2.1  ✅
+
+**Built.** `Dpss/Convergence.lean` — `convergesBy`, `sync_at_of_time`,
+`allSync_of_time`, the real-time mirror transfer, and three concrete
+configurations that discharge every hypothesis.
+
+**Insights.**
+
+- **The final induction is the paper's, unchanged.** Drone `0` free, every pair
+  met by 1, `+1/n` per drone. What took the work was not the induction but
+  making each of its three inputs exist.
+- **The bound is exact, to the last `1/n`.** `1 + (n−1)/n = 2 − 1/n` with
+  nothing to spare — as it had to be, since C3 then showed the bound attained.
+  Any analysis that had leaked an `ε` anywhere would have been visible here as a
+  worse constant.
+- **`ApartOnBoundaries` is the one thing the paper never has to say.** A
+  co-located pair heading apart is on the boundary it shares — obvious about
+  the algorithm's reachable states, false about configurations in general
+  (§3.20), and therefore a hypothesis on the start. Finding that it *also*
+  needed reflecting for the right-hand half was a small surprise; "by symmetry"
+  keeps charging rent.
+- **Stating the goal as a `Prop`-valued definition from day one paid off.** The
+  repository was never `sorry`-ful, the target was always precisely visible,
+  and discharging it was a one-line theorem at the end rather than a
+  renegotiation of what had been aimed at.
+
+---
+
+### C1 — measuring the nondeterminism  ✅ *(C1′ remains)*
+
+**Built.** `Dpss/Priority.lean` — the eight-way comparison, `newDirMeetFirst`,
+and `newDirMeetFirst_leaves_interval`.
+
+**Insights.**
+
+- **Measure a gap before believing your own description of it.** `Step.lean`
+  had described the priority order as "one resolution" of the paper's
+  nondeterminism for months. Seven of its eight competing cases turn out to be
+  forced, and the eighth is not a free choice either. The honest description was
+  cheaper to compute than to guess — one afternoon against a standing caveat in
+  three documents.
+- **The agreements have one reason.** A separating drone is standing on a
+  boundary, and from a boundary the escort heading is forced. That is why the
+  table is mostly "agree" rather than coincidence.
+- **The real gap was somewhere else.** Not the priority order but the
+  *definition of a meet*: ours requires the pair to be approaching, the paper's
+  is positional. Naming the gap correctly is most of what C1 delivered, and it
+  also reveals that C1′ is L rather than M.
+
+---
+
+### C2 — three drones that settle  ✅
+
+**Built.** `Dpss/ThreeConverge.lean` — `cfgS` and its four-step trace into the
+existing steady state, `cfgS_three_way_meeting`, `cfgS_not_sync_at_start`, and
+`run_cfgB_at` generalizing the cycle to an arbitrary start time.
+
+**Insights.**
+
+- **The obvious start configuration is not synchronized.** Each drone on its
+  own left endpoint, all heading right — and drone `0` is out of its interval
+  within an instant and reaches `2/3` before anything turns it. A good reminder
+  that `Sync` is a "from now on" property, not a property of a moment.
+- **The three-way meeting cost nothing extra.** It arrived on its own in the
+  first converging trace attempted. Configurations that exercise the hard
+  machinery are not rare; the two-drone traces simply cannot express them.
+- **Generalizing a trace over its start time is free if the step lemmas already
+  are.** `step_cfgB` and `step_cfgC` were stated for an arbitrary clock from
+  the beginning, so `run_cfgB_at` was the same induction with `t` carried
+  through. Worth doing to every concrete trace on the way in.
+
+---
+
+### C3 — the bound is attained  ✅ *(C3′ remains for general `n`)*
+
+**Built.** `Dpss/Sharpness.lean` — the `spreadE ε` family, its four-step trace,
+and `bound_sharp`.
+
+**Insights.**
+
+- **A family is not much harder than an instance, if the instance was done
+  right.** The `ε`-trace is the `spread` trace with `1/4` replaced by a
+  variable. What it cost was replacing `norm_num` with `linarith` and naming
+  the two hypotheses `0 < ε` and `ε < 1/3` that the arithmetic needs.
+- **The witness is a *right*-synchronization failure.** The natural guess is
+  that the late-converging drone is the one still to the left of its interval.
+  It is not: drone `0` overshoots to the **right** and does not come back until
+  `3/2 − ε`. Sharpness of a bound stated as "left and right synchronized" can
+  be witnessed by either half, and the other half was the one to look at.
+- **Sharpness is what makes the proof worth checking.** Had `2 − 1/n` been
+  loose, an analysis losing an `ε` would still have been "correct". It is not
+  loose, so the exactness of the induction in B6 is load-bearing rather than
+  aesthetic.
+
+---
+
+### D1, D2 — cleanup, one by deletion and one by not doing it  ✅
+
+**Built.** `Config.Together` and `Config.Valid` removed. `HaveMetBy` left
+alone.
+
+**Insights.**
+
+- **A dead predicate is not neutral.** `Together` and `CoLocated` said almost
+  the same thing and only one was used; leaving both invites a reader to prove
+  something about the wrong one. Same for `Valid` against `Invariant`.
+- **D2 was a contingency that never fired, and that is worth recording.** The
+  ACL2 team found a history-shaped `have-met` "difficult to work with in a
+  mechanized proof" and recasting it locally was what made their development
+  tractable. Here it caused no trouble at all: Lemma 3.5 produces the meeting
+  index and Lemma 3.7 consumes it by searching back for the last one. The
+  likely difference is ACL2's untyped first-order setting rather than the shape
+  of the predicate — so an experience report from one prover is evidence about
+  that prover, not a law.
+
+---
+
 ## Standing hazards
 
 - **Two attempts at B1 failed by guessing an invariant's shape.** Derive, write
   down, then prove.
+- **Measure a gap before restating it.** C1 spent months in three documents as
+  a caveat that turned out to be seven-eighths wrong.
 - **When a case analysis will not close, suspect the goal.** Building the §3.20
   counterexample took less time than the failed proof did, and produced
   something permanent.

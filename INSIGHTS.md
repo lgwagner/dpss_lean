@@ -304,3 +304,115 @@ unreachable here, not merely unfinished.
   It now strips Lean comments, tracking nesting, before extracting names.
 
 > **Lesson.** Tooling that certifies correctness needs its own certification.
+
+---
+
+## 13. The index that was right for 500 theorems and wrong for one
+
+Every predicate in this development is indexed by **step number**: a run is
+`run hn 0, run hn 1, …` and "drone `i` never goes left of its endpoint" is a
+statement about those. That is the natural index for an event-driven model and
+it served ~500 theorems without complaint.
+
+Lemma 3.7 is the exception. Its conclusion is a **deadline in real time**
+(`by time t + 1/n`) and its proof reads a drone's heading and position at an
+instant that is in general *strictly inside a step* — previous event before it,
+next event after it. The step-indexed reading of "left synchronized" is
+genuinely weaker there: a drone heading right can sit left of its endpoint
+mid-step and be back inside its interval by the next event. So the step-indexed
+version of the lemma is not merely inelegant. It looks false.
+
+Two things are worth extracting.
+
+**Add the second index, do not replace the first.** The temptation, once you
+find the primary index is wrong somewhere, is to switch. Here that would have
+taxed 500 theorems to pay for one: the target statement is index-shaped, every
+earlier lemma is index-shaped, and the real-time reading is needed only inside
+one proof. A thin real-time layer, introduced where the argument demands it and
+discharged back into indices immediately, cost about 340 lines and touched
+nothing else.
+
+**The bridge between the two indices is not the obvious inequality.** "Time is
+monotone along a run" does *not* give `time_m ≤ time_k → m ≤ k` — steps of zero
+length are routine here (an event already due costs no time), so several
+indices can share an instant. What is true, and what every such argument
+actually wanted, is that **if the clock does not move, no drone does either**.
+Carry the position across, not the index.
+
+> **Lesson.** When a single proof wants a different notion of "when", the
+> cheapest correct move is usually a second, thin index — with an explicit
+> bridge — not a migration.
+
+---
+
+## 14. One lemma for every "true at the events, therefore true in between"
+
+The whole real-time layer rests on three lines:
+
+```lean
+theorem nonneg_of_endpoints {a r u d : ℝ} (h0 : 0 ≤ a) (h1 : 0 ≤ a + r * d)
+    (hu : 0 ≤ u) (hud : u ≤ d) : 0 ≤ a + r * u
+```
+
+A linear function nonnegative at both ends of an interval is nonnegative
+throughout it. Within a step, *every* quantity of interest is affine in time —
+a position (rate `±1`), a gap (rate `sepRate`), a balance (rate `sign i +
+sign (i+1)`). So "the drone is inside its interval at both events, hence
+throughout the step", "the pair is ordered at both events, hence throughout",
+and every variant are all this one lemma with different names substituted.
+
+It was used six times and would have been used more had the layer grown.
+
+> **Lesson.** Before writing the third instance of an interpolation argument,
+> write the interpolation lemma.
+
+---
+
+## 15. Measure a gap before restating it
+
+`Step.lean` recorded, for months and in three documents, that `newDir`'s
+priority order — `border > separation > meet > unchanged` — was "one
+resolution" of the nondeterminism Avigad–van Doorn deliberately leave open.
+That description was written when the priority order was chosen, and never
+checked.
+
+Checking it took an afternoon. For every pair of events that can be due at one
+drone at one instant, compute both answers and compare: **seven of the eight
+combinations are not choices at all.** Two are impossible, five agree — and
+they agree for one uniform reason, that a separating drone is standing on a
+boundary and from a boundary the escort heading is forced. The eighth is the
+paper's *bounce*, and there the alternative resolution provably walks a drone
+off its own left endpoint, which is the failure a concrete trace had already
+caught (§1).
+
+The caveat was seven-eighths wrong. Worse, it named the wrong thing: the real
+restriction is not the priority order but the **definition of a meet** — ours
+requires the pair to be approaching, the paper's is positional. Getting the
+name right also re-sized the remaining work from "a session" to "a refactor
+touching every file".
+
+> **Lesson.** A caveat is a claim. Prove it, refute it, or state it as a
+> question — but do not let it sit in three documents unchecked, because the
+> plan built on top of it inherits its errors.
+
+---
+
+## 16. A hypothesis the source never has to state
+
+Theorem 2.1 here carries one condition beyond the standing invariant:
+`ApartOnBoundaries` — a co-located pair heading apart sits on the boundary it
+shares. The paper never mentions it, and is right not to: about the states the
+algorithm actually reaches, it is obvious.
+
+About *configurations in general* it is false, and `Dpss/Counterexample.lean`
+exhibits four drones stacked at one point that refute it. So it is an invariant,
+proved preserved by a step — and therefore a genuine condition on the
+**starting** configuration, which is where it now sits, with two easy
+sufficient conditions supplied.
+
+This is the second time in the project that a step the source treats as beneath
+mention turned out to be substantial formalization work; "by symmetry" (§B7)
+was the first.
+
+> **Lesson.** The parts of a paper proof that a formalization has to *add* are
+> not the hard steps. They are the sentences the author did not write.
