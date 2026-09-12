@@ -237,6 +237,37 @@ theorem not_bothLeftApart_of_turnsLeft {c : Config n} (hp : c.OnPerimeter)
   rintro ⟨-, -, hnc⟩
   exact hnc (coLocated_of_turnsLeft hp ho h ht)
 
+/-- **The mirror: a drone that reverses to rightward is co-located with its
+left-hand neighbour.**
+
+Symmetric to `coLocated_of_turnsLeft`, and needed for the same reason: to know
+what a pair's headings can be immediately after a step. Whatever can reverse a
+leftward drone — a meet with its left neighbour, a separation from it, or the
+left perimeter border — leaves it on top of that neighbour. -/
+theorem coLocated_of_turnsRight {c : Config n} (hp : c.OnPerimeter)
+    (ho : c.Ordered) {i : Fin n} (hpos : 0 < i.val) (ht : c.TurnsRight i) :
+    c.CoLocated (prevIdx i hpos) (prevIdx_lt i hpos) := by
+  obtain ⟨hd, hnew⟩ := ht
+  have hle : prevIdx i hpos ≤ i := by
+    rw [Fin.le_def, prevIdx_val]; omega
+  have hself : nextIdx (prevIdx i hpos) (prevIdx_lt i hpos) = i :=
+    nextIdx_prevIdx i hpos
+  unfold newDir at hnew
+  split_ifs at hnew with h1 h2 h3 h4 h5 h6
+  · -- at the left border: the left-hand neighbour is pinned there too
+    unfold CoLocated gap
+    rw [hself, h1.1, pos_eq_zero_of_le ho hp hle h1.1]
+    ring
+  · -- separating from that very neighbour
+    exact h4.2.1
+  · -- a leftward drone cannot be meeting its *right* neighbour
+    exact absurd h5 (not_meetRight_of_dir_left hd)
+  · -- meeting that very neighbour
+    exact h6.2.1
+  · -- nothing fired, so it did not turn at all
+    rw [hd] at hnew
+    exact absurd hnew (fun hc => Dir.noConfusion hc)
+
 /-! ## A pair already escorting stays together
 
 The second of the three ways `BothLeftApart` could arise: neither drone turns,

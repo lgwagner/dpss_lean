@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `0573e4d89008`  
+**Commit at time of writing:** `2e8b5653ee21`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**319 theorems**, all `sorry`-free, across 18 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 437 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**325 theorems**, all `sorry`-free, across 19 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -654,6 +654,33 @@ The paper phrases `a` as "the last time before `t` that they bounced or
 separated"; here it is any step after which they have not been together, which
 is the property the proof actually uses and is easier to supply.
 
+### 3.19 `Dpss/PhaseInvariant.lean` — why a drone ends up heading where it does
+
+Closing Lemma 3.2's last case needs to know not just *that* a drone ends a step
+heading some way, but **why**. `newDir_left_cases` and `newDir_right_cases`
+turn `newDir i = left` (or `right`) into the disjunction of events that could
+have produced it.
+
+Also `coLocated_of_turnsRight` in §3.13's file — the mirror of the earlier
+result: a drone reversing to **rightward** is co-located with its **left-hand**
+neighbour. Whatever can reverse a leftward drone — a meet with its left
+neighbour, a separation from it, or the left border — leaves it on top of that
+neighbour.
+
+**What this is for, and what is missing.** The target is: *a co-located pair
+ending a step heading apart is sitting exactly on the boundary it shares* —
+the post-separation configuration, and the only way to be in it. That pins the
+balance at zero while the pair moves apart, which is the invariant the last
+case of Lemma 3.2 runs on.
+
+Two routes are immediate and are proved (`pos_eq_commonEnd_of_sepRight` and its
+mirror). The rest is a nine-way analysis over the two case lemmas, most
+branches closing because **a meeting pair always agrees on where to go**
+(`meeting_pair_agrees`) so it cannot leave a meeting in opposite directions.
+**That analysis is not done.** Doing it will want the two case lemmas
+strengthened to carry the negations of the earlier branches, which `split_ifs`
+supplies but the current statements discard.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -1042,6 +1069,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.pairBalance_nonneg_step' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_turnsLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_bothLeftApart_of_turnsLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.coLocated_of_turnsRight' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_step_of_both_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_leftEnd_of_turnsRightAt_of_leftSync' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_rightEnd_of_turnsLeftAt_of_rightSync' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1051,6 +1079,11 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.pinned_of_balance_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.balanceNonneg_of_never_bothLeftApart' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_balanceNonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDir_left_cases' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDir_right_cases' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_commonEnd_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_commonEnd_of_sepLeft_next' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meeting_pair_agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1105,7 +1138,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**319/319 clean — `sorryAx` appears zero times.**
+**325/325 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1155,6 +1188,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+2e8b565  2026-09-12  feat: Lemma 3.6, unconditionally
 0573e4d  2026-09-12  feat: a pinned left-synchronized drone freezes the clock
 9cc4325  2026-09-12  feat: Lemmas 3.3 and 3.4, and the have-met predicate
 dbf6c44  2026-09-12  feat: the positional core of Lemma 3.2's last case
