@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `d0aaa02dbb3d`  
+**Commit at time of writing:** `28d112c3fece`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**352 theorems**, all `sorry`-free, across 22 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**366 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 145 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -771,6 +771,39 @@ earlier in the development.**
   longer than its distance to `1`. These are the `w` and `z` of the paper's
   proof, which bounds the meeting time by `z − w ≤ 1`.
 
+### 3.23 `Dpss/Mirror.lean` — the perimeter reflected (**B7**, part 1)
+
+Avigad–van Doorn get right synchronization in four words — *"by symmetry"* —
+which on paper is honest and in Lean is not. The way to make it honest is a
+**reflection**: flip the perimeter end-for-end, reverse every heading, renumber
+the drones backwards.
+
+    position   x  ↦  1 − x        heading  →  ↦  ←        index  i  ↦  n−1−i
+
+The algorithm is invariant under that, so right synchronization of a run *is*
+left synchronization of the mirrored run, and every result proved on the left
+transfers for free.
+
+Done here:
+
+- `mirrorIdx`, an involution that reverses the drone ordering.
+- `leftEnd_mirrorIdx` / `rightEnd_mirrorIdx` — **the endpoints swap**: the
+  reflected drone's left endpoint is the reflection of the original's right
+  endpoint.
+- `Config.mirror`, `mirror_mirror` (an involution on configurations).
+- `onPerimeter_mirror`, `ordered_mirror` — the reflection respects the standing
+  invariant.
+- `leftEnd_le_mirror_pos_iff` and its partner — **the point of the exercise**:
+  staying at or beyond your *left* endpoint in the mirrored world is staying at
+  or before your *right* endpoint in this one.
+
+**What remains (part 2):** that mirroring and running **commute** —
+`step (mirror c) = mirror (step c)`. That needs every ingredient of a step to be
+shown to reflect: gaps, separation rates, all three deadlines, and each event
+predicate, with `SepRight` ↔ `SepLeft`, `MeetRight` ↔ `MeetLeft`,
+`AtLeftBorder` ↔ `AtRightBorder` and `escortDir` ↔ `escortDirLeft` swapping. The
+index bookkeeping is the fiddly part: `nextIdx (mirrorIdx i) = mirrorIdx (prevIdx i)`.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -1160,6 +1193,20 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.haveMetBy_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_of_start' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.haveMetBy_of_meet_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.mirrorIdx_val' depends on axioms: [propext, Quot.sound]
+'DPSS.mirrorIdx_mirrorIdx' depends on axioms: [propext, Quot.sound]
+'DPSS.mirrorIdx_le_mirrorIdx' depends on axioms: [propext, Quot.sound]
+'DPSS.cast_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.leftEnd_mirrorIdx' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.rightEnd_mirrorIdx' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirror_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirror_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirror_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirror_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.onPerimeter_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ordered_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftEnd_le_mirror_pos_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.mirror_pos_le_rightEnd_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1270,7 +1317,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**352/352 clean — `sorryAx` appears zero times.**
+**366/366 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1320,6 +1367,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+28d112c  2026-09-12  feat: every drone eventually turns, and how soon
 d0aaa02  2026-09-12  docs: record the symmetric half as a work item -- I had not counted it
 49bac2d  2026-09-12  feat: the invariant the counterexample called for
 eb396c4  2026-09-12  docs: actually fix the stale gap cross-references
@@ -1387,7 +1435,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` (left half) | S | |
-| **B7** | **The symmetric half — right synchronization** | **L** | *newly recorded*; "by symmetry" is not free in Lean |
+| **B7** | The symmetric half — right synchronization | **L** | §3.23 does the geometry; step-commutation remains |
 | **C** | **Fidelity** | | |
 | C1 | Nondeterminism: a relation, not a function | M | gap 5; §3.20 shows it biting |
 | C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 3 |
