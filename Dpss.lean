@@ -35,3 +35,4 @@ import Dpss.IntModel
 import Dpss.Fence
 import Dpss.Standoff
 import Dpss.Separation
+import Dpss.Kinematics
