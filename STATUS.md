@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `b7f4b0fe3831`  
+**Commit at time of writing:** `d9e7f2fde864`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -199,39 +199,58 @@ This is the honest gap list. Nothing below is done.
    function and no notion of a run, so every result so far still concerns *one*
    flight or *one* event in isolation. This is the immediate next target.
 
-4. **Non-Zeno is not proved, and `timeToNextEvent_pos` is not it.** Strictly
-   positive steps can still sum to a finite time. What is missing is a uniform
-   lower bound on step size. This is the headline opportunity (§5) and it
-   remains open.
+2. **Non-Zeno is not proved, and `timeToNextEvent_pos` is not it.** Strictly
+   positive steps can still sum to a finite time — that is exactly how Zeno
+   behaviour works. What is missing is a uniform lower bound on step size. This
+   is the headline opportunity (§5) and it remains open.
 
-5. **An unproved modelling claim.** `NextEvent.lean` computes `borderTime` for
-   *every* drone, not just the two on the ends. For an interior drone that
-   number does not correspond to a reachable border event — a neighbour is in
-   the way. I argue in the file header that including it is harmless, because
-   under `OnPerimeter` and ordering a spurious border time can never be
-   strictly smaller than the genuine event that preempts it. **That argument is
-   prose, not Lean.** It is believed but unverified, and it should either be
-   proved or the definition narrowed. Flagging it explicitly because it is
-   exactly the kind of plausible-sounding step that the original 2008 proof got
-   wrong.
-2. **Non-Zeno is not started.** This is the headline opportunity (§5) and it
-   needs the run machinery from (1) first.
-3. **`Synchronized` is not defined**, so Theorem 2.1 is not even *stated* yet.
+3. **A modelling claim, now half proved.** `NextEvent.lean` computes
+   `borderTime` for *every* drone, including interior ones for which no border
+   event is reachable — a neighbour is in the way. The worry is that such a
+   number becomes the minimum, making `timeToNextEvent` report a deadline with
+   no event behind it.
+
+   The **local** steps are now proved:
+   `droneNextTime_le_borderTime_of_next_left` (a leftward drone's border
+   deadline is at least its left neighbour's deadline),
+   `droneNextTime_le_borderTime_of_self_right` (the mirror image, when the
+   right neighbour also heads right), and
+   `meetTime_le_borderTime_of_approaching` (when a pair is closing, the left
+   drone's deadline is realised by the meet — a genuine event). Chaining these
+   anchors every spurious border deadline at an end drone, whose border event
+   *is* genuine.
+
+   **The chaining itself is not formalized.** The statement that wants proving
+   is "`timeToNextEvent` is attained by a genuine event", and it needs argmin
+   machinery that does not exist here yet. So the argument is no longer bare
+   prose, but it is not finished either.
+
+   Worth recording how this went: my first attempt at the rightward lemma was
+   simply **false**, and Lean caught it. I had forgotten that `droneNextTime j`
+   only ever consults the pair `(j, j+1)`, so a meet with the *left* neighbour
+   is accounted for at `j-1` and never at `j`. The asymmetry between the two
+   lemmas is real, not an oversight.
+
+4. **`Synchronized` is not defined**, so Theorem 2.1 is not even *stated* yet.
    That is Stage 2.
-6. **No sanity tests.** Nothing has been instantiated at `n = 2` or `n = 3`.
+
+5. **No sanity tests.** Nothing has been instantiated at `n = 2` or `n = 3`.
    The model has not been run even once. Until Stage 3 there is no evidence the
-   definitions are non-vacuous *as a system* — only the two local checks in §3.2.
-7. **None of Lemmas 3.1–3.8 are formalized.** The proof skeleton is recorded in
+   definitions are non-vacuous *as a system* — only the local checks in §3.2
+   and §3.4.
+
+6. **None of Lemmas 3.1–3.8 are formalized.** The proof skeleton is recorded in
    `PLAN.md` §3 but not touched in Lean.
-8. **The nondeterminism is not modelled.** When three or more drones converge,
-   the paper leaves open which neighbour the middle drone escorts. My events are
-   currently deterministic per-pair. This does not bite in phase 2, but a fully
-   faithful model needs a relation, not a function.
-9. **Unused definitions.** `Config.Together` and `Config.Valid` are defined
-   but no theorem uses them. (`OnPerimeter`, `escortDir`, `AtSeparation`,
-   `AtLeftBorder` and `AtRightBorder` were on this list and are now discharged
-   by `Schedule.lean`.)
-10. **Algorithm B is entirely out of scope** — wrong estimates, changing
+
+7. **The nondeterminism is not modelled.** When three or more drones converge,
+   the paper leaves open which neighbour the middle drone escorts. My events
+   are currently deterministic per-pair. This does not bite in phase 2, but a
+   fully faithful model needs a relation, not a function.
+
+8. **Unused definitions.** `Config.Together` and `Config.Valid` are defined but
+   no theorem uses them.
+
+9. **Algorithm B is entirely out of scope** — wrong estimates, changing
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
 
@@ -432,6 +451,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+d9e7f2f  2026-09-12  feat: spurious border deadlines are dominated (and Lean caught a false lemma)
 b7f4b0f  2026-09-12  feat: time to the next event, proved strictly positive
 c12ef57  2026-09-12  feat: event scheduling, and make the status report self-refreshing
 bc5bef8  2026-09-12  feat: the three DPSS events, plus an auditable status report
@@ -452,8 +472,8 @@ bcdb11f  2026-09-11  Create README.md
 
 1. ~~Constrain the border predicates.~~ **Done** — `Schedule.lean`.
 2. ~~`timeToNextEvent`, proved strictly positive.~~ **Done** — `NextEvent.lean`.
-3. Either prove the spurious-border-time claim (gap 3 above) or narrow the
-   definition so it is not needed.
+3. Finish gap 3: chain the local domination lemmas into "`timeToNextEvent` is
+   attained by a genuine event".
 4. `step` and runs: iterate event-to-event.
 5. Non-Zeno proper, following AvD §2. The load-bearing step is: *if drone `i+1`
    makes two consecutive left turns, drone `i` must turn right in between.*
