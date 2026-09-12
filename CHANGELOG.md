@@ -12,6 +12,72 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S5: safety when the network degrades; Track A complete  *(branch `safety`)*
+
+Three answers, different in character. `Dpss/Comms.lean`, `rust/src/comms.rs`.
+
+**1. The fence needs no network at all.** Structural rather than a theorem, and
+worth saying loudly: nothing in `Fence.Traj` mentions another drone. A total
+communications failure does not weaken the fence by an epsilon.
+
+**2. Staleness is sensing error.** A report `a` samples old localizes the
+neighbour to `eps + a·Dmax`; with own sensing that is `2·eps + a·Dmax`, so
+
+```
+M ≥ 2·(Dmax + turn + eps) + A·Dmax
+```
+
+One sample of staleness costs exactly one `Dmax`, and nothing else changes.
+**Delay and loss are one hypothesis** — a message lost is a message not yet
+arrived. `Vehicle.pair` of S3 is the case `A = 0`, so this generalizes S3
+rather than sitting beside it.
+
+**3. After convergence, separation is free.** `sConvergesBy` puts every drone in
+its own respaced segment; `standoff_tiles` puts consecutive segments exactly `d`
+apart; `separated_of_segments` — one `linarith` — says confinement *is*
+separation.
+
+So **the communication requirement is transient**: the inflated margin buys
+coordination during phase 1, and afterwards geometry maintains the invariant.
+That settles what the degraded-mode fallback should be — *hold to your own
+segment* — with no new mechanism, because it is the steady state. All three
+properties the plan asked of a fallback are proved: inside the fence
+(`standoffLeftEnd_nonneg`, `standoffRightEnd_le_one`), separated
+(`gap_ge_of_hold`), and starving nobody (`hold_covers` — the segments and
+footprints tile `[0,1]` exactly).
+
+`100 verified, 0 errors`. Two new traces: margin `50 = 2·(10+3+2) + 2·10` clears
+a standoff of 5 at `low = 6`; on the *fresh* margin of 30, a two-sample delay is
+enough for the gap to go **negative** — the pair flies through itself.
+
+### Track A is complete
+
+| | |
+|---|---|
+| S0 | the standoff shear is exact |
+| S1 | bounded speed is a change of clock |
+| S2 | the margined fence, proved sharp |
+| S3 | margined separation, at the model and the controller |
+| S4 | `Dmax = V·Δt`, derived |
+| S5 | staleness priced, and the fallback proved |
+
+### What is **not** done
+
+* **Heterogeneous speeds.** A rewrite, not a margin: uniform speed is what makes
+  an escort stay together without a grouped representation, so dropping it takes
+  out `EscortsCoherent`, `Dpss/Coherence.lean` and Lemmas 3.2–3.4.
+* **The turn allowance, and that reversals complete within a period.** Facts
+  about control authority that no speed bound determines. They stay as
+  hypotheses, where an engineer can see what the vehicle is being asked to do.
+* **`A` is a hypothesis**, like `Dmax`. What is proved is the exchange rate.
+* **Track B — convergence under cooperation — is untouched**, and its central
+  question (an `n`-independent phase-1 bound) is an open research problem.
+
+774 theorems, `sorry`-free; `100 verified, 0 errors`; traces agree with Lean.
+`INSIGHTS.md` §24.
+
+---
+
 ## 2026-09-12 — S1 and S4: the last two uniform idealizations  *(branch `safety`)*
 
 ### S1 — bounded speed is a change of clock

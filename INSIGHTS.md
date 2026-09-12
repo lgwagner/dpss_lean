@@ -644,3 +644,39 @@ any of them were started. Ask it first.
 > not by how many files mention it. A uniform one is a change of coordinates —
 > find the map. A non-uniform one is a rewrite, and the honest move is to say so
 > and leave it as a hypothesis.
+
+---
+
+## 24. The fallback was already in the development
+
+S5's open design question was: *what should a drone do when coordination is lost
+for good?* It looked like the item that would need new mechanism — a hold mode,
+a timeout, a re-join protocol, all of it to be specified and then proved safe.
+
+It needed none. The answer was a theorem that had been proved for an entirely
+different reason.
+
+`sConvergesBy` says every drone ends up confined to its own respaced segment.
+`standoff_tiles` says consecutive segments are exactly `d` apart. Compose them
+and *confinement is separation* — `separated_of_segments`, whose proof is one
+`linarith`. So a drone that has lost contact permanently is safe provided it
+stays in its own segment, which is precisely what the algorithm has already
+converged to doing. The fallback is the steady state.
+
+That turns the whole communications budget inside out. `CommsPair` prices
+staleness at one `Dmax` of margin per sample of age, and the natural reading is
+that a team needs a network of a certain quality *for ever*. It does not. The
+inflated margin buys coordination during phase 1; afterwards the invariant is
+maintained by geometry, and the network can fall away entirely. **The
+communication requirement is transient.**
+
+This is not luck, and the reason generalizes. The algorithm converges to a
+*partition* of the perimeter, and a partition is exactly the structure that
+makes a global property (separation) checkable locally (stay in your own piece).
+Any protocol whose steady state is a partition has a free degraded mode, and the
+proof of convergence is also the proof that the degraded mode is safe.
+
+> **Lesson.** Before designing a degraded mode, look at what the system already
+> converges to. If the steady state is safe without the resource that was lost,
+> the fallback is "hold the steady state" — and the convergence proof you
+> already have is the safety proof you were about to write.

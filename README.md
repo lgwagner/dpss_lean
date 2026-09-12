@@ -17,8 +17,8 @@ the finished mathematics. The baseline is elsewhere and is not disturbed:
 |---|---|
 | tag **`v1.0-lean-baseline`** | the Lean formalization of Avigad–van Doorn with extensions, and nothing else. **Start here** if you want the mathematics without the engineering. |
 | branch `main` | that baseline, as it continues |
-| branch `rust-verus` | **E1**, complete: an executable implementation in Rust with Verus proving key equivalence to the Lean specification — `91 verified, 0 errors` |
-| branch **`safety`** (here) | **Track A**: fencing and separation guarantees for a real vehicle. `rust-verus` plus `Dpss/Fence.lean`, `Dpss/Standoff.lean`, `Dpss/Separation.lean`, `Dpss/Kinematics.lean`, `Dpss/Continuous.lean` and the matching Verus modules |
+| branch `rust-verus` | **E1**, complete: an executable implementation in Rust with Verus proving key equivalence to the Lean specification — `100 verified, 0 errors` |
+| branch **`safety`** (here) | **Track A**: fencing and separation guarantees for a real vehicle. `rust-verus` plus `Dpss/Fence.lean`, `Dpss/Standoff.lean`, `Dpss/Separation.lean`, `Dpss/Kinematics.lean`, `Dpss/Continuous.lean`, `Dpss/Comms.lean` and the matching Verus modules |
 
 ## Status
 
@@ -61,6 +61,10 @@ collapse to a function on every state the algorithm can reach
 (`convergesBy_of_isRun`), which is what the paper asserts and does not prove.
 
 ### On this branch: the drone-level guarantees
+
+**Track A is complete.** A drone-level controller with fencing and separation
+guarantees, in Lean and in Verus, against a vehicle described by numbers an
+airframe report contains and a network described by a bound on message age.
 
 **The fence is proved, and proved sharp.** A single drone under a sampled
 controller, with three idealizations of the team model removed at once — point
@@ -110,6 +114,22 @@ real instant with no sampling in the statement. What it deliberately does *not*
 derive is the turn allowance: that is control authority, not kinematics, and no
 speed bound determines it.
 
+**And the network can degrade.** A report `a` samples old localizes a neighbour
+to `eps + a·Dmax`, so the separation margin inflates by exactly `A·Dmax` and
+delay and loss become one hypothesis (`Dpss/Comms.lean`). More useful still: the
+requirement is **transient**. Once the team has converged, every drone is in its
+own respaced segment and consecutive segments are exactly `d` apart, so
+
+```lean
+theorem separated_of_segments (hx : x ≤ standoffRightEnd d i)
+    (hy : standoffLeftEnd d (nextIdx i h) ≤ y) : d ≤ y - x
+```
+
+— confinement *is* separation, with no observation, no message and no
+controller. That makes the degraded-mode fallback the algorithm's own steady
+state: hold to your own segment. It is inside the fence, separated, and
+`hold_covers` shows it starves nobody.
+
 **What is not done** is in `STATUS.md` §4, which is written to be read. The
 work package is complete; what remains outside it is Algorithm B, and a
 phase-1 result that this scope cannot reach by construction.
@@ -129,6 +149,7 @@ phase-1 result that this scope cannot reach by construction.
 | `Dpss/Separation.lean` | **S3** — margined separation at the controller: the fence theorem, instantiated. |
 | `Dpss/Kinematics.lean` | **S1** — bounded speed as a change of clock, and why `vmin > 0` is required. |
 | `Dpss/Continuous.lean` | **S4** — where `Dmax` comes from: `V · Δt`, and the fence at every real instant. |
+| `Dpss/Comms.lean` | **S5** — staleness as sensing error, and why the communication requirement is transient. |
 | `PLAN-original.md` | The original scoping plan, including one recorded planning error. |
 | `dpss-perimeter-surveillance-brief.md` | Literature brief, with corrections from the primary sources. |
 | `Dpss/` | The development. Each file opens with prose explaining the mathematics. |

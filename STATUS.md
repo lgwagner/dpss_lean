@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `883456b2f1f4`  
+**Commit at time of writing:** `697613db4f64`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**754 theorems**, all `sorry`-free, across 39 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 232 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**774 theorems**, all `sorry`-free, across 40 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 468 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 232 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1432,6 +1432,26 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.CommsPair.rep_error' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.CommsPair.obs_error' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.CommsPair.safe_iff_fence' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.CommsPair.le_low' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.CommsPair.le_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.CommsPair.age_within_budget' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separated_of_segments' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_ge_of_converged' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_ge_of_hold' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pitch_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.standoffLeftEnd_eq_pitch' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.standoffRightEnd_eq_pitch' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.n_mul_pitch' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.hold_covers' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.standoffLeftEnd_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.standoffRightEnd_le_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.lipschitz_of_deriv' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.sampleTime_le_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.Flight.leg_nonempty' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2134,7 +2154,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**754/754 clean — `sorryAx` appears zero times.**
+**774/774 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2184,6 +2204,10 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+697613d  2026-09-12  S5: the fallback starves nobody
+006507b  2026-09-12  S5: the stale link in Verus, and a breach you can watch happen
+3ad69da  2026-09-12  S5: safety when the network degrades
+d67406e  2026-09-12  docs: S1 and S4 core, and the diagnostic that would have re-sized the track
 883456b  2026-09-12  S4(core): Dmax is no longer a hypothesis
 5c8a921  2026-09-12  S1: bounded speed is a change of clock
 677a8b1  2026-09-12  docs: S3 done in both halves, and the transfer lesson
@@ -2443,7 +2467,7 @@ not scheduled.
 | **S3** | ~~Margined separation~~ | S | ✅ **both halves** — `Dpss/Separation.lean`, `Dpss/Standoff.lean`, `rust/src/separation.rs` |
 | **S1** | ~~Kinematics: bounded motion into the *team* model~~ | M | ✅ **uniform speeds** — `Dpss/Kinematics.lean`. Heterogeneous speeds recorded as a rewrite, not attempted |
 | **S4** | The continuous layer | XL | ◐ **core done** — `Dmax = V·Δt` derived, `Dpss/Continuous.lean`. See the non-claims |
-| S5 | Decentralized safety under a comms model | L | open |
+| **S5** | ~~Decentralized safety under a comms model~~ | L | ✅ **done** — `Dpss/Comms.lean`, `rust/src/comms.rs` |
 
 ### S2 — what is actually guaranteed
 
@@ -2616,6 +2640,54 @@ are how the controller works, not part of what is guaranteed.
 bound bounds the leg below, and is never required to be *attained*, so no
 compactness or extreme-value argument appears anywhere.
 
+### S5 — safety when the network degrades
+
+Three answers, different in character.
+
+**1. The fence needs no network at all.** Structural rather than a theorem, and
+worth stating: nothing in `Fence.Traj` mentions another drone. A total
+communications failure does not weaken the fence by an epsilon.
+
+**2. Staleness is sensing error.** A report `a` samples old localizes the
+neighbour to `eps + a·Dmax` — the error when taken, plus the furthest it can
+have moved since. With own sensing that is `2·eps + a·Dmax`, so
+
+```
+M ≥ 2·(Dmax + turn + eps) + A·Dmax
+```
+
+One sample of staleness costs exactly one `Dmax`, and nothing else changes — no
+extra vehicle hypothesis, no second induction. **Delay and loss are one
+hypothesis**, because a message lost is a message not yet arrived, and
+`age_within_budget` reads it the other way round to say how long a drone may go
+unheard on a fixed margin. `Vehicle.pair` of S3 is the case `A = 0`.
+
+**3. After convergence, separation is free.** `sConvergesBy` puts every drone in
+its own respaced segment; `standoff_tiles` puts consecutive segments exactly `d`
+apart; so `separated_of_segments` — one `linarith` — says confinement *is*
+separation. `gap_ge_of_converged` applies it to a converged run.
+
+The consequence for a designer is the useful one: **the communication
+requirement is transient.** The inflated margin buys coordination during phase
+1; afterwards the invariant is maintained by geometry.
+
+That settles the open design question of what the degraded-mode fallback should
+be — *hold to your own segment* — and it needs no new mechanism, because it is
+the steady state. It has all three properties the plan asked for:
+
+| | |
+|---|---|
+| inside the fence | `standoffLeftEnd_nonneg`, `standoffRightEnd_le_one` |
+| separated | `gap_ge_of_hold` |
+| starves nobody | `hold_covers` — every point of `[0,1]` is covered, because the segments and footprints tile it exactly |
+
+`rust/src/comms.rs` is the same in Verus (`100 verified, 0 errors`), with the
+whole sensing term in one field `2·eps + a·dmax` — splitting it evenly would
+have needed a division by two, exact over the reals and not over the integers.
+Two more traces: margin `50 = 2·(10+3+2) + 2·10` clears a standoff of 5 at
+`low = 6`; on the *fresh* margin of 30, a two-sample delay is enough for the
+gap to go **negative**.
+
 ### What Track A does not claim
 
 * **The convergence result here is Theorem 2.1 transported, not a new one.**
@@ -2634,5 +2706,10 @@ compactness or extreme-value argument appears anywhere.
   is what makes a co-located pair stay co-located, so dropping it removes
   `Escorting` as an invariant and takes `EscortsCoherent`,
   `Dpss/Coherence.lean` and Lemmas 3.2–3.4 with it. Recorded, not attempted.
-* **S5 is not started.** There is no comms model, no message loss, no delay, and
-  no degraded-cooperation fallback.
+* **`A` is a hypothesis, like `Dmax`.** Bounding message age is the network's
+  job exactly as bounding displacement is the airframe's. What is proved is the
+  exchange rate between them: one sample of staleness costs one `Dmax` of
+  margin.
+* **Nothing here is about staying *synchronized* under degradation.** A team
+  that loses coordination stays safe; whether it re-synchronizes is a question
+  about Algorithm B and estimate propagation, and is Track B.

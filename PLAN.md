@@ -52,16 +52,15 @@ scheduled*.
 | S3 | Margined separation | S | ✅ done — both halves, in Lean and Verus |
 | S1 | Kinematics: bounded motion into the team model | M | ✅ done — uniform speeds |
 | S4 | The continuous layer | XL | ◐ core done — `Dmax = V·Δt` derived |
-| **S5** | Decentralized safety under a comms model | L | **next** |
+| S5 | Decentralized safety under a comms model | L | ✅ done — both halves |
 
-**Everything uniform has been removed.** What is left on this track is not a
-change of coordinates, and `INSIGHTS.md` §23 is the diagnostic that says so:
+**Track A is complete.** A drone-level controller with fencing and separation
+guarantees exists, in Lean and in Verus, against a vehicle described by
+measurable numbers and a network described by a bound on message age.
 
-* **S5 — a comms model.** Bounded delay, message loss, a drone going silent, and
-  a fallback hold that is provably inside the fence, separated, and starves
-  nobody. These are invariants, so they are proved against the worst case rather
-  than the expected one. **Genuinely new work**, not a transfer: a comms model
-  adds state that `Config` does not have.
+What remains is not on this track, and none of it is a change of coordinates —
+`INSIGHTS.md` §23 is the diagnostic that says so:
+
 * **Heterogeneous speeds.** A rewrite, and the reason is structural: uniform
   speed is what makes an escort stay together without a grouped representation.
   It would take out `EscortsCoherent`, `Dpss/Coherence.lean` and Lemmas 3.2–3.4.
@@ -98,6 +97,17 @@ uniform across drones and bounded, and the work roughly halves.
 ---
 
 ## Completed on this branch
+
+**S5 — safety when the network degrades.** `Dpss/Comms.lean`,
+`rust/src/comms.rs`. Staleness is sensing error, at one `Dmax` of margin per
+sample of age; delay and loss are one hypothesis. And after convergence,
+separation is maintained by geometry with no messages at all — which makes the
+communication requirement transient and settles what the fallback should be.
+`hold_covers` completes it: the fallback starves nobody.
+
+*Insight:* the fallback was already in the development. The open design question
+was answered by composing two theorems proved for other reasons, and the proof
+is one `linarith`. `INSIGHTS.md` §24.
 
 **S4 (core) — `Dmax` derived.** `Dpss/Continuous.lean`. `Vehicle.ofSpeed` gives
 `Dmax = V·Δt`; `lipschitz_of_deriv` converts a derivative bound into it via
