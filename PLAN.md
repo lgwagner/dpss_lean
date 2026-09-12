@@ -134,11 +134,34 @@ being sharp means 2.2 fails if drones start correct. This is what turns the
 
 ---
 
-## 4. Non-Zeno: we have a roadmap
+## 4. Non-Zeno: the most valuable thing in this project
 
-The paper supplies an explicit argument (§2) that the algorithm has no Zeno
-behaviour — infinitely many events in finite time. This is the single biggest
-well-definedness obligation and we do **not** have to invent it:
+**This section was upgraded on 2026-09-12 after reading the ACL2 paper in full.**
+
+Non-Zeno — no infinitely many events in finite time — looked like tedious
+well-definedness plumbing. It is in fact the part where a Lean development has
+something genuinely new to offer.
+
+The ACL2 mechanization **does not prove it**. Their event-stepping function
+`step-time` was admitted as a partial function via `def::ung`, and the
+assumption `(step-time-always-terminates)` appears as an explicit hypothesis in
+their top-level convergence theorem. They are candid about it and invite exactly
+this improvement: *"given sufficient interest and resources, a proper measure
+for step-time could be developed and used to dispatch this assumption, further
+strengthening our results."*
+
+Avigad–van Doorn, meanwhile, **do** supply the argument (§2) but do not
+mechanize it. The two artifacts are complementary, and the gap between them is
+precisely what Stage 1 produces.
+
+So the target is sharper than "reproduce a known result":
+
+> Formalize the AvD non-Zeno argument in Lean and thereby discharge the
+> hypothesis that the only existing mechanization has to assume.
+
+That stands on its own even if Stage 4 never closes.
+
+The paper's argument, which we get to reuse rather than invent:
 
 1. Suppose infinitely many events with least upper bound `T`.
 2. Some drone changes direction infinitely often in `(T−ε, T)`.
@@ -157,7 +180,7 @@ Step 3 is a clean standalone lemma and a good early Lean target.
 | Stage | Deliverable | Status |
 |---|---|---|
 | 0 | Toolchain, Mathlib project, papers read, `[verify]` items resolved | in progress |
-| 1 | Definitional layer: state, events, trajectory, order invariant, non-Zeno | |
+| 1 | Definitional layer: state, events, trajectory, order invariant, non-Zeno — **now carries independent novelty, see §4** | |
 | 2 | `Synchronized` defined; Theorem 2.1 **stated** (with `sorry`) | |
 | 3 | Sanity tests at `n = 2, 3`; refute the false phase-1 bound | |
 | 4 | Close the `2 − 1/n` proof | stretch |
@@ -173,6 +196,9 @@ interesting case**.
 
 - **Sharpness leaves no slack.** `2 − 1/n` is attained. Any analysis that loses
   an `ε` will not close.
+- **Rationals vs reals.** ACL2 has no reals, so their model is rational-valued.
+  Our `ℝ` model is strictly more faithful, but it also means their termination
+  intuitions do not transfer for free.
 - **Localize, don't globalize.** The ACL2 team reported that predicates defined
   over execution *history* or extrapolated futures "tended to draw heavily on
   human intuition" and resisted mechanization; locally checkable invariants over

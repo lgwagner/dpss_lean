@@ -12,9 +12,11 @@ worth checking against the primary text before any of them is turned into a Lean
 > Five items are now marked **[resolved]**, **[partly resolved]** or **[searched]** inline
 > below, one factual error was corrected (the "bounce" terminology in sec 3.4 — it was
 > wrong in a way that would have corrupted the Lean model), and one omitted result was
-> added (Theorem 2.2 in sec 4.3). arXiv:2205.11697 has *not* yet been read in full, so
-> every ACL2-specific claim below remains unverified. See PLAN.md for the formalization
-> plan this fed into.
+> added (Theorem 2.2 in sec 4.3). arXiv:2205.11697 has now *also* been read (sec 2 and
+> sec 4), which resolved the remaining periodicity question and surfaced a significant
+> omission: the ACL2 convergence proof is **conditional on an unproved termination
+> assumption**. See the flagged subsection in sec 4.4 — it changes what this project is
+> worth. See PLAN.md for the formalization plan this fed into.
 
 ---
 
@@ -34,7 +36,7 @@ three communities:
 | 2008 | Kingston, Beard, Holt (BYU → AFRL) | Algorithm + hand proof, claimed total convergence bound 5T |
 | 2019 | Davis, Humphrey, Kingston (Collins Aerospace + AFRL) | AGREE model checker finds Lemma 1 false |
 | 2020–21 | Avigad, van Doorn (CMU / Bonn) | Corrected hand proof; sharp phase-2 bound `2 − 1/n`; phase-1 lower bounds |
-| 2022 | Greve, Davis, Humphrey (Collins + AFRL) | Mechanized proof of the phase-2 result in ACL2 |
+| 2022 | Greve, Davis, Humphrey (Collins + AFRL) | Mechanized proof of the phase-2 result in ACL2 — **conditional on an unproved termination assumption**, see §4.4 |
 
 So there is a known-good target (the phase-2 theorem, already mechanized once), a
 known-bad historical artifact (the 2008 Lemma 1) that makes a nice regression test, and a
@@ -179,11 +181,13 @@ Two equivalent-ish formulations appear:
 
 Synchronization is the more useful one to formalize — it is a safety property with a
 "from now on" quantifier, whereas periodicity is an exact-orbit statement.
-**[partly resolved 2026-09-12]** Avigad-van Doorn use *only* synchronization; the word
-periodicity does not carry their argument. Periodicity is the ACL2 paper's framing. So
-the two are not presented as equivalent, and synchronization is confirmed as the right
-target. Whether the ACL2 development *derives* periodicity from synchronization is still
-unchecked against arXiv:2205.11697 in full. **[verify]**
+**[resolved 2026-09-12]** Avigad-van Doorn use *only* synchronization. The ACL2 paper
+**derives** periodicity from synchronization: "once we know that a UAV satisfies both
+have met and synchronized (both left and right), we can show that its behavior will be
+forever periodic". The extra ingredient is that UAVs turn only at meets/borders and all
+travel at uniform speed. So the two are *not* equivalent — periodicity is strictly
+downstream. Synchronization is confirmed as the right primary target, with periodicity
+available as a corollary if we want it.
 
 ---
 
@@ -280,6 +284,43 @@ bound `2N − 1` segment-times. Two invariants carry the proof:
 The paper also discusses three general-purpose ACL2 utilities developed for expressing
 and reasoning about the model. Worth reading for the modeling patterns even though ACL2's
 untyped first-order setting is quite unlike Lean's.
+
+#### ⚠️ The ACL2 result is conditional — **[read in full 2026-09-12]**
+
+This is the most consequential thing the original brief missed, and it changes what a
+Lean development is worth.
+
+The ACL2 simulator's `step-time` function steps from event to event. ACL2 requires a
+termination proof for every recursive function, and **they did not give one**. Instead
+they used the `def::ung` macro to admit `step-time` as a *partial* function, and carried
+the assumption as an explicit hypothesis. The top-level theorem literally reads:
+
+```lisp
+(defthm dpss-location-convergence-after-2T-1
+ (implies
+  (and (wf-ensemble ens)
+       (step-time-always-terminates))     ; <-- admitted, never proved
+  (dpss-location-convergence (step-time (- (* 2 (TEE)) (ONE)) ens))))
+```
+
+In their own words: *"we believe that there is a proof that `step-time` always
+terminates. However, the proof is likely to be ugly and time consuming and it is unlikely
+that it will reveal anything of interest about the DPSS algorithm"*, and *"given
+sufficient interest and resources, a proper measure for step-time could be developed and
+used to dispatch this assumption, further strengthening our results."*
+
+`step-time-always-terminates` **is** the non-Zeno property. And Avigad–van Doorn supply an
+argument for it (§2 of arXiv:2008.04262). So the two published artifacts are
+complementary: AvD have the non-Zeno argument but no mechanization; ACL2 has the
+mechanization but assumes non-Zeno.
+
+**A Lean development that formalizes the AvD non-Zeno argument closes a gap that the
+existing mechanization explicitly leaves open.** That is a real contribution rather than
+a reproduction, and it sits in Stage 1 — the part that looked like pure plumbing.
+
+Other details worth having: ACL2 has no reals, so their model is **rational**-valued;
+Lean's `ℝ` is strictly more faithful. The development is ~11K lines of ACL2 and the
+convergence proof runs in about 30 minutes.
 
 ### 4.5 What is still open
 
