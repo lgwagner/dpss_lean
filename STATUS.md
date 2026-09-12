@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `9f72d4cb3153`  
+**Commit at time of writing:** `f2d3ecaa7fdd`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -57,6 +57,8 @@ Stage 1 broken down:
 | Drones stay on the perimeter (`onPerimeter_step`) | done |
 | Lemma 3.1: where a drone may turn | done |
 | Crossing an interval costs `1/n` of time | done |
+| Escorts stay coherent (`escortsCoherent_step`) | done |
+| Invariants hold along a whole run (`invariant_run`) | done |
 | **Non-Zeno proper (the counting step)** | **not started** |
 
 ---
@@ -64,7 +66,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**126 theorems**, all `sorry`-free, across 9 files (`Basic.lean` 212 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 215 lines, `Step.lean` 227 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**145 theorems**, all `sorry`-free, across 10 files (`Basic.lean` 212 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 215 lines, `Step.lean` 227 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -252,6 +254,38 @@ backwards would have silently wrecked every bound in the file.
 - `convergesBy_of_one` — the `n = 1` case, **proved**. Mathematically trivial,
   but it confirms the definitions are not mis-signed or vacuous.
 
+### 3.10 `Dpss/Coherence.lean` — the last assumption, discharged
+
+`EscortsCoherent` — escorts point at the boundary they are escorting to — had
+been *assumed* everywhere it was needed. It is now proved.
+
+**`escortsCoherent_step` needs no hypotheses at all.** That was a surprise: I
+wrote it with `OnPerimeter`, `AdjOrdered` and the old coherence as premises and
+Lean reported all three unused. The reason is structural — `droneNextTime`
+always includes an escorting pair's `separationTime` among the candidates it
+minimises over, so **a step can never overshoot a separation**. Coherence is
+enforced by the scheduler rather than inherited.
+
+The proof is a case analysis on which branch of `newDir` fired for drone `i`.
+A border event, a separation, or a meet with the right neighbour each settle
+the sign immediately. Two branches need `commonEnd_le_pos_of_both_left`: if a
+co-located pair both end up heading left, they must be at or beyond their
+shared boundary — established by asking what could have turned drone `i+1` that
+way, and finding every possibility puts it there.
+
+**And so the invariants close under iteration**, which is the point at which
+this development stops reasoning about isolated steps and starts reasoning
+about the running system:
+
+- `Invariant` — on the perimeter, in order, escorts coherent.
+- `invariant_step`, **`invariant_run`** — preserved by a step, hence along an
+  entire run.
+- `onPerimeter_run`, `ordered_run`, `time_mono_run` — drones never leave the
+  perimeter, never overtake one another, and time never runs backwards. Ever.
+- `convergesBy_of_one'` — Theorem 2.1 at `n = 1`, now **unconditional**. What
+  was previously a hypothesis ("assume they stay on the perimeter") is a
+  theorem.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -262,9 +296,9 @@ This is the honest gap list, ordered by importance.
    consecutive turns of one drone are at least `1/n` apart. What remains: every
    event turns at least one drone, each drone turns at most once per `1/n`,
    therefore only finitely many events fit in a bounded interval. That needs a
-   pigeonhole over `Fin n`, and it also needs gap 2, since otherwise a step
-   might fly to a deadline where nothing actually fires. **This is the headline
-   opportunity (§5) and it is not finished.**
+   pigeonhole over `Fin n`, and also gap 2, since otherwise a step might fly to
+   a deadline where nothing fires. **This is the headline opportunity (§5) and
+   it is not finished.**
 
 2. **The minimum is not yet proved genuine.** `timeToNextEvent` minimises over
    `borderTime` for *every* drone, including interior ones where no border
@@ -273,39 +307,40 @@ This is the honest gap list, ordered by importance.
    chaining into "`timeToNextEvent` is attained by a genuine event" is not
    done** — it needs argmin machinery that does not exist here.
 
-   Instructive: my first attempt at the rightward version of this was
-   **false**, and Lean caught it. `droneNextTime j` only consults the pair
-   `(j, j+1)`, so a meet with the *left* neighbour is accounted for at `j-1`,
-   never at `j`.
+   Instructive: my first attempt at the rightward version was **false**, and
+   Lean caught it. `droneNextTime j` only consults the pair `(j, j+1)`, so a
+   meet with the *left* neighbour is accounted for at `j-1`, never at `j`.
 
-3. **`EscortsCoherent` is not proved preserved by a step.** It is assumed
-   wherever needed. A meet event does establish it, but that it survives an
-   arbitrary step — cascades included — is unproved. This is the weakest link
-   in the invariant set.
-
-4. **Theorem 2.1 is stated but not proved**, except at `n = 1`. Lemma 3.1 is
+3. **Theorem 2.1 is stated but not proved**, except at `n = 1`. Lemma 3.1 is
    done; **Lemmas 3.2 through 3.8 are untouched.** Lemma 3.5 in particular
    ("every adjacent pair has met by time 1") is the uniform timing result that
    makes the bound `n`-independent, and nothing here approaches it.
 
-5. **No sanity tests. The model has never been run.** Nothing is instantiated
-   at `n = 2` or `n = 3`. The only evidence the definitions are non-vacuous is
+4. **No sanity tests. The model has never been run.** Nothing is instantiated
+   at `n = 2` or `n = 3`. Evidence that the definitions are non-vacuous is
    local: the `meetTime` checks (§3.2), the schedule-correctness theorems
-   (§3.4), and `n = 1` (§3.9). That is meaningfully more than nothing, and
-   meaningfully less than having executed the system once.
+   (§3.4), `n = 1` (§3.9), and now the run-level invariants (§3.10). That is
+   meaningfully more than nothing, and meaningfully less than having executed
+   the system once.
 
-6. **The paper's sharp `n = 2` and `n = 3` values are not checked.** They would
+   A practical obstacle worth recording: the model is `noncomputable`
+   throughout (real division, and `newDir` uses classical choice), so it cannot
+   simply be `#eval`ed. Sanity checks have to be symbolic proofs about concrete
+   configurations rather than test runs.
+
+5. **The paper's sharp `n = 2` and `n = 3` values are not checked.** They would
    make excellent regression tests (`2` and `2.5` for `n = 2`).
 
-7. **The nondeterminism is not modelled.** When three or more drones converge
+6. **The nondeterminism is not modelled.** When three or more drones converge
    the paper leaves open which neighbour the middle one escorts, and notes the
    strongest bound quantifies over all resolutions. `newDir` picks one. A fully
    faithful model needs a relation, not a function.
 
-8. **Unused definitions.** `Config.Together` and `Config.Valid` are defined but
-   no theorem uses them.
+7. **Unused definitions.** `Config.Together` is defined but unused, and
+   `Config.Valid` has been superseded by `Config.Invariant` without being
+   removed.
 
-9. **Algorithm B is entirely out of scope** — wrong estimates, changing
+8. **Algorithm B is entirely out of scope** — wrong estimates, changing
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
 
@@ -397,6 +432,25 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.rightEnd_last' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.together_refl' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.together_symm' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.gap_advance_of_dir_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepTime_nonneg_left_border' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepTime_nonneg_right_border' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepTime_eq_zero_at_commonEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepTime_nonneg_at_leftEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepTime_nonneg_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepTime_nonneg_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.commonEnd_lt_commonEnd_next' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftEnd_next_eq_commonEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.droneNextTime_le_separationTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.commonEnd_le_pos_of_both_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortsCoherent_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.invariant_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.invariant_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.onPerimeter_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ordered_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_mono_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.convergesBy_of_one'' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.advance_time' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.advance_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.advance_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -507,7 +561,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**126/126 clean — `sorryAx` appears zero times.**
+**145/145 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -557,6 +611,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+f2d3eca  2026-09-12  docs: bring STATUS.md up to date, and guard it against silent edit failures
 9f72d4c  2026-09-12  feat: Stage 2 -- synchronization defined, Theorem 2.1 stated
 beb1ee8  2026-09-12  feat: crossing an interval costs at least 1/n of time
 8213bd8  2026-09-12  feat: Lemma 3.1 -- where a drone is allowed to turn
@@ -582,12 +637,11 @@ bcdb11f  2026-09-11  Create README.md
 ## 9. Next steps, in order
 
 1. ~~Border predicates, `timeToNextEvent`, `step` and runs, Lemma 3.1,
-   `Synchronized`, Theorem 2.1 stated.~~ **All done.**
+   `Synchronized`, Theorem 2.1 stated, escort coherence, run invariants.~~
+   **All done.**
 2. **Finish non-Zeno** (gap 1): every event turns a drone; pigeonhole over
    `Fin n`; conclude finitely many events per bounded interval.
-3. Prove `EscortsCoherent` preserved by a step (gap 3), so the invariants close
-   under iteration.
-4. Chain the domination lemmas into "the minimum is genuine" (gap 2).
-5. Stage 3: instantiate at `n = 2, 3`, run the model, check the paper's sharp
-   values, and refute the known-false phase-1 bound.
-6. Lemmas 3.2 → 3.7, then Theorem 2.1 itself.
+3. Chain the domination lemmas into "the minimum is genuine" (gap 2).
+4. Stage 3: instantiate at `n = 2, 3` and check the paper's sharp values
+   symbolically, since the model cannot be evaluated.
+5. Lemmas 3.2 → 3.7, then Theorem 2.1 itself.

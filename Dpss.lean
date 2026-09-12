@@ -7,3 +7,4 @@ import Dpss.Step
 import Dpss.Turning
 import Dpss.NonZeno
 import Dpss.Synchronization
+import Dpss.Coherence
