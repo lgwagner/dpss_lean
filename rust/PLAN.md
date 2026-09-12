@@ -9,6 +9,11 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 
 ## Status
 
+**All six milestones are done.** `80 verified, 0 errors`; the verified binary
+reproduces two traces Lean has already proved. What remains is the per-drone
+controller, scoped in `REFINEMENT.md` and not built — its specification does not
+exist yet, and writing it is a Lean problem rather than a Rust one.
+
 | | Milestone | State |
 |---|---|---|
 | **M0** | Toolchain, pinned and scripted | ✅ `3 verified, 0 errors` |

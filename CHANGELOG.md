@@ -12,6 +12,77 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — E1: DPSS in Rust, verified with Verus  *(branch `rust-verus`)*
+
+An executable implementation of Algorithm A, with Verus proving it computes exactly
+the specification the Lean development proves theorems about. `80 verified,
+0 errors`; the verified binary reproduces two traces Lean has already proved.
+
+`main` is untouched. The work is on `rust-verus`; `rust/PLAN.md` is the build plan
+and its running status, `rust/README.md` explains the branch.
+
+### The constraint that shaped it
+
+**Verus has no real numbers** — `int`/`nat` in specs, fixed-width integers in
+executable code, no rationals, no verified floats. So the specification had to be
+restated over the integers.
+
+**That restatement loses nothing.** Scale by `S = 2·K·n`: the segment boundaries
+land on the even integers, and because a gap only ever changes by `sep_rate · dt`
+with `sep_rate ∈ {−2, 0, 2}`, **gap parity is invariant** — so `meet_time = gap/2`
+is always exact. The integer runs are a sublattice of the real runs, not an
+approximation of them. `Dpss/IntModel.lean` proves it (`embed_step`,
+`intRun_converges`), which is what lets the Rust inherit the `2 − 1/n` bound
+without reproving it.
+
+Doing that step in Lean is also what keeps the generator honest: the one
+semantically interesting part of the port is proved, so
+`scripts/lean_to_verus.py` only has to change notation.
+
+### What is proved where
+
+| | |
+|---|---|
+| **Verus** | the executable step equals the generated spec step; both standing conditions preserved, and along a whole run; no arithmetic overflow |
+| **Lean** | `2 − 1/n`, sharp, for every resolution; and that the integer model refines the real one |
+| **Trusted** | the generator, the Verus toolchain, Z3 |
+
+`converges_by` is *written down* as a Verus `spec fn` so the property exists in the
+crate's own language, but is neither proved nor `assume`d there — an `assume` would
+be a silent trust hole and nothing depends on it.
+
+### Three things that were not expected
+
+**Z3 is better at the exhaustive branch analyses than Lean is.**
+`apart_on_boundaries` preservation costs ~90 lines across three hand-written
+lemmas in `Dpss/Reachable.lean`; in Verus it went through with no case split
+written at all. An if-chain over decidable conditions is what an SMT solver is for.
+The opposite held for the real-valued reasoning, where Mathlib was indispensable —
+which is the argument for this split of labour rather than either tool alone.
+
+**The invariant proofs are a sharper filter than the differential tests.** The plan
+expected the traces to catch a mistranslation. Corrupting the generated
+`escort_dir_left` to aim at the wrong boundary — and corrupting the executable code
+to match, so the equivalence would still verify — was caught one layer earlier, by
+escort coherence failing. I could not construct a corruption that passes every
+proof and still changes a trace, which matches what `Dpss/Priority.lean` found
+about the model: the tie-breaks that look like choices are unreachable.
+
+**Z3 is not bundled with the Verus release**, and the version it requires is not in
+`INSTALL.md` — it is `EXPECTED_Z3_VERSION` in `tools/common/consts.rs` at the
+pinned commit. Verus also releases weekly, so all three versions are pinned in
+`rust/toolchain-versions.txt` and bumped deliberately.
+
+### What is not done
+
+The per-drone controller — what you would actually fly. `rust/REFINEMENT.md`
+scopes it: every event in the model is already local and every quantity a drone
+needs is already local, but `time_to_next_event` is a minimum over all drones, and
+the theorem that local reaction realizes the global event sequence does not exist
+in any form. The Rust side of that would be the easy half.
+
+---
+
 ## 2026-09-12 (later) — the work package, closed
 
 The two items the Theorem 2.1 entry below left open are done. **Every item in

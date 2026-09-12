@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `d42b1703191b`  
+**Commit at time of writing:** `f4ec3ecb81c0`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2088,6 +2088,14 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+f4ec3ec  2026-09-12  docs: M6 -- what a verified controller would additionally require
+f45896c  2026-09-12  feat: M5 -- the verified stepper reproduces the Lean traces
+b4b59d7  2026-09-12  feat: M4 complete -- the key equivalence, proved
+b01fe7f  2026-09-12  feat: M4 begins -- the executable ensemble, proved equal to its spec
+82a3c84  2026-09-12  feat: M3 complete -- both invariants preserved, and carried along a run
+4ce0f76  2026-09-12  feat: M3 -- the invariant is preserved, and holds along a whole run
+6416d81  2026-09-12  feat: M2 -- the Verus specification, generated from the Lean
+e8e6aba  2026-09-12  feat: M1 -- the integer model, and the bridge to the real one
 d42b170  2026-09-12  fix: the deep-link generator lost seventeen links to IntModel's twins
 c8dc116  2026-09-12  docs: commit the E1 build plan, as a living document
 8fcf4cb  2026-09-12  feat: M0 -- the Verus toolchain, pinned, plus M1's integer model
