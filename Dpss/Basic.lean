@@ -69,6 +69,10 @@ def sign : Dir → ℝ
 
 theorem sign_ne_zero (d : Dir) : d.sign ≠ 0 := by cases d <;> norm_num [sign]
 
+/-- There are only two directions. Used constantly to drive case analysis on a
+drone's heading. -/
+theorem eq_left_or_right (d : Dir) : d = left ∨ d = right := by cases d <;> simp
+
 /-- Drones never stand still: the two directions have opposite velocities. -/
 @[simp] theorem sign_flip (d : Dir) : d.flip.sign = -d.sign := by
   cases d <;> norm_num [flip, sign]
