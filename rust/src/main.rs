@@ -43,6 +43,7 @@ pub mod step_lemmas;
 pub mod coherence;
 pub mod reachable;
 pub mod exec;
+pub mod fence;
 
 /// A trace harness, not part of the verified development.
 ///
@@ -71,6 +72,41 @@ fn main() {
     // time 5/4, which is 10 in these units.
     trace("spread (n=2, K=2)", 2, vec![0, 2],
           vec![Dir::Right, Dir::Right], 3);
+
+    // S2, the margined fence. One drone, one wall, worst case throughout: every
+    // leftward leg is a full `dmax`, the sensor always reads high (which delays
+    // the turn maximally, so it is the adversarial choice at a *left* fence),
+    // every reversal costs the full `turn` allowance and yields no net progress,
+    // and the surveillance algorithm asks for Left at every sample.
+    //
+    // `Dpss/Fence.lean` proves the drone stays clear when the margin is at least
+    // `dmax + turn + eps`, and `margin_sharp` proves it need not when the margin
+    // is any smaller. The second run below is that theorem at runtime: the same
+    // verified controller, a margin one term short, and a breach.
+    fence_trace("fence (dmax=10, turn=3, eps=2, margin=15)", 10, 3, 2, 15, 44, 6);
+    fence_trace("fence, margin short by eps (margin=13 < 10+3+2)", 10, 3, 2, 13, 42, 6);
+}
+
+/// Worst-case fence simulation, driven by the *verified* controller.
+#[verifier::external]
+fn fence_trace(name: &str, dmax: i64, turn: i64, eps: i64, margin: i64,
+               p0: i64, samples: usize) {
+    use crate::dir::Dir;
+    use crate::fence::fence_control;
+    println!("--- {} ---", name);
+    let mut p = p0;
+    let mut min_low = i64::MAX;
+    for k in 0..samples {
+        let obs = p + eps;                       // adverse sensing
+        let d = fence_control(margin, obs, Dir::Left);   // adverse request
+        let low = if d == Dir::Left { p - dmax } else { p - turn };
+        if low < min_low { min_low = low; }
+        println!("k={} p={} obs={} dir={} low={}", k, p, obs,
+                 if d == Dir::Left { "<" } else { ">" }, low);
+        p = if d == Dir::Left { p - dmax } else { p };   // no net gain on a reversal
+    }
+    println!("min low = {}  ({})", min_low,
+             if min_low >= 0 { "clear of the fence" } else { "BREACH" });
 }
 
 #[verifier::external]

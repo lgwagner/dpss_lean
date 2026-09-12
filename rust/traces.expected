@@ -9,3 +9,19 @@ t=0 pos=[0,2] dir=[>,>]
 t=6 pos=[6,8] dir=[>,<]
 t=7 pos=[7,7] dir=[<,<]
 t=10 pos=[4,4] dir=[<,>]
+--- fence (dmax=10, turn=3, eps=2, margin=15) ---
+k=0 p=44 obs=46 dir=< low=34
+k=1 p=34 obs=36 dir=< low=24
+k=2 p=24 obs=26 dir=< low=14
+k=3 p=14 obs=16 dir=< low=4
+k=4 p=4 obs=6 dir=> low=1
+k=5 p=4 obs=6 dir=> low=1
+min low = 1  (clear of the fence)
+--- fence, margin short by eps (margin=13 < 10+3+2) ---
+k=0 p=42 obs=44 dir=< low=32
+k=1 p=32 obs=34 dir=< low=22
+k=2 p=22 obs=24 dir=< low=12
+k=3 p=12 obs=14 dir=< low=2
+k=4 p=2 obs=4 dir=> low=-1
+k=5 p=2 obs=4 dir=> low=-1
+min low = -1  (BREACH)
