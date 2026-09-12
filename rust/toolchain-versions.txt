@@ -1,0 +1,5 @@
+# Pinned toolchain for the Verus half of this repository.
+# Do not track Verus's rolling releases: pin, and bump deliberately.
+verus   release/0.2026.09.06.8dea4a2
+rust    1.98.0-x86_64-unknown-linux-gnu   # the toolchain that Verus release requires
+z3      4.16.0                            # tools/common/consts.rs EXPECTED_Z3_VERSION

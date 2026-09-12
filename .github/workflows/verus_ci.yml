@@ -1,0 +1,40 @@
+name: Verus CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Verus makes rolling releases weekly and needs an exact Rust toolchain and
+      # an exact Z3. All three are pinned in rust/toolchain-versions.txt; the cache
+      # key is that file, so a deliberate bump invalidates it and nothing else does.
+      - name: Cache the pinned Verus toolchain
+        id: cache-verus
+        uses: actions/cache@v4
+        with:
+          path: ~/tools
+          key: verus-${{ hashFiles('rust/toolchain-versions.txt') }}
+
+      - name: Install the pinned toolchain
+        run: ./scripts/setup_verus.sh
+
+      # A build can succeed while a proof is stubbed out. Verus reports a count;
+      # anything other than "0 errors" fails the step.
+      - name: Verify the Rust half
+        run: ./rust/verify.sh
+
+      # Belt and braces, mirroring the Lean half: catch a proof hole directly.
+      # `assume` and `external_body` in the proof path would silently weaken
+      # everything downstream of them.
+      - name: No proof holes in the Rust sources
+        run: python3 scripts/no_proof_holes.py
