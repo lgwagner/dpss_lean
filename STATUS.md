@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `eb396c4232b9`  
+**Commit at time of writing:** `49bac2d50835`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -211,7 +211,7 @@ is automatic and no ordering of updates needs justifying.
 can never compete: a drone cannot meet both neighbours (that needs opposite
 headings), nor separate from both (the two points differ). A separation and a
 meet *can* coincide — the genuine ambiguity the paper leaves open — and giving
-separation priority is one resolution. See gap 4.
+separation priority is one resolution. See gap 5.
 
 Proved: `adjOrdered_step` (a step never flies past a collision, so nobody
 overtakes) and `step_time_lt` (time strictly advances when nothing was due).
@@ -753,40 +753,55 @@ enumeration, and §3.20 is the map of which branch needs which move.
 This is the honest gap list, ordered by importance.
 
 1. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for specific
-   `n = 2` and `n = 3` configurations. Lemma 3.1 is done and **Lemma 3.2 is
-   half done** (§3.13: everything but ruling out `BothLeftApart`). **Lemmas 3.3
-   through 3.8 are untouched.** Lemma 3.5 in particular ("every adjacent pair
-   has met by time 1") is the uniform timing result that makes the bound
-   `n`-independent, and nothing here approaches it. **This is now the main
-   outstanding item.**
+   `n = 2` and `n = 3` configurations. Lemmas 3.1 and 3.6 are done; 3.2, 3.3
+   and 3.4 are done *conditionally* on one obstruction (`BothLeftApart`);
+   **3.5 and 3.7 are untouched.** Lemma 3.5 ("every adjacent pair has met by
+   time 1") is the uniform timing result that makes the bound `n`-independent.
 
-2. **The `n = 3` work covers only the steady state.** §3.12 proves the
+2. **The symmetric half is not started, and I had not recorded it.** Every
+   convergence result here concerns **left** synchronization. `ConvergesBy`
+   needs both halves, and `RightSync` has nothing proved about it beyond
+   monotonicity.
+
+   Avigad–van Doorn dispose of this in four words — *"by symmetry it suffices
+   to show all the drones are left synchronized"* — and on paper that is
+   honest. **In Lean it is not free.** It needs either a **reflection map**
+   (`pos ↦ 1 − pos`, headings flipped, index `i ↦ n−1−i`) proved to commute
+   with `step`, after which right synchronization *is* left synchronization of
+   the mirrored run; or the whole chain duplicated. The reflection is the right
+   answer, and the index reversal is the fiddly part: `nextIdx` and `prevIdx`
+   swap, as do `leftEnd` and `rightEnd`.
+
+   Scattered hand-written mirrors exist (`coLocated_of_turnsRight` and
+   friends), but they are individual lemmas, not a symmetry principle.
+
+3. **The `n = 3` work covers only the steady state.** §3.12 proves the
    three-drone cycle and its period, which exercises the middle-drone and
    simultaneous-event machinery. But there is **no converging `n = 3` trace**
    — nothing that starts out of position and settles.
 
-3. **The traces are single configurations, not the sharp worst case.** `spread`
+4. **The traces are single configurations, not the sharp worst case.** `spread`
    converges at `5/4` against a bound of `3/2`. Closing that last quarter needs
    the drones started *arbitrarily* close, i.e. a family parameterised by `ε`.
    That would show the bound is **attained**, which the paper asserts and this
    development does not check.
 
-4. **The nondeterminism is not modelled.** When three or more drones converge
+5. **The nondeterminism is not modelled.** When three or more drones converge
    the paper leaves open which neighbour the middle one escorts, and notes the
    strongest bound quantifies over all resolutions. `newDir` picks one. Every
    result here, non-Zeno included, inherits that restriction.
 
-5. **Stage 3's original headline goal is out of scope, and the plan was wrong
+6. **Stage 3's original headline goal is out of scope, and the plan was wrong
    to list it.** `PLAN.md` §5.2 proposed refuting the false `3T` bound. That
    bound is about **phase 1** — estimate propagation — which is Algorithm B.
    This development models Algorithm A, where estimates are correct by
    assumption and absent from `Config`. Unreachable here, not merely
    unfinished. Recorded as a planning error.
 
-6. **Unused definitions.** `Config.Together` is defined but unused, and
+7. **Unused definitions.** `Config.Together` is defined but unused, and
    `Config.Valid` has been superseded by `Config.Invariant` without removal.
 
-7. **Algorithm B is entirely out of scope** — wrong estimates, changing
+8. **Algorithm B is entirely out of scope** — wrong estimates, changing
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
 
@@ -1275,6 +1290,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+49bac2d  2026-09-12  feat: the invariant the counterexample called for
 eb396c4  2026-09-12  docs: actually fix the stale gap cross-references
 2edf1c0  2026-09-12  docs: fix stale gap cross-references in the work package
 5c128c2  2026-09-12  feat: a counterexample -- the lemma I was trying to prove is false
@@ -1339,12 +1355,13 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | B3 | Lemma 3.5 — every pair has met by time 1 | **L** | `HaveMetBy` now defined (§3.17); the proof is not |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
-| B6 | Assemble `2 − 1/n` | S | |
+| B6 | Assemble `2 − 1/n` (left half) | S | |
+| **B7** | **The symmetric half — right synchronization** | **L** | *newly recorded*; "by symmetry" is not free in Lean |
 | **C** | **Fidelity** | | |
-| C1 | Nondeterminism: a relation, not a function | M | gap 4; §3.20 shows it biting |
-| C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 2 |
-| C3 | An `ε`-family showing the bound is *attained* | M | gap 3 |
-| **D** | Cleanup: unused definitions, `PLAN.md` scope fix | S | gaps 5, 6 |
+| C1 | Nondeterminism: a relation, not a function | M | gap 5; §3.20 shows it biting |
+| C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 3 |
+| C3 | An `ε`-family showing the bound is *attained* | M | gap 4 |
+| **D** | Cleanup: unused definitions, `PLAN.md` scope fix | S | gaps 6, 7 |
 
 Sizes are relative: **S** is a sitting, **M** is a session, **L** is the kind of
 argument the paper spends a figure on and the ACL2 team spent 11K lines around.
