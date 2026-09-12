@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `e0f35b645d70`  
+**Commit at time of writing:** `b3b36635ae82`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -70,7 +70,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**284 theorems**, all `sorry`-free, across 14 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 144 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**288 theorems**, all `sorry`-free, across 14 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 204 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 283 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -492,13 +492,31 @@ This is the honest gap list, ordered by importance.
    pigeonhole over `Fin n`, and also gap 2. **This is the headline opportunity
    (§5) and it is not finished.**
 
-2. **The minimum is not yet proved genuine.** `timeToNextEvent` minimises over
-   `borderTime` for *every* drone, including interior ones where no border
-   event is reachable. The local domination lemmas are proved; the chaining
-   into "`timeToNextEvent` is attained by a genuine event" is not done.
+2. **The minimum is genuine for border deadlines; the priority analysis is
+   open.** This gap has shrunk twice and is worth reading as a record of being
+   wrong about my own model.
 
-   Instructive: my first attempt at the rightward version was **false**, and
-   Lean caught it.
+   The original worry: `timeToNextEvent` minimises over `borderTime` for *every*
+   drone, including interior ones where no border event looked reachable, so
+   the minimum might report a deadline with **no event behind it**.
+
+   **That worry was unfounded**, and §3.14 now settles it. Flying a drone for
+   exactly `borderTime` lands it on `0` or `1` — that is what the quantity *is*
+   — so `AtLeftBorder`/`AtRightBorder` genuinely holds there and the event
+   genuinely fires. Ordering makes it coherent: if an interior drone reaches
+   `0`, every drone to its left is already there and they all bounce together.
+   `someDroneTurns_of_border_deadline` is unconditional.
+
+   **What is actually open** is narrower and different: when the minimum comes
+   from a *meet* or *separation* deadline, the pair does arrive as intended
+   (`meet_due_of_meet_deadline`, `separation_due_of_separation_deadline`), but
+   which drone ends up turning depends on how `newDir` resolves border >
+   separation > meet in a **cascade** — three or more drones meeting at once.
+   Working examples by hand, someone always turns; proving it needs the case
+   analysis. That is what blocks collecting A1 into an unconditional statement.
+
+   Instructive along the way: my first attempt at the rightward domination
+   lemma was **false**, and Lean caught it.
 
 3. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for
    specific `n = 2` and `n = 3` configurations. Lemma 3.1 is done and **Lemma
@@ -691,6 +709,10 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.someDroneTurns_of_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.escortDirLeft_next_eq_escortDir' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.someDroneTurns_of_meet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atBorder_of_advance_borderTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.someDroneTurns_of_border_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meet_due_of_meet_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separation_due_of_separation_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.d0_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.commonEnd_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.leftEnd_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -895,7 +917,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**284/284 clean — `sorryAx` appears zero times.**
+**288/288 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -945,6 +967,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+b3b3663  2026-09-12  feat: A1 -- every scheduled event turns a drone
 e0f35b6  2026-09-12  feat: Lemma 3.2 reduced to a single configuration class
 69e6577  2026-09-12  feat: the pair balance -- Lemma 3.2, modulo one invariance
 4c4fe2d  2026-09-12  feat: three drones -- the first case where the middle-drone machinery runs
@@ -984,7 +1007,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 |---|---|---|---|
 | **A** | **Non-Zeno** | | *the novel contribution — ACL2 assumes this* |
 | A1 | Every event turns at least one drone | ~~S~~ | **done case-by-case** (§3.14); collecting needs A2 |
-| A2 | The minimum is attained by a genuine event | M | gap 2; needs argmin machinery |
+| A2 | Border deadlines genuine ✓; cascade priority analysis | M | gap 2; the border half is **done** |
 | A3 | Pigeonhole: `k` steps ⟹ some drone turns ≥ `k/n` times | M | |
 | A4 | Assemble `NonZeno` | S | |
 | **B** | **Theorem 2.1** | | *the headline* |

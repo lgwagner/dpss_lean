@@ -139,6 +139,66 @@ theorem someDroneTurns_of_meet {c : Config n} {i : Fin n} {h : i.val + 1 < n}
     rw [hj, hR, hA.2]
     exact fun hc => Dir.noConfusion hc
 
+/-! ## Border deadlines are never spurious
+
+`STATUS.md` carried a worry for many commits: `timeToNextEvent` minimises over
+`borderTime` for *every* drone, including interior ones where no border event
+looked reachable, so the minimum might report a deadline with **no event behind
+it**.
+
+That worry was overstated, and this settles it. Flying drone `i` for exactly
+`borderTime i` lands it on `0` or `1` — that is what the quantity *is*. At that
+point `AtLeftBorder` or `AtRightBorder` genuinely holds and the event genuinely
+fires. Ordering makes it coherent too: if an interior drone reaches `0`, every
+drone to its left is already there, and they all bounce together.
+
+So a border deadline is always real, whichever drone it belongs to. -/
+
+/-- Flying a drone for exactly its border deadline puts it on a border. -/
+theorem atBorder_of_advance_borderTime (c : Config n) (i : Fin n) :
+    (c.advance (c.borderTime i)).AtLeftBorder i ∨
+      (c.advance (c.borderTime i)).AtRightBorder i := by
+  rcases Dir.eq_left_or_right (c.dir i) with hd | hd
+  · exact Or.inl (by rw [borderTime_of_left hd]; exact atLeftBorder_at_leftBorderTime hd)
+  · exact Or.inr (by rw [borderTime_of_right hd]; exact atRightBorder_at_rightBorderTime hd)
+
+/-- **A step whose length is set by a border deadline turns a drone.**
+
+Unconditional — no assumption about which drone, and no priority reasoning,
+because a border event outranks everything else in `newDir`. -/
+theorem someDroneTurns_of_border_deadline {c : Config n} (hn : 0 < n)
+    (i : Fin n) (hmin : c.timeToNextEvent hn = c.borderTime i) :
+    SomeDroneTurns (c.advance (c.timeToNextEvent hn)) := by
+  rw [hmin]
+  rcases atBorder_of_advance_borderTime c i with h | h
+  · exact someDroneTurns_of_atLeftBorder h
+  · exact someDroneTurns_of_atRightBorder h
+
+/-! ## Meet deadlines really do produce meetings -/
+
+/-- A step whose length is set by an approaching pair's meeting time really
+does bring that pair together, still closing. Whether the resulting *turn*
+happens to that pair or to another drone depends on which event wins the
+priority order in `newDir`, which is the part still open. -/
+theorem meet_due_of_meet_deadline {c : Config n} (hn : 0 < n) {i : Fin n}
+    {h : i.val + 1 < n} (hA : c.Approaching i h)
+    (hmin : c.timeToNextEvent hn = c.meetTime i h) :
+    (c.advance (c.timeToNextEvent hn)).CoLocated i h ∧
+      (c.advance (c.timeToNextEvent hn)).Approaching i h := by
+  rw [hmin]
+  refine ⟨coLocated_at_meetTime hA, ?_, ?_⟩
+  · simpa using hA.1
+  · simpa using hA.2
+
+/-- Likewise a separation deadline really does bring an escorting pair to the
+boundary it shares. -/
+theorem separation_due_of_separation_deadline {c : Config n} (hn : 0 < n)
+    {i : Fin n} {h : i.val + 1 < n} (he : c.Escorting i h)
+    (hmin : c.timeToNextEvent hn = c.separationTime i) :
+    (c.advance (c.timeToNextEvent hn)).AtSeparation i h := by
+  rw [hmin]
+  exact atSeparation_at_separationTime he
+
 end Config
 
 end DPSS
