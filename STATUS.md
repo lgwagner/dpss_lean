@@ -2,9 +2,14 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `2db5f0b8c1de`  
+**Commit at time of writing:** `4d9e80d45208`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
+
+> **Companion:** `INSIGHTS.md` records the non-obvious things this project
+> taught us — the bug a concrete trace caught that 145 theorems missed, why the
+> non-Zeno proof departs from the paper's, and the Lean mechanics that cost
+> real time. Read it before extending the work.
 
 This document is written to be *audited*, not just read. Every claim about what
 is proved is backed by machine output reproduced verbatim in §6, and §7 tells
@@ -1063,6 +1068,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+4d9e80d  2026-09-12  feat: two of the three routes to Lemma 3.2's obstruction are closed
 2db5f0b  2026-09-12  docs: record non-Zeno as done in section 5
 c920cb3  2026-09-12  feat: non-Zeno, proved
 80c4490  2026-09-12  feat: A3 -- consecutive turns of one drone are 1/n apart in time
