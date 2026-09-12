@@ -14,8 +14,8 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 | **M0** | Toolchain, pinned and scripted | ✅ `3 verified, 0 errors` |
 | **M1** | The integer model, in Lean | ✅ `embed_step`, `embed_run`, `intRun_converges` |
 | **M2** | The generator | ✅ 24 spec fns, fail-loud, CI-checked |
-| **M3** | Verus spec and invariants | **next** |
-| **M4** | Executable code and the key equivalence | not started |
+| **M3** | Verus spec and invariants | ✅ `52 verified, 0 errors` |
+| **M4** | Executable code and the key equivalence | **next** |
 | **M5** | Differential testing | not started |
 | **M6** | The controller, scoped not built | not started |
 
@@ -48,6 +48,17 @@ so a bump or a restart does not rediscover them:
   `Finset.inf'`), the four standing conditions (quantifiers with a dependent proof
   argument), and `Dir` itself. None is arithmetic, which is where a transcription
   error would hide.
+- **Z3 is better at the exhaustive branch analyses than Lean is.**
+  `apart_on_boundaries` preservation took ~90 lines across three lemmas in
+  `Dpss/Reachable.lean`; in Verus it went through with no case split written at all,
+  once the geometry facts were supplied. The `new_dir` if-chain is exactly what an
+  SMT solver is good at. The *opposite* held for the real-valued reasoning, which is
+  why the split of labour in this design is the right way round.
+- Two things Z3 needs said out loud. The scaled geometry is **nonlinear** —
+  `left_end` is `2*k*i`, a product of variables — so `geometry.rs` states the
+  endpoint facts once. And multiplying by a heading's velocity is a sign flip, not a
+  multiplication: `lemma_times_isign` says so once and every separation-time goal
+  afterwards is linear.
 - `spec fn`s carry no proof obligations, so a crate of nothing but generated
   specifications verifies **vacuously**. `rust/src/facts.rs` exists so that
   "0 errors" means something.
