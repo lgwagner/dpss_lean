@@ -12,6 +12,79 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — Track A: the fence, and the standoff verdict  *(branch `safety`)*
+
+The mathematics was finished and neither half was a thing you could fly. This
+session starts Track A: making the results apply to a vehicle, **safety first**.
+Convergence under cooperation is Track B, and is recorded rather than scheduled.
+
+`main` is untagged no longer: **`v1.0-lean-baseline`** marks the Lean
+formalization with extensions, so the baseline can be found without reading past
+the engineering.
+
+### S2 — the margined fence, in both halves
+
+One drone, one wall, a sampled controller. Three idealizations of the team model
+removed at once — point mass at unit speed, instantaneous reversal, perfect
+sensing — each replaced by a number an airframe analysis measures.
+
+```lean
+theorem Traj.low_nonneg (hM : V.Dmax + V.turn + V.eps ≤ M)
+    (h0 : T.Safe 0) (k : ℕ) : 0 ≤ T.low k
+```
+
+`low k` is the lowest position of a whole leg, so this covers **every instant**
+— proved by a discrete induction with no continuous-time machinery in it. Both
+fences; the right one by an explicit reflection (`TrajR.mirror`), because B7 is
+on record as the item whose "by symmetry" cost 737 lines.
+
+`Fence.margin_sharp` proves the margin exactly tight: for *every* smaller `M`
+there is a conforming trajectory that crosses. Unconditional — no restriction on
+which of the three terms is deficient and no window of `M`, which took one
+trajectory family rather than three counterexamples.
+
+`rust/src/fence.rs` is the same theorem in Verus — `87 verified, 0 errors`, with
+the trajectory as `spec_fn(nat)` so `safe_at` is the same induction, not a
+horizon-limited version of it. Two new traces drive the **verified** controller
+under a worst-case adversary and breach exactly when the margin is short.
+
+### S0 — the standoff shear holds, exactly
+
+`adj_ordered` is `0 ≤ gap`: the separation invariant with `d = 0`. Raising it to
+`d ≤ gap` reads like a contradiction of the algorithm, since in DPSS a meet *is*
+a loss of separation. S3 was sized "S if a shear works, else L", with a day set
+aside to find out which.
+
+`Dpss/Standoff.lean`: the shear `yᵢ = xᵢ − i·d` turns separation into ordering,
+`toPoint_advance` says the dynamics commute, and the event predicates pull back
+one for one. The catch is real and benign — the segments do not shear, they
+respace, each narrowing by `1 − (n−1)d` with a buffer of exactly `d` that two
+neighbours cover precisely when the standoff is two half-footprints.
+
+**S3 is a change of constants.** The predicted bound is
+`(2 − 1/n)·(1 − (n−1)d)` — *better* than the point bound.
+
+### What this session did **not** finish
+
+* **The scheduler-level correspondence.** S0 proved the correspondence for
+  positions, motion and the event *predicates*. `timeToNextEvent`, `newDir` and
+  `step` are left to S3 and are **not claimed**. Until they are done the
+  standoff convergence bound above is a prediction, not a theorem.
+* **S1, bounded speed in the team model.** Not started. A survey of the
+  development produced one correction to the plan worth recording before anyone
+  picks it up: a lower bound `v_min > 0` is **required, not optional** —
+  `Dpss/EventuallyTurns.lean` is false without it, and with it go Lemma 3.5 and
+  Theorem 2.1. Bounding speed only from above is not enough.
+* **`Dmax` is still a hypothesis.** Deriving it from a vehicle model is S4.
+  Keeping it a hypothesis is exactly what made S2 cheap, and the honest
+  statement is that the guarantee is conditional on a number someone else
+  measures — with the theorem saying precisely which number.
+
+703 theorems, `sorry`-free; `87 verified, 0 errors`; traces agree with Lean.
+`INSIGHTS.md` §20 and §21.
+
+---
+
 ## 2026-09-12 — E1: DPSS in Rust, verified with Verus  *(branch `rust-verus`)*
 
 An executable implementation of Algorithm A, with Verus proving it computes exactly

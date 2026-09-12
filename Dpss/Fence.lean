@@ -263,6 +263,114 @@ theorem pos_nonneg (hM : V.Dmax + V.turn + V.eps ≤ M) {T : Traj V M}
 
 end Traj
 
+/-! ## The other wall
+
+The right fence is the mirror image, and it is taken by an **explicit
+reflection** rather than an appeal to symmetry. `Dpss/Mirror.lean` reflects a
+whole `Config`, which is not what a single-drone statement needs; and the
+project has already paid once for assuming a mirror argument is free.
+
+The reflection maps a rightward trajectory approaching `L` to a leftward one
+approaching `0`: positions and observations go to `L - ·`, headings flip, and
+the *highest* point of a leg becomes the lowest. Every field of `Traj` is then
+discharged from the corresponding field of `TrajR`, and the two theorems below
+are `low_nonneg` and `pos_nonneg` read through the mirror — no second
+induction. -/
+
+@[simp] theorem flip_eq_left_iff (d : Dir) : d.flip = Dir.left ↔ d = Dir.right := by
+  cases d <;> simp [Dir.flip]
+
+@[simp] theorem flip_eq_right_iff (d : Dir) : d.flip = Dir.right ↔ d = Dir.left := by
+  cases d <;> simp [Dir.flip]
+
+/-- The right-hand fence controller: an observation at or above `L - M`
+commands leftward, overriding whatever was requested. -/
+noncomputable def fenceDirR (L M : ℝ) (phat : ℝ) (req : Dir) : Dir :=
+  if L - M ≤ phat then Dir.left else req
+
+/-- The two controllers are the same controller, seen from the two ends. -/
+theorem flip_fenceDirR (L M phat : ℝ) (req : Dir) :
+    (fenceDirR L M phat req).flip = fenceDir M (L - phat) req.flip := by
+  unfold fenceDirR fenceDir
+  by_cases h : L - M ≤ phat
+  · rw [if_pos h, if_pos (by linarith)]; rfl
+  · rw [if_neg h, if_neg (by rw [not_le] at h ⊢; linarith)]
+
+/-- A sampled trajectory against the **right** fence. `high` is the *highest*
+position reached on the leg from sample `k` to sample `k+1`. -/
+structure TrajR (V : Vehicle) (L M : ℝ) where
+  p : ℕ → ℝ
+  d : ℕ → Dir
+  high : ℕ → ℝ
+  obs : ℕ → ℝ
+  req : ℕ → Dir
+  obs_close : ∀ k, |obs k - p k| ≤ V.eps
+  control : ∀ k, d k = fenceDirR L M (obs k) (req k)
+  pos_le_high : ∀ k, p k ≤ high k
+  next_le_high : ∀ k, p (k + 1) ≤ high k
+  right_leg : ∀ k, d k = Dir.right → high k ≤ p k + V.Dmax
+  turn_leg : ∀ k, d k = Dir.left → high k ≤ p k + V.turn
+  hold_leg : ∀ k, d k = Dir.left → p (k + 1) ≤ p k
+
+namespace TrajR
+
+variable {V : Vehicle} {L M : ℝ}
+
+/-- The reflection. -/
+noncomputable def mirror (T : TrajR V L M) : Traj V M where
+  p := fun k => L - T.p k
+  d := fun k => (T.d k).flip
+  low := fun k => L - T.high k
+  obs := fun k => L - T.obs k
+  req := fun k => (T.req k).flip
+  obs_close := by
+    intro k
+    have h : L - T.obs k - (L - T.p k) = -(T.obs k - T.p k) := by ring
+    rw [h, abs_neg]
+    exact T.obs_close k
+  control := by
+    intro k
+    rw [T.control k, flip_fenceDirR]
+  low_le_pos := by intro k; have := T.pos_le_high k; linarith
+  low_le_next := by intro k; have := T.next_le_high k; linarith
+  left_leg := by
+    intro k hd
+    rw [flip_eq_left_iff] at hd
+    have := T.right_leg k hd
+    linarith
+  turn_leg := by
+    intro k hd
+    rw [flip_eq_right_iff] at hd
+    have := T.turn_leg k hd
+    linarith
+  hold_leg := by
+    intro k hd
+    rw [flip_eq_right_iff] at hd
+    have := T.hold_leg k hd
+    linarith
+
+/-- The invariant at the right fence: a drone heading *towards* the wall needs a
+sample period's travel plus the turn allowance of clearance from it. -/
+def Safe (T : TrajR V L M) (k : ℕ) : Prop := V.margin (T.d k).flip ≤ L - T.p k
+
+theorem safe_iff_mirror (T : TrajR V L M) (k : ℕ) :
+    T.Safe k ↔ T.mirror.Safe k := Iff.rfl
+
+/-- **The right fence holds, between samples too.** -/
+theorem high_le (hM : V.Dmax + V.turn + V.eps ≤ M) {T : TrajR V L M}
+    (h0 : T.Safe 0) (k : ℕ) : T.high k ≤ L := by
+  have h := Traj.low_nonneg hM ((T.safe_iff_mirror 0).mp h0) k
+  have : T.mirror.low k = L - T.high k := rfl
+  rw [this] at h
+  linarith
+
+/-- And at every sample. -/
+theorem pos_le (hM : V.Dmax + V.turn + V.eps ≤ M) {T : TrajR V L M}
+    (h0 : T.Safe 0) (k : ℕ) : T.p k ≤ L :=
+  le_trans (T.pos_le_high k) (high_le hM h0 k)
+
+end TrajR
+
 /-! ## The margin is sharp
 
 For **every** `M` below `Dmax + turn + eps` there is a trajectory obeying the

@@ -40,7 +40,79 @@ not unfinished business.
 
 ## Critical path
 
-Nothing. Theorem 2.1 is proved, sharp, and resolution-independent.
+**Track A — a drone-level controller** (branch `safety`). The mathematics is
+finished; what is on the critical path now is making it apply to a vehicle.
+Safety first; convergence under cooperation is Track B and is *recorded, not
+scheduled*.
+
+| # | Item | Size | State |
+|---|---|---|---|
+| S0 | Does the standoff shear hold? | S | ✅ done — yes, exactly |
+| S2 | The margined fence | M | ✅ done — proved, sharp, executable |
+| **S1** | Kinematics: bounded motion into the team model | M | **next** |
+| **S3** | Margined separation | S | **next** — S0 made it a change of constants |
+| S4 | The continuous layer: derive `Dmax` rather than assume it | XL | open |
+| S5 | Decentralized safety under a comms model | L | open |
+
+Take **S3 before S1**. S0 turned it from a re-derivation into a change of
+constants, and it finishes the scheduler-level correspondence that S0
+deliberately left — `timeToNextEvent`, `newDir`, `step` under `toPoint`. Every
+deadline is a time and times scale by one positive constant, so it is arithmetic
+rather than a new idea. **Done when** `step` commutes with `toPoint` and the
+standoff convergence bound `(2 − 1/n)·(1 − (n−1)d)` is proved rather than
+predicted.
+
+**S1 carries a correction to its own sizing.** A survey of the development found
+that bounding speed from *above* is not enough: a lower bound `v_min > 0` is
+**required**, because `Dpss/EventuallyTurns.lean` is false without it — a drone
+crawling arbitrarily slowly never turns, so no pair meets, so Lemma 3.5 and
+Theorem 2.1 both fail. The survey also found the cheapest two insertion points,
+which are worth doing before anything structural:
+
+* **Overshoot `D` into Lemma 3.1 only.** `pos_le_leftEnd_of_turnsRight` and
+  `rightEnd_le_pos_of_turnsLeft` weaken to `≤ leftEnd + D` / `≥ rightEnd − D`;
+  every consumer already reads them as inequalities. Buys non-Zeno at
+  `(1/n − 2D)/V` under the new and sharp hypothesis `D < 1/(2n)`.
+* **Footprint `r`, routed through `gap` rather than `pos`.** Because `2r` is a
+  constant, `gap_advance` is unchanged, and with it `sepRate`, `meetTime`, all
+  of `Meeting.lean`'s gap algebra and the escort layer. Eight definitions
+  change; no proof restructuring. (This is the same shear S0 proved, in the
+  coordinates the existing files already use.)
+
+What would be a **rewrite**, and is therefore deferred: per-drone heterogeneous
+speeds. Uniform speed is what makes an escort stay together without a grouped
+representation (`Dpss/Events.lean` says so in as many words), so dropping it
+takes out `EscortsCoherent`, `Coherence.lean`, and Lemmas 3.2–3.4. Keep speed
+uniform across drones and bounded, and the work roughly halves.
+
+---
+
+## Completed on this branch
+
+**S2 — the margined fence.** `Dpss/Fence.lean` and `rust/src/fence.rs`. One
+drone, one wall, a sampled controller; three idealizations removed at once.
+`Traj.low_nonneg` is a statement about every instant proved by discrete
+induction; `margin_sharp` proves the margin `Dmax + turn + eps` exactly tight,
+unconditionally. Both fences, the right one by explicit reflection.
+`87 verified, 0 errors`; the verified controller breaches at runtime exactly
+when the margin is short.
+
+*Insight:* parameterize by **displacement per sample**, not speed. It is what a
+flight test measures, it keeps Verus in integers with no scaling argument
+needed, and it removes the continuous-time layer from the Lean proof — three
+unrelated wins from one choice of units. `INSIGHTS.md` §20.
+
+**S0 — the standoff shear.** `Dpss/Standoff.lean`. `yᵢ = xᵢ − i·d` turns
+separation into ordering; `toPoint_advance` says the dynamics commute; the event
+predicates pull back one for one. The segments respace rather than shear, and
+`coverage_exact` says the respacing loses nothing when the standoff is two
+half-footprints.
+
+*Insight:* when an item is sized "S if X, else L", build X first — not a
+prototype of either branch. A day converted an open question about the shape of
+a quarter's work into a change of constants. `INSIGHTS.md` §21.
+
+---
 
 ---
 
