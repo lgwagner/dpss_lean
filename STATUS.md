@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `55f60deb180a`  
+**Commit at time of writing:** `dbf6c4440f01`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**305 theorems**, all `sorry`-free, across 16 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 437 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**313 theorems**, all `sorry`-free, across 17 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 168 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 437 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -596,6 +596,42 @@ resolution of the nondeterminism the paper leaves open when three or more
 drones converge (gap 6). A fully general result would quantify over all
 resolutions.
 
+### 3.17 `Dpss/LeftSyncLemmas.lean` — **Lemmas 3.3 and 3.4**, and `have met`
+
+With the balance in hand, both corollaries of Lemma 3.2 are short: each needs
+only its *starting* configuration to put the balance at or above zero, and in
+both cases that falls out at once.
+
+- **Lemma 3.3** (`leftSync_of_escorting_left`) — an escorting pair's balance is
+  exactly twice its separation deadline, and escort coherence (proved
+  unconditionally in §3.10) says that deadline is never in the past. **The
+  balance is nonnegative because the scheduler makes it so.**
+- **Lemma 3.4** (`leftSync_of_pos_ge`) — if the left drone has reached the
+  shared boundary, ordering carries its neighbour past it too, so both terms of
+  the balance are nonnegative separately.
+- **Lemma 3.2** is restated in the same form (`leftSync_of_atSeparation`) for
+  comparison.
+
+**All three now depend on exactly one open condition**: that the pair is never
+`BothLeftApart`. Not on an assumed `BalanceNonneg` — that is discharged from
+the starting balance by `balanceNonneg_of_never_bothLeftApart`. So closing the
+single remaining case of §3.13 closes 3.2, 3.3 and 3.4 together.
+
+#### `have met`
+
+Lemmas 3.5–3.7 are all phrased in terms of a pair having *met* by some time,
+and nothing modelled that. `HaveMetBy` does: **the pair was co-located at some
+moment no later than `T`**. The paper's two cases — started together moving the
+same way, or involved in a meet or bounce — are both instances of it.
+
+A note left in the file for whoever continues: the ACL2 team reported that
+phrasing this over execution *history* "drew heavily on human intuition about
+system behaviour and was difficult to work with in a mechanized proof", and
+that recasting it as a **locally checkable** predicate over a drone and its
+immediate neighbour was what made their development tractable. `HaveMetBy` is
+the history-shaped one. If Lemma 3.5 or 3.7 becomes unwieldy, that is the first
+thing to change.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -934,6 +970,14 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.ExamplesThree.cfgB_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.ExamplesThree.cfgB_period' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.ExamplesThree.cfgB_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_nonneg_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_nonneg_of_pos_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_pos_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.haveMetBy_mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.haveMetBy_of_start' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.haveMetBy_of_meet_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1033,7 +1077,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**305/305 clean — `sorryAx` appears zero times.**
+**313/313 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1083,6 +1127,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+dbf6c44  2026-09-12  feat: the positional core of Lemma 3.2's last case
 55f60de  2026-09-12  docs: capture the key insights durably
 4d9e80d  2026-09-12  feat: two of the three routes to Lemma 3.2's obstruction are closed
 2db5f0b  2026-09-12  docs: record non-Zeno as done in section 5
@@ -1135,8 +1180,8 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | A4 | ~~Assemble `NonZeno`~~ | ✅ | **§3.16 — done** |
 | **B** | **Theorem 2.1** | | *the headline* |
 | B1 | Lemma 3.2 — `BothLeftApart` case 3 only | **L** | §3.13; cases 1 and 2 now closed |
-| B2 | Lemmas 3.3, 3.4 — consequences of 3.2 | S | |
-| B3 | Lemma 3.5 — every pair has met by time 1 | **L** | makes the bound `n`-independent |
+| B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
+| B3 | Lemma 3.5 — every pair has met by time 1 | **L** | `HaveMetBy` now defined (§3.17); the proof is not |
 | B4 | Lemma 3.6 — turn persistence | M | |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` | S | |

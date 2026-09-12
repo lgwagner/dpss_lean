@@ -14,3 +14,4 @@ import Dpss.PairBalance
 import Dpss.EventsTurn
 import Dpss.TurnSpacing
 import Dpss.NonZenoProof
+import Dpss.LeftSyncLemmas
