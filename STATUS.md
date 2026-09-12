@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `1b9331f54722`  
+**Commit at time of writing:** `883456b2f1f4`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**733 theorems**, all `sorry`-free, across 37 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 232 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**754 theorems**, all `sorry`-free, across 39 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 232 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1429,6 +1429,18 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.ordered_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_mono_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one'' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.lipschitz_of_deriv' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.sampleTime_le_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.leg_nonempty' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.le_of_mem_leg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.leg_bddBelow' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.low_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.le_low' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.exists_leg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Flight.flight_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.posIn_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.inStep_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.rightSyncAt_iff_leftSyncAt_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1736,6 +1748,15 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.IntExamples.cfgSI_run_3' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_run_4' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.IntExamples.cfgSI_lattice_at_2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Clock.mono' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Clock.add_mul_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sync_at_speed' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.tau_ge_of_real_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.converges_by_real_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.nonZeno_real_time' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.vmin_zero_stalls' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.uniform_tau' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.uniform_tau_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_nonneg_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pairBalance_nonneg_of_pos_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.leftSync_of_escorting_left' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2113,7 +2134,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**733/733 clean — `sorryAx` appears zero times.**
+**754/754 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2163,6 +2184,9 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+883456b  2026-09-12  S4(core): Dmax is no longer a hypothesis
+5c8a921  2026-09-12  S1: bounded speed is a change of clock
+677a8b1  2026-09-12  docs: S3 done in both halves, and the transfer lesson
 1b9331f  2026-09-12  S3: the separation controller in Verus, with its own runtime negative control
 dadbdd7  2026-09-12  S3(b): the scheduler correspondence, and the bound under standoff
 9509ddf  2026-09-12  S3(a): margined separation at the controller — the fence, instantiated
@@ -2417,8 +2441,8 @@ not scheduled.
 | **S0** | ~~Does the standoff shear hold?~~ | S | ✅ **yes, exactly** — `Dpss/Standoff.lean` |
 | **S2** | ~~The margined fence~~ | M | ✅ **proved, sharp, and executable** — `Dpss/Fence.lean`, `rust/src/fence.rs` |
 | **S3** | ~~Margined separation~~ | S | ✅ **both halves** — `Dpss/Separation.lean`, `Dpss/Standoff.lean`, `rust/src/separation.rs` |
-| S1 | Kinematics: bounded motion into the *team* model | M | open |
-| S4 | The continuous layer: derive `Dmax` rather than assume it | XL | open |
+| **S1** | ~~Kinematics: bounded motion into the *team* model~~ | M | ✅ **uniform speeds** — `Dpss/Kinematics.lean`. Heterogeneous speeds recorded as a rewrite, not attempted |
+| **S4** | The continuous layer | XL | ◐ **core done** — `Dmax = V·Δt` derived, `Dpss/Continuous.lean`. See the non-claims |
 | S5 | Decentralized safety under a comms model | L | open |
 
 ### S2 — what is actually guaranteed
@@ -2538,19 +2562,77 @@ more traces driven by the verified controller: margin `30 = 2·(10+3+2)` stays
 clear at `low = 6` against a standoff of `5`; margin `26`, short by `2·eps`,
 breaches at `low = 2`.
 
+### S1 — bounded speed is a change of clock
+
+Unit speed is cashed in by `Config.pos_sub_eq_of_dirConst` — *distance travelled
+equals elapsed time* — which non-Zeno, Lemma 3.5, Lemma 3.7 and the sharpness
+family all consume. The plan sized this as the expensive item. It is not,
+because:
+
+> if every drone has the same speed at the same instant, **speed is a clock**.
+
+With common speed `v(t)` and `τ(t) = ∫₀ᵗ v`, the bounded-speed system at real
+time `t` is the unit-speed system at unit time `τ(t)` — same positions, same
+headings, same events in the same order. `Clock` axiomatizes that
+reparameterization by the speed bounds it must satisfy rather than by an
+integral: no integration theory is imported, and bounds are what a vehicle
+report actually contains.
+
+```lean
+theorem converges_by_real_time (cl : Clock vmin V) (hv : 0 < vmin) … :
+    leftEnd i ≤ c.posAtSpeed cl hn p i t ∧ c.posAtSpeed cl hn p i t ≤ rightEnd i
+```
+
+— synchronized by real time `(2 − 1/n) / vmin`.
+
+**The two bounds do different jobs.** Convergence uses the *lower* bound and
+only the lower bound: going faster never hurts, so `V` never appears. Non-Zeno
+uses neither — `τ(T)` is a real number however fast the drones went. The upper
+bound is not idle; it is exactly the `Dmax` of the fence. But it earns its keep
+at the controller, not in the team model.
+
+**`vmin > 0` is not a technicality.** `vmin_zero_stalls`: with `vmin = 0` the
+constant clock `τ ≡ 0` satisfies the whole contract, and under it every drone
+stays exactly where it started, for ever. This is now a theorem, not a note, and
+it is the correction to this track's own plan, which had proposed bounding speed
+from above only.
+
+### S4 — the core: `Dmax` derived
+
+`Dpss/Continuous.lean`. `Vehicle.ofSpeed` sets `Dmax = V · Δt`;
+`lipschitz_of_deriv` converts a bound on the derivative into the Lipschitz bound
+the argument uses (Mathlib's mean value theorem — the only appeal to analysis on
+this track); `Flight.toTraj` turns a continuous trajectory into a
+`Fence.Traj`; and
+
+```lean
+theorem flight_nonneg … (hM : V * dt + turnA + eps ≤ M) … : 0 ≤ F.x t
+```
+
+holds at **every real instant**, with no sampling in the statement — the samples
+are how the controller works, not part of what is guaranteed.
+
+`Flight.low` is `sInf` of the image of a leg. It exists because the Lipschitz
+bound bounds the leg below, and is never required to be *attained*, so no
+compactness or extreme-value argument appears anywhere.
+
 ### What Track A does not claim
 
 * **The convergence result here is Theorem 2.1 transported, not a new one.**
   `sConvergesBy` is the point theorem in standoff coordinates. It says nothing
   about Algorithm B, about estimate propagation, or about phase 1 — those are
   Track B, and the phase-1 bound is a genuinely open research problem.
-* **`Dmax` is a hypothesis.** Deriving it from a vehicle dynamics model is S4,
-  and keeping it a hypothesis is exactly what made S2 cheap. The honest
-  interface is that the guarantee is conditional on a number someone else
-  measures, and the theorem says precisely which number.
-* **S1 is not started.** Bounded speed in the *team* model is a larger change
-  than the fence, and a survey of the development found a load-bearing detail
-  the plan had missed: a lower bound `v_min > 0` is **required, not optional**.
-  `Dpss/EventuallyTurns.lean` is false without it — a drone crawling
-  arbitrarily slowly never turns, so no pair ever meets, so Lemma 3.5 and
-  Theorem 2.1 both fail. Bounding speed only from above is not enough.
+* **The turn allowance and the completion of reversals are still hypotheses,
+  and should be.** `Dpss/Continuous.lean` derives `Dmax` from a speed bound but
+  cannot derive these, for a reason that is physical rather than technical: a
+  fast drone with strong actuators has a small turn allowance and a slow one
+  with weak actuators a large one, so no speed bound distinguishes them. They
+  are separate facts about control authority, and they sit in the hypotheses of
+  `Flight` where an engineer can see what the vehicle is being asked to do.
+* **S1 covers uniform speeds only.** Speeds that differ *between* drones are not
+  a change of clock, and they are a rewrite rather than a margin: uniform speed
+  is what makes a co-located pair stay co-located, so dropping it removes
+  `Escorting` as an invariant and takes `EscortsCoherent`,
+  `Dpss/Coherence.lean` and Lemmas 3.2–3.4 with it. Recorded, not attempted.
+* **S5 is not started.** There is no comms model, no message loss, no delay, and
+  no degraded-cooperation fallback.

@@ -50,14 +50,27 @@ scheduled*.
 | S0 | Does the standoff shear hold? | S | ✅ done — yes, exactly |
 | S2 | The margined fence | M | ✅ done — proved, sharp, executable |
 | S3 | Margined separation | S | ✅ done — both halves, in Lean and Verus |
-| **S1** | Kinematics: bounded motion into the team model | M | **next** |
-| S4 | The continuous layer: derive `Dmax` rather than assume it | XL | open |
-| S5 | Decentralized safety under a comms model | L | open |
+| S1 | Kinematics: bounded motion into the team model | M | ✅ done — uniform speeds |
+| S4 | The continuous layer | XL | ◐ core done — `Dmax = V·Δt` derived |
+| **S5** | Decentralized safety under a comms model | L | **next** |
 
-**S1 is next, and it is the first item on this track that is genuinely hard.**
-S0, S2 and S3 all turned out to be changes of coordinates or instantiations of
-one another. S1 is not: it touches the timing arguments rather than the
-invariants, and the survey below says which ones and how badly.
+**Everything uniform has been removed.** What is left on this track is not a
+change of coordinates, and `INSIGHTS.md` §23 is the diagnostic that says so:
+
+* **S5 — a comms model.** Bounded delay, message loss, a drone going silent, and
+  a fallback hold that is provably inside the fence, separated, and starves
+  nobody. These are invariants, so they are proved against the worst case rather
+  than the expected one. **Genuinely new work**, not a transfer: a comms model
+  adds state that `Config` does not have.
+* **Heterogeneous speeds.** A rewrite, and the reason is structural: uniform
+  speed is what makes an escort stay together without a grouped representation.
+  It would take out `EscortsCoherent`, `Dpss/Coherence.lean` and Lemmas 3.2–3.4.
+  The ACL2 mechanization carries the grouped representation; adopting it here is
+  the honest route if this is ever wanted.
+* **The rest of S4.** The turn allowance and the completion of reversals cannot
+  be derived from a speed bound — they are facts about control authority. What
+  remains is to instantiate them from a *specific* vehicle model, which is an
+  engineering exercise against a chosen airframe rather than a proof obligation.
 
 **S1 carries a correction to its own sizing.** A survey of the development found
 that bounding speed from *above* is not enough: a lower bound `v_min > 0` is
@@ -85,6 +98,26 @@ uniform across drones and bounded, and the work roughly halves.
 ---
 
 ## Completed on this branch
+
+**S4 (core) — `Dmax` derived.** `Dpss/Continuous.lean`. `Vehicle.ofSpeed` gives
+`Dmax = V·Δt`; `lipschitz_of_deriv` converts a derivative bound into it via
+Mathlib's mean value theorem; `flight_nonneg` holds at every real instant with
+no sampling in the statement.
+
+*Insight:* `Flight.low` as `sInf` of a leg's image needs the infimum to *exist*,
+never to be attained — so a statement quantified over all real instants goes
+through a discrete induction with no compactness anywhere.
+
+**S1 — bounded speed is a change of clock.** `Dpss/Kinematics.lean`. If every
+drone has the same speed at the same instant, speed is a clock: the
+bounded-speed system at real time `t` is the unit-speed system at unit time
+`τ(t)`. Convergence by real time `(2 − 1/n)/vmin`, and `vmin_zero_stalls` proves
+that a lower bound is required rather than convenient.
+
+*Insight:* convergence uses only the **lower** speed bound and non-Zeno uses
+neither; the upper bound earns its keep at the controller, as the fence's
+`Dmax`. Worth checking which bound a result actually needs before assuming it
+needs both.
 
 **S3 — margined separation, both halves.** The model half in
 `Dpss/Standoff.lean`: `toPoint` gains an inverse, the standoff step is the point

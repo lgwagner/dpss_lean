@@ -597,3 +597,50 @@ a hundred adjusted arithmetic steps.
 > **Lesson.** Before weakening a hypothesis throughout a development, look for a
 > map to the development you already have. If you find one, build its inverse
 > too — the round trip is where sharpness comes from.
+
+---
+
+## 23. Which idealizations are coordinate changes, and which are not
+
+The safety track set out to remove five idealizations from the team model: point
+drones, unit speed, instantaneous reversal, perfect sensing, and a global event
+scheduler. The plan sized them by how much of the development each one touched.
+That was the wrong axis. The right one turned out to be:
+
+> **Does the idealization act uniformly across the system, or does it hold a
+> symmetry between components in place?**
+
+Uniform ones are changes of coordinates and cost a file:
+
+| Idealization | The coordinate change | Cost |
+|---|---|---|
+| point drones | shear `yᵢ = xᵢ − i·d` | `Dpss/Standoff.lean` |
+| unit speed | change of clock `τ(t) = ∫₀ᵗ v` | `Dpss/Kinematics.lean` |
+| separation vs. fencing | shift by the standoff, double the vehicle | `Dpss/Separation.lean` |
+
+Each removes a real idealization, each transfers *every* theorem including
+sharpness, and each took a sitting rather than the sitting-to-quarter the plan
+had budgeted.
+
+The ones that are not uniform are rewrites, and no amount of cleverness changes
+that:
+
+* **Speeds that differ between drones.** Uniform speed is what makes a
+  co-located pair stay co-located, so `Escorting` is an invariant with no
+  representation of its own. Drop uniformity and that is gone, taking
+  `EscortsCoherent`, `Dpss/Coherence.lean` and Lemmas 3.2–3.4 with it.
+* **Control authority** — the turn allowance, and that a reversal completes
+  within a sample period. `Dpss/Continuous.lean` derives `Dmax = V·Δt` from a
+  speed bound, but *cannot* derive these, and the reason is not technical: a
+  fast drone with strong actuators has a small turn allowance and a slow one
+  with weak actuators a large one, so no speed bound distinguishes them. They
+  are separate physical facts and belong in the hypotheses where an engineer can
+  see them.
+
+The diagnostic is cheap to apply and would have re-sized four plan items before
+any of them were started. Ask it first.
+
+> **Lesson.** Size an idealization by whether it is uniform across the system,
+> not by how many files mention it. A uniform one is a change of coordinates —
+> find the map. A non-uniform one is a rewrite, and the honest move is to say so
+> and leave it as a hypothesis.

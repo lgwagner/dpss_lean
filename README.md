@@ -18,7 +18,7 @@ the finished mathematics. The baseline is elsewhere and is not disturbed:
 | tag **`v1.0-lean-baseline`** | the Lean formalization of Avigad–van Doorn with extensions, and nothing else. **Start here** if you want the mathematics without the engineering. |
 | branch `main` | that baseline, as it continues |
 | branch `rust-verus` | **E1**, complete: an executable implementation in Rust with Verus proving key equivalence to the Lean specification — `91 verified, 0 errors` |
-| branch **`safety`** (here) | **Track A**: fencing and separation guarantees for a real vehicle. `rust-verus` plus `Dpss/Fence.lean`, `Dpss/Standoff.lean`, `Dpss/Separation.lean` and the matching Verus modules |
+| branch **`safety`** (here) | **Track A**: fencing and separation guarantees for a real vehicle. `rust-verus` plus `Dpss/Fence.lean`, `Dpss/Standoff.lean`, `Dpss/Separation.lean`, `Dpss/Kinematics.lean`, `Dpss/Continuous.lean` and the matching Verus modules |
 
 ## Status
 
@@ -97,6 +97,19 @@ the controller, a pair under sampled sensing holds `d ≤ gap` at every instant,
 which is the fence theorem applied to the excess separation with the vehicle
 doubled.
 
+**Bounded speed is a change of clock.** If every drone has the same speed at the
+same instant, `τ(t) = ∫₀ᵗ v` reparameterizes the bounded-speed system into the
+unit-speed one — so Theorem 2.1 holds by real time `(2 − 1/n) / vmin`
+(`Dpss/Kinematics.lean`). Convergence uses only the *lower* speed bound; and
+`vmin_zero_stalls` proves a positive one is required, not merely convenient.
+
+**And `Dmax` is derived, not assumed.** `Dpss/Continuous.lean` sets
+`Dmax = V · Δt` from a speed bound and a sample period, converts a derivative
+bound into it by the mean value theorem, and concludes the fence holds at every
+real instant with no sampling in the statement. What it deliberately does *not*
+derive is the turn allowance: that is control authority, not kinematics, and no
+speed bound determines it.
+
 **What is not done** is in `STATUS.md` §4, which is written to be read. The
 work package is complete; what remains outside it is Algorithm B, and a
 phase-1 result that this scope cannot reach by construction.
@@ -114,6 +127,8 @@ phase-1 result that this scope cannot reach by construction.
 | `Dpss/Fence.lean` | **S2** — the margined fence: the one guarantee that needs no coordination. |
 | `Dpss/Standoff.lean` | **S0/S3** — the standoff change of coordinates, the scheduler correspondence, and Theorem 2.1 under standoff. |
 | `Dpss/Separation.lean` | **S3** — margined separation at the controller: the fence theorem, instantiated. |
+| `Dpss/Kinematics.lean` | **S1** — bounded speed as a change of clock, and why `vmin > 0` is required. |
+| `Dpss/Continuous.lean` | **S4** — where `Dmax` comes from: `V · Δt`, and the fence at every real instant. |
 | `PLAN-original.md` | The original scoping plan, including one recorded planning error. |
 | `dpss-perimeter-surveillance-brief.md` | Literature brief, with corrections from the primary sources. |
 | `Dpss/` | The development. Each file opens with prose explaining the mathematics. |

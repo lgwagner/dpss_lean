@@ -12,6 +12,67 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S1 and S4: the last two uniform idealizations  *(branch `safety`)*
+
+### S1 — bounded speed is a change of clock
+
+`Dpss/Kinematics.lean`. The plan sized this as the expensive item, because unit
+speed is cashed in by `pos_sub_eq_of_dirConst` — *distance travelled equals
+elapsed time* — which non-Zeno, Lemma 3.5, Lemma 3.7 and the sharpness family
+all consume. It is not expensive, for one reason:
+
+> if every drone has the same speed at the same instant, **speed is a clock**.
+
+With common speed `v(t)` and `τ(t) = ∫₀ᵗ v`, the bounded-speed system at real
+time `t` *is* the unit-speed system at unit time `τ(t)`. `Clock` axiomatizes the
+reparameterization by the speed bounds it must satisfy rather than by an
+integral, so no integration theory is imported and the interface is what a
+vehicle report contains.
+
+`converges_by_real_time`: synchronized by real time `(2 − 1/n) / vmin`.
+
+The accounting is worth stating: **convergence uses the lower bound and only the
+lower bound** — going faster never hurts, so `V` never appears — and **non-Zeno
+uses neither**, since `τ(T)` is a real number however fast the drones went.
+
+`vmin_zero_stalls` turns this track's standing correction into a theorem: with
+`vmin = 0` the constant clock `τ ≡ 0` satisfies the whole contract and every
+drone stays exactly where it started, for ever. Bounding speed from above alone
+makes the theorem *false*, not merely weaker.
+
+### S4 (core) — `Dmax` is no longer a hypothesis
+
+`Dpss/Continuous.lean`. `Vehicle.ofSpeed` sets `Dmax = V · Δt`;
+`lipschitz_of_deriv` converts a derivative bound into the Lipschitz bound the
+argument uses — Mathlib's mean value theorem, and the only appeal to analysis on
+this track; `flight_nonneg` concludes `0 ≤ x t` at **every real instant**, with
+no sampling in the statement.
+
+`Flight.low` is `sInf` of a leg's image. It needs the infimum to *exist*, never
+to be attained, so no compactness or extreme-value argument appears and the
+whole thing still goes through Fence.lean's discrete induction.
+
+### What this session did **not** finish
+
+* **The turn allowance and the completion of reversals remain hypotheses, and
+  should.** A speed bound cannot supply them: a fast drone with strong actuators
+  has a small turn allowance and a slow one with weak actuators a large one.
+  They are facts about control authority, and they sit in `Flight`'s hypotheses
+  where an engineer can see them.
+* **S1 covers uniform speeds only.** Heterogeneous speeds are a rewrite, not a
+  margin — uniform speed is what makes an escort stay together without a grouped
+  representation, so dropping it takes out `EscortsCoherent`,
+  `Dpss/Coherence.lean` and Lemmas 3.2–3.4.
+* **S5 is not started.** No comms model, no delay, no message loss, no
+  degraded-cooperation fallback.
+
+754 theorems, `sorry`-free; `91 verified, 0 errors`. `INSIGHTS.md` §23 records
+the diagnostic that would have re-sized four of this track's items before any of
+them were started: ask whether an idealization is *uniform across the system*,
+not how many files mention it.
+
+---
+
 ## 2026-09-12 — S3: margined separation, both halves  *(branch `safety`)*
 
 The safety track's third item, and the last one that turned out to be a change
