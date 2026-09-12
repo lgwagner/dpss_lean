@@ -115,6 +115,62 @@ theorem leftSync_of_atSeparation {c : Config n} (hn : 0 < n) (hi : c.Invariant)
     (balanceNonneg_of_never_bothLeftApart hn hi
       (le_of_eq (pairBalance_eq_zero_of_atSeparation hs).symm) hnever)
 
+/-! ## The degenerate case: a pinned drone freezes the clock
+
+§3.13 leaves one case of Lemma 3.2 open, and the obstacle there is that a step
+may take **zero** time. These two lemmas turn that from an obstacle into a
+tool.
+
+If a left-synchronized drone sits exactly on its left endpoint heading left, it
+has nowhere to go: any positive step would carry it past the endpoint, which
+synchronization forbids. So the step takes no time at all — and a step of no
+time cannot move the balance. -/
+
+/-- **A left-synchronized drone pinned at its left endpoint freezes the
+clock.** It is heading out of its own interval and synchronization will not
+permit it, so the step must have zero length. -/
+theorem timeToNextEvent_eq_zero_of_pinned {c : Config n} (hn : 0 < n)
+    (hi : c.Invariant) {i : Fin n} {k j : ℕ} (hsync : LeftSync c hn i k)
+    (hkj : k ≤ j + 1) (hpos : (c.run hn j).pos i = leftEnd i)
+    (hdir : (c.run hn j).dir i = Dir.left) :
+    (c.run hn j).timeToNextEvent hn = 0 := by
+  have hj := invariant_run hn hi j
+  have hnn : 0 ≤ (c.run hn j).timeToNextEvent hn :=
+    timeToNextEvent_nonneg hn hj.onPerimeter hj.adjOrdered hj.escortsCoherent
+  have hnext : (c.run hn (j + 1)).pos i
+      = (c.run hn j).pos i
+        + ((c.run hn j).dir i).sign * (c.run hn j).timeToNextEvent hn := rfl
+  rw [hpos, hdir, Dir.sign_left] at hnext
+  have hge : leftEnd i ≤ (c.run hn (j + 1)).pos i := hsync (j + 1) hkj
+  rw [hnext] at hge
+  linarith
+
+/-- **A zero-length step leaves the balance exactly where it was.** So the one
+configuration that could drive the balance negative cannot do so while a drone
+is pinned. -/
+theorem pairBalance_step_of_time_zero {c : Config n} (hn : 0 < n) {i : Fin n}
+    {h : i.val + 1 < n} (hz : c.timeToNextEvent hn = 0) :
+    (c.step hn).pairBalance i h = c.pairBalance i h := by
+  have heq : (c.step hn).pairBalance i h
+      = (c.advance (c.timeToNextEvent hn)).pairBalance i h := rfl
+  rw [heq, pairBalance_advance, hz]
+  ring
+
+/-- **Putting the two together.** A pinned left-synchronized drone cannot let
+the balance fall, whatever its partner is doing — including the awkward case
+where both head left while apart. -/
+theorem pairBalance_nonneg_step_of_pinned {c : Config n} (hn : 0 < n)
+    (hi : c.Invariant) {i : Fin n} {h : i.val + 1 < n} {k j : ℕ}
+    (hsync : LeftSync c hn i k) (hkj : k ≤ j + 1)
+    (hpos : (c.run hn j).pos i = leftEnd i)
+    (hdir : (c.run hn j).dir i = Dir.left)
+    (hb : 0 ≤ (c.run hn j).pairBalance i h) :
+    0 ≤ (c.run hn (j + 1)).pairBalance i h := by
+  have hz := timeToNextEvent_eq_zero_of_pinned hn hi hsync hkj hpos hdir
+  have hstep : c.run hn (j + 1) = (c.run hn j).step hn := rfl
+  rw [hstep, pairBalance_step_of_time_zero hn hz]
+  exact hb
+
 /-! ## `have met`
 
 Lemmas 3.5, 3.6 and 3.7 are all phrased in terms of a pair having *met* by some
