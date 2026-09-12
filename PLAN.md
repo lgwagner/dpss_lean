@@ -58,7 +58,7 @@ scheduled*.
 guarantees exists, in Lean and in Verus, against a vehicle described by
 measurable numbers and a network described by a bound on message age.
 
-### S6 — raise the safety traces to a real differential test  ⟨M⟩
+### S6 — raise the safety traces to a real differential test  ⟨M⟩  ◐ S6a done
 
 **The known weakness in what Track A ships.** `rust/traces.sh` runs two kinds of
 block. `cfgS` and `spread` are a genuine differential test: Lean proves those
@@ -71,12 +71,23 @@ execute. They guard against the Rust changing; they do not check it against Lean
 Four steps, in the order they pay:
 
 * **S6a — generalize the fence over an ordered ring, instantiate at `ℤ`.** ⟨S⟩
-  `Traj`, `safe_all` and `low_nonneg` use only ordered-ring arithmetic: no
-  division, no completeness. (`margin_sharp` does use division and
-  Archimedean-ness, so it stays over a field.) Instantiated at `ℤ`, the Lean and
-  Verus statements are about *the same integers*, and Separation and Comms
-  follow free because they are transfers. This is not a test — it deletes the
-  `ℝ`/`ℤ` gap from the inspection.
+  ✅ **done.** `Dpss/Fence.lean`, `Dpss/Separation.lean` and `Dpss/Comms.lean`
+  are now stated over an arbitrary ordered ring; `margin_sharp` stays over `ℝ`
+  as expected, since it halves the deficiency to build its witness.
+  `Dpss/FenceInt.lean` is the `ℤ` instantiation, written in the Rust's own
+  packaging — unbundled `Vehicle` with a separate `wf` — so that it can be read
+  beside `rust/src/fence.rs` a definition at a time.
+
+  Two things came out of it that were not in the sizing. First,
+  `Dpss/Fence.lean` now has the Rust's **shape**: the per-leg content is a layer
+  of its own (`LegOk`, `ObsOk`, `turn_le_next`, `low_nonneg_leg`, `safe_step`)
+  and the trajectory theorems iterate it, which is how `rust/src/fence.rs` was
+  already organized — so the correspondence is node for node instead of
+  structure-against-predicate, and three of the old proofs collapsed to one
+  line. Second, the fence definitions are **computable** now that no real
+  division is involved, which is what S6c needs; `FenceInt.trace_breach` is
+  already a `decide`-proved integer breach at the numbers
+  `rust/traces.expected` records.
 * **S6b — exec mirrors of the spec predicates.** ⟨S⟩ **The step that matters
   most.** The controller is five lines; a typo there fails any test. The
   dangerous artifacts are `traj_ok`, `leg_ok`, `obs_ok`, `pair_leg_ok` and

@@ -12,6 +12,57 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S6a: the fence was never about the reals  *(branch `safety`)*
+
+`rust/traces.sh` says in as many words that six of its eight blocks are a
+regression test and not a differential one. S6 is the item that fixes that, and
+S6a is its first step — not a test at all, but the deletion of a gap that a
+reader of the two halves had to close by hand.
+
+**The fence argument is ordered-ring arithmetic.** `Traj`, `safe_all` and
+`low_nonneg` use addition, subtraction and comparison: no division, no
+completeness, no limits. So `Dpss/Fence.lean`, `Dpss/Separation.lean` and
+`Dpss/Comms.lean` are now stated over an arbitrary ordered ring, with `ℝ` one
+instance among others. `Dpss/Continuous.lean` still lands in `ℝ`, as it must —
+it is where the mean value theorem is used.
+
+**At `ℤ` the two developments are about the same integers.** `Dpss/FenceInt.lean`
+is the instantiation, written to be read beside `rust/src/fence.rs`: the Verus
+`struct Vehicle`, `wf`, `fence_dir`, `safe`, `leg_ok`, `obs_ok` and `traj_ok`
+transliterated, and the five `proof fn`s stated argument for argument. Every
+proof in it applies the general theorem; none repeats an argument.
+
+**`Dpss/Fence.lean` was restructured to have the Rust's shape.** The per-leg
+content — `LegOk`, `ObsOk`, `turn_le_next`, `low_nonneg_leg`, `safe_step` — is
+now a layer of its own, and the trajectory theorems iterate it. That is how
+`rust/src/fence.rs` was already organized; the two files now correspond node by
+node rather than structure-against-predicate. `Traj.turn_le_pos_succ`,
+`safe_succ`, `safe_all`, `low_nonneg` and `pos_nonneg` keep their names and
+statements, and three of them are now one line.
+
+**A side effect worth having:** `fenceDir`, `Traj`, `PairTraj` and `Sharp.traj`
+are no longer `noncomputable`. Real division was what forced that
+(`INSIGHTS.md` §11), and there is none in the fence. `FenceInt.trace_breach`
+cashes it immediately: the integer trajectory that breaches a short margin, with
+both the vehicle contract and the breach discharged by `decide`, at exactly the
+numbers `rust/traces.expected` records.
+
+### What is **not** done
+
+* **S6b — exec mirrors of the spec predicates** — is the step that matters most
+  and is untouched. `traj_ok`, `leg_ok`, `obs_ok`, `pair_leg_ok` and `link_ok`
+  never execute, so no trace test can catch a wrong one.
+* **S6c** — the six safety blocks of `rust/traces.expected` are still recorded
+  from the binary. `traces.sh` still says so, correctly.
+* **`margin_sharp` stays over `ℝ`.** It halves the deficiency to build its
+  witness, so it needs a field. The construction is general, which is what
+  `trace_breach` uses; a general integer sharpness statement is not claimed.
+
+795 theorems, `sorry`-free; `lake build` clean. The Rust is untouched by this
+step, so `100 verified, 0 errors` and the traces stand as they were.
+
+---
+
 ## 2026-09-12 — S5: safety when the network degrades; Track A complete  *(branch `safety`)*
 
 Three answers, different in character. `Dpss/Comms.lean`, `rust/src/comms.rs`.

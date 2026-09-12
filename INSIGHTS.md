@@ -680,3 +680,56 @@ proof of convergence is also the proof that the degraded mode is safe.
 > converges to. If the steady state is safe without the resource that was lost,
 > the fallback is "hold the steady state" — and the convergence proof you
 > already have is the safety proof you were about to write.
+
+---
+
+## 25. A correspondence gap can be deleted rather than tested
+
+The safety half of this repository ships two proofs of the same theorem: one in
+Lean over `ℝ`, one in Verus over `int`. Between them sat a gap nobody had
+written down as an obligation, because it is not one — real numbers and
+mathematical integers are different objects, so the two theorems were, strictly,
+about different systems, and a reader had to satisfy themselves that nothing
+lived in the difference.
+
+The plan's answer was to *test* across it: drive the verified binary and check
+its trace against numbers Lean had proved. That is worth doing and is what S6c
+does. But the first step was cheaper and stronger than any test, and it started
+from a question about the proof rather than about the artifacts:
+
+> **which of these hypotheses does the argument actually use?**
+
+The fence argument uses addition, subtraction and comparison. No division, no
+completeness, no limits, no Archimedean property. `ℝ` was never the subject; it
+was a default. Stated over an ordered ring, the theorem holds at `ℤ` as an
+instance, and at `ℤ` the Lean statement and the Verus statement quantify over
+the same integers. The gap is not narrowed, or tested, or bounded. It is gone,
+and the generalization is a *weakening of hypotheses* — nothing was reproved and
+no proof grew.
+
+Two dividends came with it that were not part of the reasoning.
+
+**The shape of the file turned out to matter as much as the type.** Verus states
+the per-leg content as predicates (`leg_ok`, `obs_ok`) consumed by pointwise
+`proof fn`s, and iterates them at the end. Lean had the same content as *fields
+of a structure*, consumed inside the induction. Same mathematics, but a reader
+comparing them was comparing a structure against a predicate, clause by clause,
+by hand. Splitting the Lean into the same two layers cost nothing — three proofs
+got *shorter* — and turned the comparison into a list of statements with the
+same names, the same argument order and the same arity. A correspondence that
+has to be checked by a human should be arranged so the human is comparing like
+with like; that is a property of the presentation, and it is free.
+
+**The definitions became computable.** Real division is what forces
+`noncomputable` through this development (§11), and there is none in the fence —
+so over an ordered ring the controller, the trajectory and the sharpness witness
+all compute. An integer counterexample that had to be a symbolic construction is
+now three `decide`s. The step taken for correspondence paid for the step after
+it, which is the one that needs to evaluate things.
+
+> **Lesson.** Before building machinery to test across a gap between two
+> formalizations, check whether the gap is load-bearing. Strip each proof to the
+> hypotheses it uses; if what is left is common to both settings, instantiate
+> one at the other and the correspondence problem disappears instead of becoming
+> a test suite. And when two proofs must be compared by eye, spend the small
+> amount it costs to give them the same shape.

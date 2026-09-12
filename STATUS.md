@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `697613db4f64`  
+**Commit at time of writing:** `d44c013f99fb`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**774 theorems**, all `sorry`-free, across 40 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 468 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 562 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 232 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**795 theorems**, all `sorry`-free, across 41 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 265 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1429,10 +1429,10 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.ordered_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_mono_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.convergesBy_of_one'' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
 'DPSS.Fence.CommsPair.rep_error' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.CommsPair.obs_error' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.CommsPair.safe_iff_fence' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1449,9 +1449,9 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.hold_covers' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.standoffLeftEnd_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.standoffRightEnd_le_one' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
 'DPSS.Fence.lipschitz_of_deriv' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.sampleTime_le_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.Flight.leg_nonempty' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1674,12 +1674,18 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.ExamplesThree.cfgB_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.ExamplesThree.cfgB_period' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.ExamplesThree.cfgB_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle.margin_left' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle.margin_right' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle.margin_left' depends on axioms: [propext]
+'DPSS.Fence.Vehicle.margin_right' depends on axioms: [propext]
 'DPSS.Fence.Vehicle.margin_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.fenceDir_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.fenceDir_of_gt' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.lt_obs_of_dir_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.fenceDir_of_le' depends on axioms: [propext]
+'DPSS.Fence.fenceDir_of_gt' depends on axioms: [propext]
+'DPSS.Fence.lt_obs_of_dir_left' depends on axioms: [propext]
+'DPSS.Fence.obsOk_of_abs' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.turn_le_next' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.low_nonneg_leg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.safe_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Traj.obsOk' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Traj.legOk' depends on axioms: [propext]
 'DPSS.Fence.Traj.turn_le_pos_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.Traj.safe_succ' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.Traj.safe_all' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1691,13 +1697,28 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Fence.TrajR.safe_iff_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.TrajR.high_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.TrajR.pos_le' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Sharp.pos_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Sharp.pos_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Sharp.pos_of_le' depends on axioms: [propext]
+'DPSS.Fence.Sharp.pos_of_ge' depends on axioms: [propext]
 'DPSS.Fence.Sharp.dir_of_lt' does not depend on any axioms
 'DPSS.Fence.Sharp.dir_of_ge' does not depend on any axioms
 'DPSS.Fence.Sharp.lt_of_dir_left' does not depend on any axioms
 'DPSS.Fence.Sharp.ge_of_dir_right' does not depend on any axioms
 'DPSS.Fence.margin_sharp' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.Vehicle.toFence_Dmax' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.Vehicle.toFence_turn' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.Vehicle.toFence_eps' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.Vehicle.clearance_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.fenceDir_eq' depends on axioms: [propext]
+'DPSS.FenceInt.safe_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.legOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.obsOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.turn_le_next' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.low_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.safe_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.safe_at' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.low_nonneg_at' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.traceVehicle_wf' does not depend on any axioms
+'DPSS.FenceInt.trace_breach' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.exists_greatest_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apartOnBoundaries_run' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.apartOnBoundaries_of_not_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1988,9 +2009,9 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.meetTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_nonneg_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DPSS.Fence.Vehicle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
+'DPSS.Fence.Vehicle' depends on axioms: [propext]
 'DPSS.Fence.PairTraj.safe_iff_fence' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.PairTraj.le_low' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.PairTraj.le_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2154,7 +2175,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**774/774 clean — `sorryAx` appears zero times.**
+**795/795 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2204,6 +2225,10 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+d44c013  2026-09-12  S6a: the fence was never about the reals
+a753e1c  2026-09-12  plan: S6 -- raise the safety traces to a real differential test
+daca9d3  2026-09-12  fix: traces.sh was overclaiming for the six safety blocks
+db67d74  2026-09-12  docs: Track A complete
 697613d  2026-09-12  S5: the fallback starves nobody
 006507b  2026-09-12  S5: the stale link in Verus, and a breach you can watch happen
 3ad69da  2026-09-12  S5: safety when the network degrades
@@ -2468,6 +2493,7 @@ not scheduled.
 | **S1** | ~~Kinematics: bounded motion into the *team* model~~ | M | ✅ **uniform speeds** — `Dpss/Kinematics.lean`. Heterogeneous speeds recorded as a rewrite, not attempted |
 | **S4** | The continuous layer | XL | ◐ **core done** — `Dmax = V·Δt` derived, `Dpss/Continuous.lean`. See the non-claims |
 | **S5** | ~~Decentralized safety under a comms model~~ | L | ✅ **done** — `Dpss/Comms.lean`, `rust/src/comms.rs` |
+| **S6** | Raise the safety traces to a real differential test | M | ◐ **S6a done** — the fence is over an ordered ring and instantiated at `ℤ`, `Dpss/FenceInt.lean`. S6b–S6d open |
 
 ### S2 — what is actually guaranteed
 
@@ -2687,6 +2713,45 @@ have needed a division by two, exact over the reals and not over the integers.
 Two more traces: margin `50 = 2·(10+3+2) + 2·10` clears a standoff of 5 at
 `low = 6`; on the *fresh* margin of 30, a two-sample delay is enough for the
 gap to go **negative**.
+
+### S6a — the `ℝ`/`ℤ` gap, deleted
+
+`rust/traces.sh` says plainly that six of its eight blocks are a regression test
+against the binary rather than a differential test against Lean. S6 is the item
+that fixes that; S6a is the part of it that is not a test.
+
+**The fence argument is ordered-ring arithmetic.** `Traj`, `safe_all` and
+`low_nonneg` use addition, subtraction and comparison and nothing else. So
+`Dpss/Fence.lean`, `Dpss/Separation.lean` and `Dpss/Comms.lean` are stated over
+an arbitrary ordered ring, and `ℝ` is one instance rather than the subject. This
+was never a *generalization* in the mathematical sense — it is the removal of a
+hypothesis the argument was not using.
+
+**At `ℤ` the two halves quantify over the same integers.** `Dpss/FenceInt.lean`
+transliterates the Verus statements — `struct Vehicle`, `wf`, `fence_dir`,
+`safe`, `leg_ok`, `obs_ok`, `traj_ok`, and the five `proof fn`s argument for
+argument — and proves each by instantiating the general theorem. Nothing is
+re-proved there. It also mirrors the Rust's *packaging*: an unbundled vehicle
+with a separate well-formedness predicate, with `Vehicle.toFence` the single
+line that repackages it.
+
+**`Dpss/Fence.lean` was given the Rust's shape.** `LegOk`, `ObsOk`,
+`turn_le_next`, `low_nonneg_leg` and `safe_step` are a per-leg layer; the
+trajectory theorems iterate it. `Traj.turn_le_pos_succ`, `safe_succ`,
+`safe_all`, `low_nonneg` and `pos_nonneg` keep their names and statements, and
+three of them are now one line.
+
+**What this does not establish.** Nothing mechanical checks that `legOk` says
+what `leg_ok` says — that is still a human read, and S6d is the only step that
+would remove part of it. What has changed is that the read is now between two
+files with the same definitions in the same order over the same integers,
+instead of between a real-valued structure and an integer-valued predicate.
+
+**What it did buy immediately.** With no real division anywhere, the fence
+definitions are computable: `FenceInt.trace_breach` exhibits the integer
+trajectory that breaches a margin one `eps` short — the vehicle contract and the
+breach both by `decide` — at exactly the numbers `rust/traces.expected` records.
+That is the machinery S6c needs.
 
 ### What Track A does not claim
 

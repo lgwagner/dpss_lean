@@ -33,6 +33,7 @@ import Dpss.SharpnessGeneral
 import Dpss.Nondeterminism
 import Dpss.IntModel
 import Dpss.Fence
+import Dpss.FenceInt
 import Dpss.Standoff
 import Dpss.Separation
 import Dpss.Kinematics

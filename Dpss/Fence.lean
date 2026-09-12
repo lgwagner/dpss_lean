@@ -166,6 +166,92 @@ theorem lt_obs_of_dir_left {M phat : α} {req : Dir}
   rw [fenceDir_of_le hc] at h
   exact Dir.noConfusion h
 
+/-! ## One leg
+
+The vehicle contract and the sensing bound, stated for a **single leg** with no
+trajectory around them. Everything the fence argument knows about motion is
+here; the trajectory layer below only iterates it.
+
+This is also the shape `rust/src/fence.rs` has, and deliberately so: `LegOk` is
+its `leg_ok`, `ObsOk` its `obs_ok`, and the three theorems that follow are its
+`turn_le_next`, `low_nonneg` and `safe_step`, argument for argument. A reader
+checking the two developments against each other compares statements of the
+same shape rather than a structure against a predicate. -/
+
+/-- **Sensing is accurate to `eps`.** `rust/src/fence.rs`, `obs_ok`. -/
+def ObsOk (V : Vehicle α) (obs p : α) : Prop := -V.eps ≤ obs - p ∧ obs - p ≤ V.eps
+
+theorem obsOk_of_abs {V : Vehicle α} {obs p : α} (h : |obs - p| ≤ V.eps) :
+    ObsOk V obs p := abs_le.mp h
+
+/-- **The vehicle contract for one leg.** `low` is the lowest position reached
+between this sample and the next; a leftward leg travels at most `Dmax`; a
+reversal costs at most `turn` and completes within the period.
+
+`rust/src/fence.rs`, `leg_ok`. -/
+structure LegOk (V : Vehicle α) (p : α) (d : Dir) (low pNext : α) : Prop where
+  /-- `low` is a low-water mark for this sample. -/
+  low_le_pos : low ≤ p
+  /-- and for the next. -/
+  low_le_next : low ≤ pNext
+  /-- **Displacement bound.** A leftward leg travels at most `Dmax`. -/
+  left_leg : d = Dir.left → p - V.Dmax ≤ low
+  /-- **Turn allowance.** A drone commanded right may still lose `turn`. -/
+  turn_leg : d = Dir.right → p - V.turn ≤ low
+  /-- **Reversals complete within a sample period.** -/
+  hold_leg : d = Dir.right → p ≤ pNext
+
+/-- **A safe sample leaves at least the turn allowance at the next one.**
+
+Both cases are one subtraction. Heading left, the drone starts with
+`Dmax + turn` and can spend at most `Dmax`; heading right, it does not lose
+ground at all. This is the half of the induction that does not mention the
+controller. `rust/src/fence.rs`, `turn_le_next`. -/
+theorem turn_le_next {V : Vehicle α} {p low pNext : α} {d : Dir}
+    (hs : V.margin d ≤ p) (hl : LegOk V p d low pNext) : V.turn ≤ pNext := by
+  cases d with
+  | left =>
+    have h1 : V.Dmax + V.turn ≤ p := by simpa using hs
+    have h2 := hl.left_leg rfl
+    have h3 := hl.low_le_next
+    linarith
+  | right =>
+    have h1 : V.turn ≤ p := by simpa using hs
+    have h2 := hl.hold_leg rfl
+    linarith
+
+/-- **The drone is clear of the fence for the whole leg**, not merely at its
+endpoints. `rust/src/fence.rs`, `low_nonneg`. -/
+theorem low_nonneg_leg {V : Vehicle α} {p low pNext : α} {d : Dir}
+    (hs : V.margin d ≤ p) (hl : LegOk V p d low pNext) : 0 ≤ low := by
+  cases d with
+  | left =>
+    have h1 : V.Dmax + V.turn ≤ p := by simpa using hs
+    have h2 := hl.left_leg rfl
+    have := V.turn_nonneg
+    linarith
+  | right =>
+    have h1 : V.turn ≤ p := by simpa using hs
+    have h2 := hl.turn_leg rfl
+    linarith
+
+/-- **One sample preserves the invariant.** The other half: if the controller
+leaves the drone heading left it cannot have fired, so the observation was above
+`M`, so the true position is above `M - eps`, which the margin condition makes
+at least `Dmax + turn`. `rust/src/fence.rs`, `safe_step`. -/
+theorem safe_step {V : Vehicle α} {M p low pNext obs : α} {d req : Dir}
+    (hM : V.Dmax + V.turn + V.eps ≤ M) (hs : V.margin d ≤ p)
+    (hl : LegOk V p d low pNext) (ho : ObsOk V obs pNext) :
+    V.margin (fenceDir M obs req) ≤ pNext := by
+  have hturn : V.turn ≤ pNext := turn_le_next hs hl
+  cases hd : fenceDir M obs req with
+  | right => simpa using hturn
+  | left =>
+    have hgt : M < obs := lt_obs_of_dir_left hd
+    simp only [Vehicle.margin_left]
+    have := ho.2
+    linarith
+
 /-! ## Sampled trajectories
 
 A trajectory is a sequence of samples. At sample `k` the drone is at `p k`,
@@ -214,45 +300,30 @@ variable {V : Vehicle α} {M : α}
 /-- The invariant: the drone holds the clearance its current heading requires. -/
 def Safe (T : Traj V M) (k : ℕ) : Prop := V.margin (T.d k) ≤ T.p k
 
-/-- **A safe sample leaves at least the turn allowance at the next one.**
+/-- Each sample of a trajectory satisfies the sensing bound of the leg layer. -/
+theorem obsOk (T : Traj V M) (k : ℕ) : ObsOk V (T.obs k) (T.p k) :=
+  obsOk_of_abs (T.obs_close k)
 
-Both cases are one subtraction. Heading left, the drone starts with
-`Dmax + turn` and can spend at most `Dmax`; heading right, it does not lose
-ground at all. This is the half of the induction that does not mention the
-controller. -/
+/-- And each leg satisfies the vehicle contract of the leg layer. The fields of
+`Traj` are `LegOk`, quantified over the samples. -/
+theorem legOk (T : Traj V M) (k : ℕ) : LegOk V (T.p k) (T.d k) (T.low k) (T.p (k + 1)) :=
+  { low_le_pos := T.low_le_pos k
+    low_le_next := T.low_le_next k
+    left_leg := T.left_leg k
+    turn_leg := T.turn_leg k
+    hold_leg := T.hold_leg k }
+
+/-- **A safe sample leaves at least the turn allowance at the next one.** -/
 theorem turn_le_pos_succ {T : Traj V M} {k : ℕ} (hk : T.Safe k) :
-    V.turn ≤ T.p (k + 1) := by
-  cases hd : T.d k with
-  | left =>
-    have h1 : V.Dmax + V.turn ≤ T.p k := by
-      have h := hk; unfold Safe at h; rw [hd] at h; simpa using h
-    have h2 : T.p k - V.Dmax ≤ T.low k := T.left_leg k hd
-    have h3 : T.low k ≤ T.p (k + 1) := T.low_le_next k
-    linarith
-  | right =>
-    have h1 : V.turn ≤ T.p k := by
-      have h := hk; unfold Safe at h; rw [hd] at h; simpa using h
-    have h2 : T.p k ≤ T.p (k + 1) := T.hold_leg k hd
-    linarith
+    V.turn ≤ T.p (k + 1) :=
+  turn_le_next hk (T.legOk k)
 
-/-- **The invariant is preserved.** The other half: if the controller leaves the
-drone heading left it must not have fired, so the observation was above `M`, so
-the true position is above `M - eps`, which the margin condition makes at least
-`Dmax + turn`. -/
+/-- **The invariant is preserved.** -/
 theorem safe_succ (hM : V.Dmax + V.turn + V.eps ≤ M) {T : Traj V M} {k : ℕ}
     (hk : T.Safe k) : T.Safe (k + 1) := by
-  have hturn : V.turn ≤ T.p (k + 1) := turn_le_pos_succ hk
   unfold Safe
-  cases hd : T.d (k + 1) with
-  | right => simpa using hturn
-  | left =>
-    have hc : fenceDir M (T.obs (k + 1)) (T.req (k + 1)) = Dir.left := by
-      rw [← T.control (k + 1), hd]
-    have hgt : M < T.obs (k + 1) := lt_obs_of_dir_left hc
-    have hobs : T.obs (k + 1) - T.p (k + 1) ≤ V.eps :=
-      (abs_le.mp (T.obs_close (k + 1))).2
-    simp only [Vehicle.margin_left]
-    linarith
+  rw [T.control (k + 1)]
+  exact safe_step hM hk (T.legOk k) (T.obsOk (k + 1))
 
 /-- **The invariant holds forever**, given that it holds at the first sample. -/
 theorem safe_all (hM : V.Dmax + V.turn + V.eps ≤ M) {T : Traj V M}
@@ -267,19 +338,8 @@ theorem safe_all (hM : V.Dmax + V.turn + V.eps ≤ M) {T : Traj V M}
 `low k` is the lowest point of the whole leg, so this is a statement about
 continuous time even though the proof is entirely discrete. -/
 theorem low_nonneg (hM : V.Dmax + V.turn + V.eps ≤ M) {T : Traj V M}
-    (h0 : T.Safe 0) (k : ℕ) : 0 ≤ T.low k := by
-  have hk : T.Safe k := safe_all hM h0 k
-  unfold Safe at hk
-  cases hd : T.d k with
-  | left =>
-    have h1 : V.Dmax + V.turn ≤ T.p k := by rw [hd] at hk; simpa using hk
-    have h2 : T.p k - V.Dmax ≤ T.low k := T.left_leg k hd
-    have := V.turn_nonneg
-    linarith
-  | right =>
-    have h1 : V.turn ≤ T.p k := by rw [hd] at hk; simpa using hk
-    have h2 : T.p k - V.turn ≤ T.low k := T.turn_leg k hd
-    linarith
+    (h0 : T.Safe 0) (k : ℕ) : 0 ≤ T.low k :=
+  low_nonneg_leg (safe_all hM h0 k) (T.legOk k)
 
 /-- And in particular at every sample. -/
 theorem pos_nonneg (hM : V.Dmax + V.turn + V.eps ≤ M) {T : Traj V M}

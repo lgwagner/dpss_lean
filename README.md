@@ -144,7 +144,8 @@ phase-1 result that this scope cannot reach by construction.
 | **`PLAN.md`** | The roadmap. The work package is complete, so this now holds the **backlog** — new directions, sized and scoped. |
 | `CHANGELOG.md` | What changed and when, newest first — including what each session did **not** finish. |
 | `rust/README.md` | **E1** — the executable Rust implementation verified with Verus. `rust/PLAN.md` is its build plan, `rust/REFINEMENT.md` the obligations it does *not* discharge. |
-| `Dpss/Fence.lean` | **S2** — the margined fence: the one guarantee that needs no coordination. |
+| `Dpss/Fence.lean` | **S2** — the margined fence: the one guarantee that needs no coordination. Stated over an ordered ring, so `ℤ` is an instance. |
+| `Dpss/FenceInt.lean` | **S6a** — that fence at `ℤ`, in the shape `rust/src/fence.rs` has. Read the two side by side. |
 | `Dpss/Standoff.lean` | **S0/S3** — the standoff change of coordinates, the scheduler correspondence, and Theorem 2.1 under standoff. |
 | `Dpss/Separation.lean` | **S3** — margined separation at the controller: the fence theorem, instantiated. |
 | `Dpss/Kinematics.lean` | **S1** — bounded speed as a change of clock, and why `vmin > 0` is required. |
