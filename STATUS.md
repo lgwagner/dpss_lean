@@ -1,8 +1,10 @@
 # DPSS formalization — status
 
-**Generated:** 2026-09-12
-**Commit at time of writing:** `b5de46913cbd`
+<!-- BEGIN:META -->
+**Generated:** 2026-09-12  
+**Commit at time of writing:** `bc5bef846f04`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
+<!-- END:META -->
 
 This document is written to be *audited*, not just read. Every claim about what
 is proved is backed by machine output reproduced verbatim in §6, and §7 tells
@@ -48,7 +50,9 @@ Stage 1 broken down:
 | Motion between events (`advance`) | done |
 | Ordering invariant under motion | **done — main result so far** |
 | The three events as state transformations | done |
-| Event *scheduling* (`timeToNextEvent`, `step`) | **not started** |
+| Per-event scheduling (when each event comes due) | done |
+| Combining them into `timeToNextEvent` (a minimum) | **not started** |
+| `step` and runs | **not started** |
 | Runs / event sequences | **not started** |
 | Non-Zeno | **not started** |
 
@@ -56,7 +60,9 @@ Stage 1 broken down:
 
 ## 3. What is actually proved
 
-51 theorems across 3 files (193 + 228 + 216 lines). All `sorry`-free; see §6.
+<!-- BEGIN:COUNTS -->
+**69 theorems**, all `sorry`-free, across 4 files (`Basic.lean` 199 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `Schedule.lean` 215 lines).
+<!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
 
@@ -123,16 +129,46 @@ ordering obligation lives entirely in `Dynamics.lean`.
   cannot re-collide without first turning around.
 - `adjOrdered_doMeet` / `_doSeparate` / `_doBorder` — events preserve ordering.
 
+### 3.4 `Dpss/Schedule.lean` — when each event comes due
+
+Each event kind gets a time, and **each time gets a correctness theorem**
+saying that flying for exactly that long really does establish that event's
+precondition. That pairing is the whole point: a scheduler returning
+plausible-looking numbers unrelated to the events it claims to schedule would
+sail through a convergence proof and mean nothing.
+
+- `pos_eq_zero_of_le` / `pos_eq_one_of_ge` — **who can be at a border.** The
+  border predicates deliberately do *not* stipulate which drone is involved;
+  that would be building a conclusion into a definition. Instead these recover
+  it: if a drone sits on the left border then so does everyone to its left,
+  pinned between that drone and the edge of the perimeter.
+- `separationTime`, `leftBorderTime`, `rightBorderTime` — all of the form
+  "signed distance ÷ unit speed", signed so the time is nonnegative exactly
+  when the event is *ahead* of the drone rather than behind it.
+- `pos_eq_commonEnd_at_separationTime`, `atLeftBorder_at_leftBorderTime`,
+  `atRightBorder_at_rightBorderTime`, `coLocated_at_meetTime` — the four
+  correctness theorems.
+- `atSeparation_at_separationTime` — an escorting pair stays escorting as it
+  flies, so the separation becomes due for *both* drones simultaneously.
+- **`separationTime_nonneg_doMeet` / `separationTime_pos_doMeet`** — the real
+  content of `escortDir`: after a meet, the separation it creates is genuinely
+  in the future, *strictly* so unless the pair met exactly on their shared
+  boundary. That exceptional case is the paper's *bounce* — a meet and a
+  separation coinciding. Everywhere else, a meet buys strictly positive time
+  before the next event for that pair, which is exactly the kind of fact
+  non-Zeno gets assembled from.
+
 ---
 
 ## 4. What is **not** proved — read this part
 
 This is the honest gap list. Nothing below is done.
 
-1. **There is no dynamics yet.** The three events exist as individual state
-   transformations, and `advance` exists as motion. **Nothing sequences them.**
-   There is no `timeToNextEvent`, no `step`, and no notion of a run. Everything
-   proved so far is about *one* flight or *one* event in isolation.
+1. **There is still no running system.** Each event now has a scheduled time
+   with a correctness proof (`Schedule.lean`), but **nothing takes the minimum
+   over them**, so there is no `timeToNextEvent`, no `step`, and no notion of a
+   run. Everything proved so far concerns *one* flight or *one* event in
+   isolation. This is the immediate next target.
 2. **Non-Zeno is not started.** This is the headline opportunity (§5) and it
    needs the run machinery from (1) first.
 3. **`Synchronized` is not defined**, so Theorem 2.1 is not even *stated* yet.
@@ -146,12 +182,10 @@ This is the honest gap list. Nothing below is done.
    the paper leaves open which neighbour the middle drone escorts. My events are
    currently deterministic per-pair. This does not bite in phase 2, but a fully
    faithful model needs a relation, not a function.
-7. **Unused definitions.** `Config.OnPerimeter`, `Config.Valid`,
-   `Config.Together`, `Config.escortDir`, `Config.AtSeparation`,
-   `AtLeftBorder` / `AtRightBorder` are defined but no theorem constrains them
-   yet. In particular **nothing proves that only drone `0` can be at the left
-   border** — that needs the ordering invariant plus `OnPerimeter`, and is a
-   good next target.
+7. **Unused definitions.** `Config.Together` and `Config.Valid` are defined
+   but no theorem uses them. (`OnPerimeter`, `escortDir`, `AtSeparation`,
+   `AtLeftBorder` and `AtRightBorder` were on this list and are now discharged
+   by `Schedule.lean`.)
 8. **Algorithm B is entirely out of scope** — wrong estimates, changing
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
@@ -213,8 +247,7 @@ depends on `sorryAx`, and that is impossible to hide. **`sorryAx` appears zero
 times below.** `propext`, `Classical.choice` and `Quot.sound` are the three
 standard axioms of Lean's logic and are what ordinary mathematics uses.
 
-All 51 theorems:
-
+<!-- BEGIN:AUDIT -->
 ```
 'DPSS.Dir.flip_left' does not depend on any axioms
 'DPSS.Dir.flip_right' does not depend on any axioms
@@ -222,6 +255,7 @@ All 51 theorems:
 'DPSS.Dir.sign_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Dir.sign_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Dir.sign_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Dir.sign_mul_self' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Dir.eq_left_or_right' depends on axioms: [propext]
 'DPSS.Dir.sign_flip' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.rightEnd_sub_leftEnd' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -260,6 +294,8 @@ All 51 theorems:
 'DPSS.Config.adjOrdered_doSeparate' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.adjOrdered_doBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.escorting_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.doMeet_dir_self' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.doMeet_dir_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.doSeparate_dir_left' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.doSeparate_dir_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.not_approaching_doSeparate' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -267,7 +303,25 @@ All 51 theorems:
 'DPSS.Config.doBorder_dir_of_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sepRate_eq_zero_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_advance_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_eq_commonEnd_at_separationTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atSeparation_at_separationTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atLeftBorder_at_leftBorderTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.atRightBorder_at_rightBorderTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.coLocated_at_meetTime' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftBorderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightBorderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftBorderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightBorderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_nonneg_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
+
+**69/69 clean — `sorryAx` appears zero times.**
+<!-- END:AUDIT -->
 
 ---
 
@@ -291,6 +345,11 @@ This also runs in CI on every push (`.github/workflows/lean_action_ci.yml`), so
 a `sorry` cannot enter the repository unnoticed rather than merely being absent
 today.
 
+`scripts/refresh_status.py` regenerates the machine-generated blocks of *this
+document* (§6, §8, the header, the theorem count) from the live repository, so
+the numbers here cannot quietly drift away from the code. If you suspect this
+file is stale, run it.
+
 `scripts/audit.py` is committed alongside the sources. It extracts every
 theorem name from `Dpss/*.lean` (tracking namespaces), asks Lean for each one's
 axiom dependencies, and exits nonzero if any depends on `sorryAx`. It is the
@@ -309,7 +368,9 @@ untested.** §4 item 4 is the one to watch.
 
 ## 8. Commit history
 
+<!-- BEGIN:COMMITS -->
 ```
+bc5bef8  2026-09-12  feat: the three DPSS events, plus an auditable status report
 b5de469  2026-09-12  feat: motion between events, and the ordering invariant
 fbeab29  2026-09-12  docs: ACL2 convergence proof is conditional on unproved termination
 29d8b41  2026-09-12  feat: scaffold Lean 4 + Mathlib project and add the geometry layer
@@ -319,16 +380,18 @@ c4b40fd  2026-09-12  docs: verify brief against arXiv:2008.04262, fix one error,
 bcdb11f  2026-09-11  Create README.md
 971617b  2026-09-11  Initial commit
 ```
+<!-- END:COMMITS -->
 
 ---
 
 ## 9. Next steps, in order
 
-1. Prove the currently-unused predicates are constrained: only drone `0` can be
-   at the left border, only drone `n-1` at the right. Closes gap (7) above.
+1. ~~Constrain the border predicates.~~ **Done** — `Schedule.lean`.
 2. `timeToNextEvent` — the minimum over all pending events — and prove it
-   **positive** when no event is currently due. This is the local half of
-   non-Zeno and the first thing ACL2 could not do.
+   **strictly positive** when no event is currently due. This is the local half
+   of non-Zeno and the first thing the ACL2 development could not do. The
+   per-event times and their correctness proofs are now in place, so this is
+   the minimum-over-a-finite-set step.
 3. `step` and runs: iterate event-to-event.
 4. Non-Zeno proper, following AvD §2. The load-bearing step is: *if drone `i+1`
    makes two consecutive left turns, drone `i` must turn right in between.*

@@ -71,14 +71,18 @@ theorem nextIdx_ne (i : Fin n) (h : i.val + 1 < n) : nextIdx i h ≠ i := by
 /-! ## When each event fires -/
 
 /-- Drone `i` has reached the left border of the perimeter heading into it.
-Only the leftmost drone can be in this situation. -/
-def AtLeftBorder (c : Config n) (i : Fin n) : Prop :=
-  i.val = 0 ∧ c.pos i = 0 ∧ c.dir i = Dir.left
 
-/-- Drone `i` has reached the right border heading into it. Only the rightmost
-drone can be in this situation. -/
+Note this does *not* require `i` to be the leftmost drone. It would be wrong to
+build that in: several drones can sit on the border at once, and the algorithm
+turns any drone that reaches it. What *is* true is that everyone to `i`'s left
+must be there too, which is `pos_eq_zero_of_le` below — a consequence of the
+ordering invariant rather than a definitional stipulation. -/
+def AtLeftBorder (c : Config n) (i : Fin n) : Prop :=
+  c.pos i = 0 ∧ c.dir i = Dir.left
+
+/-- Drone `i` has reached the right border heading into it. -/
 def AtRightBorder (c : Config n) (i : Fin n) : Prop :=
-  i.val + 1 = n ∧ c.pos i = 1 ∧ c.dir i = Dir.right
+  c.pos i = 1 ∧ c.dir i = Dir.right
 
 /-- Drones `i` and `i+1` occupy the same point. -/
 def CoLocated (c : Config n) (i : Fin n) (h : i.val + 1 < n) : Prop :=
@@ -156,6 +160,18 @@ theorem escorting_doMeet {c : Config n} {i : Fin n} {h : i.val + 1 < n}
   rw [setDir_dir_self]
   rw [setDir_dir_ne _ _ (nextIdx_ne i h).symm, setDir_dir_self]
 
+/-- The heading a meet installs on the left drone of the pair. -/
+@[simp] theorem doMeet_dir_self (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    (c.doMeet i h).dir i = c.escortDir i := by
+  unfold doMeet
+  rw [setDir_dir_ne _ _ (nextIdx_ne i h).symm, setDir_dir_self]
+
+/-- And on the right drone — the same one, which is what makes it an escort. -/
+@[simp] theorem doMeet_dir_next (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
+    (c.doMeet i h).dir (nextIdx i h) = c.escortDir i := by
+  unfold doMeet
+  rw [setDir_dir_self]
+
 /-- After a separation the left drone heads left. Lemma 3.2 of the paper opens
 with exactly this observation. -/
 @[simp] theorem doSeparate_dir_left (c : Config n) (i : Fin n) (h : i.val + 1 < n) :
@@ -184,14 +200,14 @@ theorem not_approaching_doSeparate (c : Config n) (i : Fin n) (h : i.val + 1 < n
 theorem doBorder_dir_of_left {c : Config n} {i : Fin n} (hb : c.AtLeftBorder i) :
     (c.doBorder i).dir i = Dir.right := by
   unfold doBorder
-  rw [setDir_dir_self, hb.2.2]
+  rw [setDir_dir_self, hb.2]
   rfl
 
 /-- A drone at the right border turns around and heads left. -/
 theorem doBorder_dir_of_right {c : Config n} {i : Fin n} (hb : c.AtRightBorder i) :
     (c.doBorder i).dir i = Dir.left := by
   unfold doBorder
-  rw [setDir_dir_self, hb.2.2]
+  rw [setDir_dir_self, hb.2]
   rfl
 
 /-- An escort really does stay together: a co-located pair pointing the same way

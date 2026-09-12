@@ -69,6 +69,12 @@ def sign : Dir → ℝ
 
 theorem sign_ne_zero (d : Dir) : d.sign ≠ 0 := by cases d <;> norm_num [sign]
 
+/-- A direction's velocity squares to one. This is what makes "distance to a
+point, divided by speed" come out right: flying for `(target - pos) * sign`
+lands exactly on `target`, because the two `sign` factors cancel. -/
+@[simp] theorem sign_mul_self (d : Dir) : d.sign * d.sign = 1 := by
+  cases d <;> norm_num [sign]
+
 /-- There are only two directions. Used constantly to drive case analysis on a
 drone's heading. -/
 theorem eq_left_or_right (d : Dir) : d = left ∨ d = right := by cases d <;> simp
