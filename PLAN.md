@@ -24,7 +24,8 @@ picking up *this* roadmap needs.
 
 ## Where things stand
 
-**594 theorems, all `sorry`-free.** Non-Zeno is proved. **Theorem 2.1 is
+**826 theorems, all `sorry`-free** (594 of them the work package; the rest are
+Track A). Non-Zeno is proved. **Theorem 2.1 is
 proved** — `convergesBy`, for every `n`, with the bound exactly `2 − 1/n` —
 **shown attained for every `n`**, and **proved for every resolution** of the
 paper's nondeterminism.
@@ -53,6 +54,7 @@ scheduled*.
 | S1 | Kinematics: bounded motion into the team model | M | ✅ done — uniform speeds |
 | S4 | The continuous layer | XL | ◐ core done — `Dmax = V·Δt` derived |
 | S5 | Decentralized safety under a comms model | L | ✅ done — both halves |
+| S6 | Raise the safety traces to a real differential test | M | ✅ S6a–S6c done; S6d optional, not done |
 
 **Track A is complete.** A drone-level controller with fencing and separation
 guarantees exists, in Lean and in Verus, against a vehicle described by
