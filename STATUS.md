@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `f268410a0149`  
+**Commit at time of writing:** `4c4fe2d38bd6`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -70,7 +70,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**266 theorems**, all `sorry`-free, across 12 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**273 theorems**, all `sorry`-free, across 13 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `PairBalance.lean` 161 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -388,6 +388,38 @@ Writing this caught a mistake of mine: I asserted the middle and right drones
 were *not* approaching in configuration B. They are, and Lean rejected the
 lemma until it was stated correctly.
 
+### 3.13 `Dpss/PairBalance.lean` — opening Lemma 3.2
+
+Lemma 3.2 is the gate to the convergence proof: *if drone `j` is left
+synchronized and `j`, `j+1` separate at their common endpoint, then `j+1` is
+left synchronized too.* Lemmas 3.3, 3.4 and 3.7 all quote it.
+
+The paper argues it through timing — *"drone `j+1` must have taken at least as
+long to turn around as drone `j`"* — with a picture. That is awkward to
+formalize directly. The same content packs into a single number, the pair's
+**balance** about the boundary they share:
+
+    balance = (pos j − commonEnd) + (pos (j+1) − commonEnd)
+
+- `pairBalance_advance` — it evolves linearly at `sign j + sign (j+1)`, so it
+  is **constant whenever the drones head opposite ways**, which is exactly what
+  they do immediately after separating and again while approaching.
+- `pairBalance_eq_zero_of_atSeparation` — **a separation zeroes it.**
+- `commonEnd_le_pos_of_coLocated` — **its sign decides where the pair can
+  meet**: nonnegative balance means any co-location happens at or beyond the
+  shared boundary, which is exactly the induction hypothesis Lemma 3.2 carries.
+- `leftEnd_le_pos_of_pairBalance` — the payoff. A nonnegative balance keeps the
+  right-hand drone at or beyond its own left endpoint, i.e. **left
+  synchronized**.
+- `leftSync_of_balanceNonneg` — **Lemma 3.2, modulo one obligation.**
+
+That obligation is `BalanceNonneg`: the balance, once zero, never goes
+negative. It is written as a *definition*, not assumed as a hypothesis, so it
+stays visible as open and cannot be used by accident. The danger it rules out
+is both drones heading left at once, which drives the balance down at rate 2 —
+and excluding that is precisely the timing argument the paper draws a picture
+for.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -409,11 +441,12 @@ This is the honest gap list, ordered by importance.
    Instructive: my first attempt at the rightward version was **false**, and
    Lean caught it.
 
-3. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for one
-   specific `n = 2` configuration. Lemma 3.1 is done; **Lemmas 3.2 through 3.8
-   are untouched.** Lemma 3.5 in particular ("every adjacent pair has met by
-   time 1") is the uniform timing result that makes the bound `n`-independent,
-   and nothing here approaches it.
+3. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for
+   specific `n = 2` and `n = 3` configurations. Lemma 3.1 is done and **Lemma
+   3.2 is half done** (§3.13: everything but the `BalanceNonneg` invariance).
+   **Lemmas 3.3 through 3.8 are untouched.** Lemma 3.5 in particular ("every
+   adjacent pair has met by time 1") is the uniform timing result that makes
+   the bound `n`-independent, and nothing here approaches it.
 
 4. **The `n = 3` work covers only the steady state.** §3.12 proves the
    three-drone cycle and its period, which exercises the middle-drone and
@@ -736,6 +769,13 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.pos_sub_eq_of_dirConst' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_advance_of_crossing' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.time_advance_of_crossing_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_advance_of_opposite' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_eq_zero_of_atSeparation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.commonEnd_le_pos_of_coLocated' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pairBalance_neg_of_coLocated_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftEnd_le_pos_of_pairBalance' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.leftSync_of_balanceNonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -785,7 +825,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**266/266 clean — `sorryAx` appears zero times.**
+**273/273 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -835,6 +875,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+4c4fe2d  2026-09-12  feat: three drones -- the first case where the middle-drone machinery runs
 f268410  2026-09-12  feat: a converging n = 2 trace, checked against the paper's bound
 f551b06  2026-09-12  feat: a complete n = 2 trace -- synchronized forever, period 1
 00d447f  2026-09-12  fix: bounce events sent a drone out of its own interval
@@ -862,13 +903,30 @@ bcdb11f  2026-09-11  Create README.md
 
 ---
 
-## 9. Next steps, in order
+## 9. The work package
 
-1. ~~Everything through Lemma 3.1, the run invariants, and an `n = 2` trace.~~
-   **Done.**
-2. **A converging trace**: start `n = 2` unsynchronized (both drones together
-   near a border) and show it settles, checking the paper's sharp `5/2`.
-3. **Finish non-Zeno** (gap 1): every event turns a drone; pigeonhole over
-   `Fin n`.
-4. `n = 3`, and the known-false phase-1 bound.
-5. Lemmas 3.2 → 3.7, then Theorem 2.1 itself.
+What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 and
+3.7 all quote it.
+
+| # | Item | Size | Notes |
+|---|---|---|---|
+| **A** | **Non-Zeno** | | *the novel contribution — ACL2 assumes this* |
+| A1 | Every event turns at least one drone | S | self-contained |
+| A2 | The minimum is attained by a genuine event | M | gap 2; needs argmin machinery |
+| A3 | Pigeonhole: `k` steps ⟹ some drone turns ≥ `k/n` times | M | |
+| A4 | Assemble `NonZeno` | S | |
+| **B** | **Theorem 2.1** | | *the headline* |
+| B1 | Lemma 3.2 — the `BalanceNonneg` invariance | **L** | §3.13 does the rest |
+| B2 | Lemmas 3.3, 3.4 — consequences of 3.2 | S | |
+| B3 | Lemma 3.5 — every pair has met by time 1 | **L** | makes the bound `n`-independent |
+| B4 | Lemma 3.6 — turn persistence | M | |
+| B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
+| B6 | Assemble `2 − 1/n` | S | |
+| **C** | **Fidelity** | | |
+| C1 | Nondeterminism: a relation, not a function | M | gap 7; or document as a restriction |
+| C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 4 |
+| C3 | An `ε`-family showing the bound is *attained* | M | gap 5 |
+| **D** | Cleanup: unused definitions, `PLAN.md` scope fix | S | gaps 6, 8 |
+
+Sizes are relative: **S** is a sitting, **M** is a session, **L** is the kind of
+argument the paper spends a figure on and the ACL2 team spent 11K lines around.

@@ -10,3 +10,4 @@ import Dpss.Synchronization
 import Dpss.Coherence
 import Dpss.Examples
 import Dpss.ExamplesThree
+import Dpss.PairBalance
