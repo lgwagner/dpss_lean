@@ -7,6 +7,9 @@
 //! * `fence_model.rs` — the drone-level safety predicates, from
 //!   `Dpss/FenceInt.lean`. These are the ones that never execute, so the
 //!   generator is the only thing that checks them against the Lean.
+//! * `separation_model.rs` — the pair and the link, from
+//!   `Dpss/SeparationInt.lean`.
 
 pub mod model;
 pub mod fence_model;
+pub mod separation_model;

@@ -44,16 +44,17 @@ use crate::dir::Dir;
 use crate::fence::*;
 use crate::separation::*;
 
+// `comms_pair_vehicle` and `comms_step_ok` are GENERATED from
+// `Dpss/SeparationInt.lean` (S6d). With `a == 0` the vehicle is `pair_vehicle`,
+// so this module generalizes `separation.rs` rather than sitting beside it.
+//
+// `link_ok` below is NOT generated, and the reason is worth knowing: its two
+// index clauses subtract sample numbers, which is ℕ subtraction in Lean
+// (truncating at zero) and `int` subtraction in Verus (not). They agree under
+// the `src(k) <= k` this predicate itself states, but a translator that mapped
+// one to the other would be unsound in general, so it refuses. The Lean
+// statement is `DPSS.Fence.CommsPair`'s `src_le`, `fresh` and `rep_close`.
 verus! {
-
-/// The vehicle a pair faces across a link at most `a` samples stale.
-///
-/// `Dpss/Comms.lean`, `DPSS.Fence.Vehicle.commsPair`. With `a == 0` this is
-/// `pair_vehicle`, so this module generalizes `separation.rs` rather than
-/// sitting beside it.
-pub open spec fn comms_pair_vehicle(v: Vehicle, a: nat) -> Vehicle {
-    Vehicle { dmax: 2 * v.dmax, turn: 2 * v.turn, eps: 2 * v.eps + a * v.dmax }
-}
 
 /// A fresh link is the S3 vehicle.
 pub proof fn comms_pair_vehicle_zero(v: Vehicle)
@@ -307,19 +308,6 @@ pub fn drift_ok_ex(v: &VehicleEx, j: u64, k: u64, q_j: i64, q_k: i64) -> (r: boo
         let bound: i64 = span * v.dmax;
         -bound <= q_k - q_j && q_k - q_j <= bound
     }
-}
-
-/// **One sample of `comms_ok`, in the quantities a trace carries.** A trace
-/// records the gap and the gap *estimate*; the drone's own position and its
-/// neighbour's are behind them. This is what `comms_ok` says about the sample
-/// when it is read in those terms.
-pub open spec fn comms_step_ok(
-    v: Vehicle, a: nat, d: int, margin: int,
-    g: int, obs: int, m: Dir, low: int, req: Dir, g_next: int,
-) -> bool {
-    &&& -(2 * v.eps + a * v.dmax) <= obs - g <= 2 * v.eps + a * v.dmax
-    &&& m == fence_dir(margin, obs - d, req)
-    &&& pair_leg_ok(v, g, m, low, g_next)
 }
 
 /// **`comms_ok` implies it, at every sample.** One direction only, and

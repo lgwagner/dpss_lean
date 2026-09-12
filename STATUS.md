@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `c273ad99b58b`  
+**Commit at time of writing:** `4a1515b057a2`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -82,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**826 theorems**, all `sorry`-free, across 42 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 265 lines, `FenceTrace.lean` 348 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**841 theorems**, all `sorry`-free, across 43 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Comms.lean` 471 lines, `Continuous.lean` 254 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `Fence.lean` 648 lines, `FenceInt.lean` 282 lines, `FenceTrace.lean` 348 lines, `InductionStep.lean` 265 lines, `IntModel.lean` 845 lines, `Kinematics.lean` 230 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Separation.lean` 235 lines, `SeparationInt.lean` 171 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Standoff.lean` 666 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -1712,6 +1712,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.FenceInt.safe_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.FenceInt.legOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.FenceInt.obsOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.trajOk_iff_steps' does not depend on any axioms
 'DPSS.FenceInt.turn_le_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.FenceInt.low_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.FenceInt.safe_step' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2047,6 +2048,20 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Fence.PairTraj.le_low' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.PairTraj.le_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Fence.pair_margin_sharp' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.pairVehicle_dmax' does not depend on any axioms
+'DPSS.FenceInt.pairVehicle_turn' does not depend on any axioms
+'DPSS.FenceInt.pairVehicle_eps' does not depend on any axioms
+'DPSS.FenceInt.commsPairVehicle_dmax' does not depend on any axioms
+'DPSS.FenceInt.commsPairVehicle_turn' does not depend on any axioms
+'DPSS.FenceInt.commsPairVehicle_eps' does not depend on any axioms
+'DPSS.FenceInt.pairVehicle_toFence' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.commsPairVehicle_toFence' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.pairVehicle_wf' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.commsPairVehicle_wf' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.pairObsOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.pairLegOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.commsObsOk_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.FenceInt.pairSafe_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.spreadE_dir' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -2206,7 +2221,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**826/826 clean — `sorryAx` appears zero times.**
+**841/841 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -2256,6 +2271,9 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+4a1515b  2026-09-12  S6d: the fence specifications are generated, not transcribed
+545eed6  2026-09-12  plan: the theorem count and the S6 row were stale
+26069c7  2026-09-12  S6c: the safety traces, from Lean -- and the six blocks are one
 c273ad9  2026-09-12  S6b: the specifications, executed
 bedfc71  2026-09-12  S6a: the fence at ℤ, in the shape the Rust has
 d44c013  2026-09-12  S6a: the fence was never about the reals
@@ -2526,7 +2544,7 @@ not scheduled.
 | **S1** | ~~Kinematics: bounded motion into the *team* model~~ | M | ✅ **uniform speeds** — `Dpss/Kinematics.lean`. Heterogeneous speeds recorded as a rewrite, not attempted |
 | **S4** | The continuous layer | XL | ◐ **core done** — `Dmax = V·Δt` derived, `Dpss/Continuous.lean`. See the non-claims |
 | **S5** | ~~Decentralized safety under a comms model~~ | L | ✅ **done** — `Dpss/Comms.lean`, `rust/src/comms.rs` |
-| **S6** | ~~Raise the safety traces to a real differential test~~ | M | ✅ **S6a–S6c done** — `traces.sh` can now truthfully say every block is checked against Lean. S6d was optional and is not done |
+| **S6** | ~~Raise the safety traces to a real differential test~~ | M | ✅ **done, all four steps** — every block is checked against Lean, and the safety specifications are generated from it |
 
 ### S2 — what is actually guaranteed
 
@@ -2877,6 +2895,55 @@ Rust; Lean has nothing to say about them. The script drops them and says so.
 **And the negative control is on both sides.** The last block is a drone whose
 reversal loses ground: the executable specification rejects it at the sample
 where it happens, and `FenceTrace.bad_not_trajOk` proves no `trajOk` holds of it.
+
+### S6d — the safety specifications, generated
+
+S6a put the two halves over the same integers and gave them the same shape.
+S6b made the specifications executable, so a trace that violates one is caught.
+Neither reaches the case that matters most: a specification that is simply
+**wrong** — faithfully proved about, faithfully evaluated on a trace that
+satisfies it, and not what the Lean says. The only way to remove that is to stop
+transcribing.
+
+**Fourteen `spec fn`s are now generated.** `scripts/lean_to_verus.py` already
+produced `rust/src/spec/model.rs` from `Dpss/IntModel.lean`; it now also
+produces `fence_model.rs` from `Dpss/FenceInt.lean` and `separation_model.rs`
+from `Dpss/SeparationInt.lean`:
+
+| | |
+|---|---|
+| `fence_model.rs` | `wf`, `clearance`, `fence_dir`, `safe`, `leg_ok`, `obs_ok`, `traj_step_ok` |
+| `separation_model.rs` | `pair_vehicle`, `comms_pair_vehicle`, `pair_obs_ok`, `pair_leg_ok`, `pair_safe`, `pair_traj_step_ok`, `comms_step_ok` |
+
+CI regenerates both and fails on drift, exactly as it already did for the team
+model. `Vehicle` itself moved to `rust/src/vehicle.rs`, hand-written as `Dir`
+and `Snapshot` are — the generator translates arithmetic, not types.
+
+**The generator grew a second shape, not a second copy.** The team model's
+definitions are functions of the configuration, so it supplies `c: Snapshot`;
+the safety ones take their arguments explicitly, so it reads the binders and
+emits them. That is a parameter-passing convention rather than a grammar, and
+keeping it as an attribute of the source left `model.rs` byte-identical. The
+grammar itself gained the propositional connectives (`∧ ∨ ¬ →`, the last
+right-associative), Lean's dot notation, and the anonymous constructor.
+
+**One clause is refused, deliberately.** `link_ok`'s two index clauses subtract
+sample numbers. In Lean that is ℕ subtraction, which truncates at zero; in Verus
+it is `int` subtraction, which does not. They agree under the `src k ≤ k` the
+predicate itself states — which is exactly the kind of "it is fine here"
+argument a translator must not be allowed to make. It refuses; those two clauses
+stay hand-written in `rust/src/comms.rs` with the Lean statement named beside
+them. `INSIGHTS.md` §27.
+
+**Checked live, not assumed.** Reversing the `hold_leg` clause in
+`Dpss/FenceInt.lean` and regenerating turns `121 verified, 0 errors` into
+`117 verified, 4 errors`, naming the four proofs that depended on it; dropping
+the doubling from the Lean `pairLegOk` costs one more. A generator that had
+quietly stopped being used would show neither.
+
+**What is still a human read.** That `traj_ok` assembles `obs_ok`, `fence_dir`
+and `leg_ok` the way the Lean `trajOk` does; the two refused `link_ok` clauses;
+and the proof structures, which stay separate whatever the definitions do.
 
 ### What Track A does not claim
 

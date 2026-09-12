@@ -52,4 +52,8 @@ pub open spec fn leg_ok(v: Vehicle, p: int, d: Dir, low: int, p_next: int) -> bo
 pub open spec fn obs_ok(v: Vehicle, obs: int, p: int) -> bool {
     (((-v.eps) <= (obs - p)) && ((obs - p) <= v.eps))
 }
+/// `DPSS.FenceInt.trajStepOk` -- Dpss/FenceInt.lean:161
+pub open spec fn traj_step_ok(v: Vehicle, margin: int, p: int, d: Dir, low: int, obs: int, req: Dir, p_next: int) -> bool {
+    ((obs_ok(v, obs, p) && (d == fence_dir(margin, obs, req))) && leg_ok(v, p, d, low, p_next))
+}
 } // verus!

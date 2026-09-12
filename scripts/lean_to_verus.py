@@ -94,12 +94,30 @@ TEAM_RENAME = {
 # would hide in: `leg_ok` and `obs_ok` never execute, so nothing but this
 # generator checks that the Verus ones say what the Lean ones say.
 FENCE_WHITELIST = [
-    "wf", "clearance", "fenceDir", "safe", "legOk", "obsOk",
+    "wf", "clearance", "fenceDir", "safe", "legOk", "obsOk", "trajStepOk",
 ]
 
 FENCE_RENAME = {
     "wf": "wf", "clearance": "clearance", "fenceDir": "fence_dir",
     "safe": "safe", "legOk": "leg_ok", "obsOk": "obs_ok",
+    "trajStepOk": "traj_step_ok",
+}
+
+# The pair and the link. `linkStepOk` and `driftOk` are NOT here: both subtract
+# sample indices, which is ℕ subtraction in Lean (truncating) and `int`
+# subtraction in Verus (not). They agree under the accompanying `src k ≤ k`, but
+# a translator that mapped one to the other would be unsound in general, so they
+# stay hand-written. `Dpss/SeparationInt.lean` says so at the top.
+PAIR_WHITELIST = [
+    "pairVehicle", "commsPairVehicle",
+    "pairObsOk", "pairLegOk", "pairSafe", "pairTrajStepOk", "commsStepOk",
+]
+
+PAIR_RENAME = {
+    "pairVehicle": "pair_vehicle", "commsPairVehicle": "comms_pair_vehicle",
+    "pairObsOk": "pair_obs_ok", "pairLegOk": "pair_leg_ok",
+    "pairSafe": "pair_safe", "pairTrajStepOk": "pair_traj_step_ok",
+    "commsStepOk": "comms_step_ok",
 }
 
 # Postfix projections, written `(e).name` in Lean, that become a call in Verus.
@@ -112,7 +130,14 @@ ATOMS = {"Dir.left": "Dir::Left", "Dir.right": "Dir::Right"}
 TEAM_ATOMS = {**ATOMS, "left": "Dir::Left", "right": "Dir::Right",
               "K": "c.k", "n": "c.n"}
 
-RESULT_TYPE = {"ℤ": "int", "Bool": "bool", "Dir": "Dir", "Prop": "bool"}
+RESULT_TYPE = {"ℤ": "int", "Bool": "bool", "Dir": "Dir", "Prop": "bool",
+               "Vehicle": "Vehicle"}
+
+# Structures Lean writes as `⟨a, b, c⟩` and Verus as `T { f: a, g: b, h: c }`.
+# The field order is the declaration order and is checked against the Lean source
+# nowhere, which is exactly why there is only one entry: add a second only with
+# the declaration in front of you.
+STRUCTS = {"Vehicle": ["dmax", "turn", "eps"]}
 
 # Lean binder type -> Verus parameter type, for the explicitly-parameterized half.
 PARAM_TYPE = {"ℤ": "int", "ℕ": "nat", "Bool": "bool", "Dir": "Dir",
@@ -152,7 +177,8 @@ def strip_comments(src: str) -> str:
     return "".join(out)
 
 
-DEF = re.compile(r"^def\s+([A-Za-z_][\w'.]*)\s*(.*?):\s*(ℤ|ℕ|Bool|Dir|Prop)\s*:=\s*(.*)$")
+DEF = re.compile(
+    r"^def\s+([A-Za-z_][\w'.]*)\s*(.*?):\s*(ℤ|ℕ|Bool|Dir|Prop|Vehicle)\s*:=\s*(.*)$")
 
 
 ISIGN = re.compile(
@@ -190,12 +216,23 @@ def read_defs(src: pathlib.Path, whitelist):
         if re.match(r"^end\s+[\w.]+", st):
             if ns: ns.pop()
             i += 1; continue
-        m = DEF.match(st)
+        m, i_body = DEF.match(st), i
+        if not m and st.startswith("def "):
+            # a signature wrapped over several lines: join until `:=` closes it
+            joined, j = st, i + 1
+            while j < len(code) and ":=" not in joined and j - i <= 4:
+                if not code[j].startswith(" "):
+                    break
+                joined = joined + " " + code[j].strip()
+                j += 1
+            m = DEF.match(joined)
+            if m:
+                st, i_body = joined, j - 1
         if not m:
             i += 1; continue
         name, params, ty, first = m.groups()
         body = [first]
-        j = i + 1
+        j = (i_body + 1) if st != raw.strip() else (i + 1)
         while j < len(code):
             nxt = code[j]
             if nxt.strip() == "":
@@ -223,7 +260,7 @@ TOKEN = re.compile(r"""
   | (?P<ty>ℤ|ℕ)
   | (?P<id>[A-Za-z_][\w'.]*)
   | (?P<proj>\.[A-Za-z_]\w*)
-  | (?P<op>==|&&|\|\||≤|≥|<|>|\+|-|\*|/|!|\(|\)|,|:|=>|\||=|→|∧|∨|¬)
+  | (?P<op>==|&&|\|\||≤|≥|<|>|\+|-|\*|/|!|\(|\)|,|:|=>|\||=|→|∧|∨|¬|⟨|⟩)
 """, re.X)
 
 
@@ -255,9 +292,9 @@ class Parser:
         ("*", "*", 6, False), ("/", "/", 6, False),
     ]
 
-    def __init__(self, toks, where, known, mode="config", params=()):
+    def __init__(self, toks, where, known, mode="config", params=(), result=None):
         self.toks, self.i, self.where, self.known = toks, 0, where, known
-        self.mode, self.params = mode, set(params)
+        self.mode, self.params, self.result = mode, set(params), result
         self.atoms = TEAM_ATOMS if mode == "config" else ATOMS
 
     def peek(self):
@@ -352,7 +389,11 @@ class Parser:
         if "." in head:
             recv, fld = head.rsplit(".", 1)
             if fld in self.known and recv.split(".")[0] in self.params:
+                # Lean's dot notation: `v.clearance d` is `clearance(v, d)`
                 return f"{self.known[fld]}({', '.join([snake(recv)] + args)})"
+            if fld in self.known:
+                # a namespace-qualified call: `Vehicle.clearance v d`
+                return f"{self.known[fld]}({', '.join(args)})"
             raise Refused(f"{self.where}: unknown projection or call {head!r}")
         if head in self.known:
             return f"{self.known[head]}({', '.join(args)})"
@@ -369,6 +410,8 @@ class Parser:
 
     def atom(self):
         k, v = self.peek()
+        if v == "⟨":
+            return self.anon()
         if v == "(":
             self.take("(")
             # a type ascription `(x : ℤ)` is a cast, and every numeric type here
@@ -406,6 +449,26 @@ class Parser:
                 return name
             raise Refused(f"{self.where}: unknown identifier {name!r}")
         raise Refused(f"{self.where}: unexpected token {v!r}")
+
+    def anon(self):
+        """`⟨a, b, c⟩` — Lean's anonymous constructor. Which structure it builds
+        is the definition's result type, and the field names come from `STRUCTS`;
+        anything else is refused."""
+        if self.result not in STRUCTS:
+            raise Refused(f"{self.where}: ⟨…⟩ but the result type "
+                          f"{self.result!r} is not a known structure")
+        fields = STRUCTS[self.result]
+        self.take("⟨")
+        args = [self.expr(0)]
+        while self.peek()[1] == ",":
+            self.take(",")
+            args.append(self.expr(0))
+        self.take("⟩")
+        if len(args) != len(fields):
+            raise Refused(f"{self.where}: {self.result} takes {len(fields)} "
+                          f"fields, found {len(args)}")
+        body = ", ".join(f"{f}: {a}" for f, a in zip(fields, args))
+        return f"{self.result} {{ {body} }}"
 
     def atom_explicit(self, name):
         """A bare name is a binder, a field of one, or a function about to be
@@ -523,7 +586,8 @@ SOURCES = [
               "fenceDir": "DPSS.FenceInt.fenceDir",
               "safe": "DPSS.FenceInt.safe",
               "legOk": "DPSS.FenceInt.legOk",
-              "obsOk": "DPSS.FenceInt.obsOk"},
+              "obsOk": "DPSS.FenceInt.obsOk",
+              "trajStepOk": "DPSS.FenceInt.trajStepOk"},
         mode="explicit",
         imports="use crate::dir::Dir;\nuse crate::vehicle::Vehicle;",
         note="""// What is deliberately NOT generated: `trajOk`, which quantifies over every
@@ -541,13 +605,36 @@ SOURCES = [
 // states the fence over the same integers Verus has.
 //""",
     ),
+    dict(
+        name="pair",
+        src=REPO / "Dpss" / "SeparationInt.lean",
+        out=REPO / "rust" / "src" / "spec" / "separation_model.rs",
+        whitelist=PAIR_WHITELIST,
+        rename=PAIR_RENAME,
+        qual={name: f"DPSS.FenceInt.{name}" for name in PAIR_WHITELIST},
+        mode="explicit",
+        imports=("use crate::dir::Dir;\nuse crate::vehicle::Vehicle;\n"
+                 "use crate::spec::fence_model::*;"),
+        note="""// What is deliberately NOT generated: `link_ok`'s two index clauses. Both
+// subtract sample indices, which in Lean is ℕ subtraction (truncating at zero)
+// and in Verus is `int` subtraction (not). They agree under the `src(k) <= k`
+// that `link_ok` itself states -- but a translator that mapped one to the other
+// would be unsound in general, and this one refuses rather than guesses. They
+// are hand-written in ../comms.rs, beside the Lean statement in
+// `DPSS.Fence.CommsPair`.""",
+        preamble="""// The pair and the link, at the same integers as the fence. Every predicate here
+// is proved in Lean to be the corresponding fence predicate on the doubled
+// vehicle (`pairLegOk_iff` and friends), which is the content of
+// `PairTraj.toFence` -- the pair layer adds coordinates, not content.""",
+        after="fence",
+    ),
 ]
 
 
-def generate(source) -> str | None:
+def generate(source, preknown=None) -> str | None:
     """The Verus text for one source, or None after printing why it was refused."""
     defs = read_defs(source["src"], source["whitelist"])
-    known, out, missing = {}, [], []
+    known, out, missing = dict(preknown or {}), [], []
     src, rename, mode = source["src"], source["rename"], source["mode"]
 
     for lean in source["whitelist"]:
@@ -566,7 +653,8 @@ def generate(source) -> str | None:
                 binders = verus_params(lean, params)
             else:
                 binders, names = explicit_params(params, where)
-                expr = Parser(tokenize(body, where), where, known, mode, names).parse()
+                expr = Parser(tokenize(body, where), where, known, mode, names,
+                              ty).parse()
         except Refused as e:
             print(f"::error::REFUSED {e}", file=sys.stderr)
             print("The grammar does not cover this definition. Extend the grammar "
@@ -610,8 +698,11 @@ verus! {{
 def main() -> int:
     check = "--check" in sys.argv
     rc = 0
+    produced = {}
     for source in SOURCES:
-        text = generate(source)
+        text = generate(source, produced.get(source.get("after")))
+        produced[source["name"]] = {k.split(".")[-1]: v
+                                    for k, v in source["rename"].items()}
         if text is None:
             return 1
         out, src = source["out"], source["src"]

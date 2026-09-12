@@ -36,6 +36,8 @@ Dpss/*.lean               real-valued model; convergesBy
 scripts/lean_to_verus.py  syntactic translator, fail-loud
       ▼
 rust/src/spec/model.rs    GENERATED -- 24 spec fns, do not edit
+rust/src/spec/*_model.rs  GENERATED from Dpss/FenceInt.lean and
+                          Dpss/SeparationInt.lean -- 14 more
 rust/src/inv.rs           the standing conditions, hand-written
 rust/src/exec.rs          the executable step and run
       ▼
@@ -74,6 +76,9 @@ version lives in Verus's `tools/common/consts.rs`, not in `INSTALL.md`.
 | `PLAN.md` | the build plan and its running status |
 | `REFINEMENT.md` | what a verified per-drone **controller** would additionally require — scoped, not built |
 | `src/spec/model.rs` | generated from `Dpss/IntModel.lean`; do not edit |
+| `src/spec/fence_model.rs` | generated from `Dpss/FenceInt.lean`; the safety predicates |
+| `src/spec/separation_model.rs` | generated from `Dpss/SeparationInt.lean`; the pair and the link |
+| `src/vehicle.rs` | the airframe numbers; a type, so hand-written like `Dir` |
 | `src/inv.rs` | the standing conditions, and the parts the generator refuses |
 | `src/schedule.rs` | the scheduler's two guarantees |
 | `src/geometry.rs` | the scaled geometry, which is nonlinear |
@@ -82,6 +87,13 @@ version lives in Verus's `tools/common/consts.rs`, not in `INSTALL.md`.
 | `src/fence.rs` | S2 — the margined fence, and the `_ex` mirrors of its specifications |
 | `src/separation.rs` | S3 — margined separation, as the fence on the excess gap |
 | `src/comms.rs` | S5 — staleness priced as sensing error, and the link predicates |
+
+**The safety specifications are generated (S6d).** `leg_ok`, `obs_ok`, `safe`,
+`fence_dir`, `pair_leg_ok` and the rest come out of Lean through
+`scripts/lean_to_verus.py`, so nobody types them twice. Two clauses of `link_ok`
+are **refused** and hand-written instead: they subtract sample indices, which is
+ℕ subtraction in Lean and `int` subtraction here, and a translator that mapped
+one to the other would be unsound in general. The generated headers say so.
 
 **The `_ex` functions are S6b.** A `spec fn` never executes, so no test can
 exercise one, and a wrong specification supporting a flawless proof is the

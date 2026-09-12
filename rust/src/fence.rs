@@ -162,21 +162,7 @@ pub proof fn low_nonneg_at(
     low_nonneg(v, p(k), d(k), low(k), p((k + 1) as nat));
 }
 
-/// **One sample's worth of `traj_ok`.** The body of the three quantifiers,
-/// with no quantifier around it — so it is a statement about numbers that an
-/// executable function can be proved to compute.
-///
-/// `Dpss/Fence.lean`, one `k` of `DPSS.FenceInt.trajOk`.
-pub open spec fn traj_step_ok(
-    v: Vehicle, margin: int,
-    p: int, d: Dir, low: int, obs: int, req: Dir, p_next: int,
-) -> bool {
-    &&& obs_ok(v, obs, p)
-    &&& d == fence_dir(margin, obs, req)
-    &&& leg_ok(v, p, d, low, p_next)
-}
-
-/// **`traj_ok` is exactly that, at every sample.** Stated and proved rather
+/// **`traj_ok` is exactly `traj_step_ok` at every sample.** Stated and proved rather
 /// than asserted in a comment, because it is what licenses checking a finite
 /// trace against `traj_step_ok_ex` below and calling the result a check of
 /// `traj_ok` on that prefix.

@@ -153,6 +153,23 @@ def trajOk (v : Vehicle) (margin : ℤ) (p : ℕ → ℤ) (d : ℕ → Dir)
     (∀ k, d k = fenceDir margin (obs k) (req k)) ∧
     (∀ k, legOk v (p k) (d k) (low k) (p (k + 1)))
 
+/-- **One sample's worth of `trajOk`**, with no quantifier around it — a
+statement about numbers, which is what the generator can translate and what an
+executable function can be proved to compute.
+
+`rust/src/spec/fence_model.rs`, `traj_step_ok`. -/
+def trajStepOk (v : Vehicle) (margin p : ℤ) (d : Dir) (low obs : ℤ) (req : Dir)
+    (pNext : ℤ) : Prop :=
+  obsOk v obs p ∧ d = fenceDir margin obs req ∧ legOk v p d low pNext
+
+theorem trajOk_iff_steps (v : Vehicle) (margin : ℤ) (p : ℕ → ℤ) (d : ℕ → Dir)
+    (low obs : ℕ → ℤ) (req : ℕ → Dir) :
+    trajOk v margin p d low obs req ↔
+      ∀ k, trajStepOk v margin (p k) (d k) (low k) (obs k) (req k) (p (k + 1)) := by
+  constructor
+  · rintro ⟨h1, h2, h3⟩ k; exact ⟨h1 k, h2 k, h3 k⟩
+  · intro h; exact ⟨fun k => (h k).1, fun k => (h k).2.1, fun k => (h k).2.2⟩
+
 /-- A `trajOk` is a `Fence.Traj`. Field for field, with no arithmetic. -/
 def toTraj {v : Vehicle} (h : v.wf) {margin : ℤ} {p : ℕ → ℤ} {d : ℕ → Dir}
     {low obs : ℕ → ℤ} {req : ℕ → Dir} (ht : trajOk v margin p d low obs req) :

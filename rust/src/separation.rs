@@ -29,31 +29,13 @@ use vstd::prelude::*;
 use crate::dir::Dir;
 use crate::fence::*;
 
+// `pair_vehicle`, `pair_leg_ok`, `pair_obs_ok`, `pair_safe` and
+// `pair_traj_step_ok` are GENERATED from `Dpss/SeparationInt.lean` by
+// `scripts/lean_to_verus.py` (S6d). `Dir::Left` means **closing** in all of
+// them, mirroring the fence where left meant approaching the wall.
+pub use crate::spec::separation_model::*;
+
 verus! {
-
-/// The vehicle as the *gap* sees it.
-///
-/// `Dpss/Separation.lean`, `DPSS.Fence.Vehicle.pair`.
-pub open spec fn pair_vehicle(v: Vehicle) -> Vehicle {
-    Vehicle { dmax: 2 * v.dmax, turn: 2 * v.turn, eps: 2 * v.eps }
-}
-
-/// The vehicle contract for one leg of a pair.
-///
-/// `Dir::Left` means **closing**, mirroring the fence where left meant
-/// approaching the wall.
-pub open spec fn pair_leg_ok(v: Vehicle, g: int, m: Dir, low: int, g_next: int) -> bool {
-    &&& low <= g
-    &&& low <= g_next
-    &&& (m == Dir::Left ==> g - 2 * v.dmax <= low)
-    &&& (m == Dir::Right ==> g - 2 * v.turn <= low)
-    &&& (m == Dir::Right ==> g <= g_next)
-}
-
-/// Both positions are sensed, so the gap costs twice the error.
-pub open spec fn pair_obs_ok(v: Vehicle, obs: int, g: int) -> bool {
-    -(2 * v.eps) <= obs - g <= 2 * v.eps
-}
 
 /// A sampled trajectory of one adjacent pair holding a standoff `d`.
 ///
@@ -98,11 +80,6 @@ pub proof fn pair_to_fence(
     }
 }
 
-/// The invariant: the pair holds the standoff plus the clearance its mode needs.
-pub open spec fn pair_safe(v: Vehicle, d: int, g: int, m: Dir) -> bool {
-    d + clearance(pair_vehicle(v), m) <= g
-}
-
 /// **Separation is maintained, between samples too.**
 ///
 /// `low(k)` is the least gap over the whole leg, so this is a statement about
@@ -136,18 +113,6 @@ pub proof fn pair_le_low(
     low_nonneg_at(vp, margin, p, mode, lw, ob, req, k);
     assert(0 <= lw(k));
     assert(0 <= p(k));
-}
-
-/// **One sample's worth of `pair_traj_ok`.**
-///
-/// `Dpss/Separation.lean`, one `k` of the fields of `DPSS.Fence.PairTraj`.
-pub open spec fn pair_traj_step_ok(
-    v: Vehicle, d: int, margin: int,
-    g: int, m: Dir, low: int, obs: int, req: Dir, g_next: int,
-) -> bool {
-    &&& pair_obs_ok(v, obs, g)
-    &&& m == fence_dir(margin, obs - d, req)
-    &&& pair_leg_ok(v, g, m, low, g_next)
 }
 
 /// **`pair_traj_ok` is exactly that, at every sample.** As `traj_ok_iff_steps`,

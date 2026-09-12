@@ -60,7 +60,7 @@ scheduled*.
 guarantees exists, in Lean and in Verus, against a vehicle described by
 measurable numbers and a network described by a bound on message age.
 
-### S6 — raise the safety traces to a real differential test  ⟨M⟩  ✅ S6a–S6c done
+### S6 — raise the safety traces to a real differential test  ⟨M⟩  ✅ done
 
 **The known weakness in what Track A ships.** `rust/traces.sh` runs two kinds of
 block. `cfgS` and `spread` are a genuine differential test: Lean proves those
@@ -125,10 +125,30 @@ Four steps, in the order they pay:
   theorem (`Sim.trajOk`, for any well-formed vehicle and any margin), and the
   sufficient-margin blocks are clear of the fence by `Sim.low_nonneg` rather
   than by evaluation.
-* **S6d — extend the generator to the safety specs.** ⟨M, higher risk⟩ Optional.
-  Correspondence by construction for the generated part; needs grammar
-  extensions (`Dir`-valued `if`, structure fields), and `INSIGHTS.md` records
-  that every E1 extension was a deliberate fix to a refusal.
+* **S6d — extend the generator to the safety specs.** ⟨M, higher risk⟩ ✅
+  **done, with one deliberate refusal.** Fourteen `spec fn`s across
+  `rust/src/spec/fence_model.rs` and `separation_model.rs` are now generated
+  from `Dpss/FenceInt.lean` and `Dpss/SeparationInt.lean`, so the predicates a
+  wrong transcription would hide in are not transcribed at all.
+
+  The grammar extensions the sizing predicted were needed, and one it did not.
+  The predicted ones: propositional connectives (`∧ ∨ ¬ →`, the last
+  right-associative), explicit binders, Lean's dot notation, and the anonymous
+  constructor `⟨a, b, c⟩`. The one it did not: **a second shape**. The team
+  model's definitions are functions of the configuration; the safety ones take
+  their arguments explicitly. That is a parameter-passing convention, not a
+  grammar, and keeping it as a source attribute left `model.rs` byte-identical.
+
+  **The refusal is the interesting part.** `link_ok`'s two index clauses
+  subtract sample numbers, which is ℕ subtraction in Lean and `int` subtraction
+  in Verus — truncating in one, not in the other. They agree under the
+  `src k ≤ k` the predicate itself states, so a translator *could* be talked
+  into it; this one refuses, and the two clauses stay hand-written with the Lean
+  beside them. `INSIGHTS.md` §27.
+
+  Checked live rather than assumed: reversing `hold_leg` in the Lean fence turns
+  `121 verified` into `117 verified, 4 errors`, and forgetting the doubling in
+  the Lean pair costs one more.
 
 **Done when** `traces.sh` can truthfully say all blocks are checked against
 Lean. ✅ It now does, and `scripts/check_traces.py` is the other half of that
@@ -139,12 +159,14 @@ The one thing Lean does not attest is the `contract:` lines, and it should not:
 they are the Rust's own executable specifications evaluated on the trace, which
 is a fact about the Rust. The script drops them before comparing and says so.
 
-**What this still will not establish.** Even all four do not prove the Lean
-theorem and the Verus theorem are the same theorem. They make the remaining
-inspection short and mechanical — same integers, same predicates evaluated
-identically, same traces — but statement-level correspondence stays a human
-read. Only S6d removes part of that, and the proof structures stay separate
-regardless.
+**What this still does not establish.** The four steps do not prove the Lean
+theorem and the Verus theorem are the same theorem, and nothing here was ever
+going to. What they did was shrink what a reader has to check by hand, in four
+different ways: same integers (S6a), the specifications evaluated rather than
+inspected (S6b), the traces derived from Lean rather than recorded (S6c), and
+the specifications themselves generated rather than transcribed (S6d). What is
+left is the `traj_ok`-shaped quantifiers, the two `link_ok` index clauses, and
+the proof structures, which stay separate regardless.
 
 ---
 

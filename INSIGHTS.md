@@ -781,3 +781,55 @@ prove than the instances are to check.
 > second test harness — and prove the contract the harness is supposed to
 > exercise as a general theorem, so that evaluation is left with nothing to
 > decide but the digits.
+
+---
+
+## 27. A translator earns its keep at the point where it says no
+
+`scripts/lean_to_verus.py` exists so that the Verus specification is *the* Lean
+specification rather than a second one somebody typed in. Its doc comment has
+said from the first day that anything outside its grammar is refused with an
+error naming the definition and the token, never guessed at, because a
+translator that quietly does its best is worse than no translator: the Rust then
+verifies beautifully against the wrong specification.
+
+Extending it to the safety predicates (S6d) produced the first refusal that was
+*tempting*, and it is worth recording what it looked like.
+
+`link_ok` says a held report is not too old:
+
+```
+src k ≤ k    ∧    k - src k ≤ a
+```
+
+In Lean those are natural numbers, where subtraction truncates at zero. In Verus
+they are `int`, where it does not. `k - src k ≤ a` is therefore a different
+proposition in the two systems — and yet, in the presence of the first clause,
+the same one. A translator could be given that reasoning. It would be correct
+here, and it would be the end of the guarantee: from then on the generated file
+would be right *because someone had checked an argument*, which is the thing
+generation exists to avoid.
+
+So the two clauses are not generated. They stay hand-written, with the Lean
+statement named beside them, and the file that would have generated them says
+why in its header.
+
+Two things generalize.
+
+**The valuable part of a translator is its refusal set, and refusals should be
+written down where the reader is.** Not in the translator's source, where only
+the next maintainer will see it — in the generated file's header and in the
+hand-written code that took over. A reader of `rust/src/comms.rs` needs to know
+that these two clauses are the ones nothing mechanical checks.
+
+**Type systems disagree quietly at exactly the interesting places.** ℕ vs `int`
+subtraction is the whole of this instance, and it is invisible: both sides read
+`k - src k ≤ a`, both are true of the intended system, and the difference only
+shows on inputs the surrounding hypothesis excludes. A syntactic translator has
+no way to see the difference and no business assuming it away. When two
+formalizations of the same thing are being connected, the arithmetic that looks
+identical is where to look first.
+
+> **Lesson.** Judge a mechanical translator by what it declines, not by what it
+> covers, and publish the declined list where the code is — a refusal recorded
+> only in the tool is a refusal nobody reads.

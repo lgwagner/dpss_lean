@@ -12,6 +12,52 @@ follow the convergence proof.
 
 ---
 
+## 2026-09-12 — S6d: the safety specifications, generated  *(branch `safety`)*
+
+The step that removes the transcription. S6a put the two halves over the same
+integers; S6b made the specifications executable, which catches a trace that
+violates one but not a specification that is wrong; S6c derived the traces from
+Lean. None of those reaches a `leg_ok` that faithfully says the wrong thing.
+
+**Fourteen `spec fn`s are now generated** — `rust/src/spec/fence_model.rs` from
+`Dpss/FenceInt.lean`, `separation_model.rs` from the new
+`Dpss/SeparationInt.lean` — joining the 24 the team model already had. CI
+regenerates all three and fails on drift. `Vehicle` moved to
+`rust/src/vehicle.rs`, hand-written as `Dir` and `Snapshot` are: the generator
+translates arithmetic, not types.
+
+**A second shape, not a second copy.** The team model's definitions are
+functions of the configuration, so the generator supplies `c: Snapshot`; the
+safety ones take their arguments explicitly, so it reads the binders. Keeping
+that as an attribute of the source left `model.rs` byte-identical. The grammar
+gained the propositional connectives (`∧ ∨ ¬ →`, the last right-associative),
+Lean's dot notation, and the anonymous constructor `⟨a, b, c⟩`.
+
+**And one refusal, which is the part worth reading.** `link_ok`'s two index
+clauses subtract sample numbers: ℕ subtraction in Lean, truncating at zero;
+`int` subtraction in Verus, not. They agree under the `src k ≤ k` the predicate
+itself states — which is exactly the kind of *it is fine here* argument a
+translator must not be allowed to make. It refuses, those two clauses stay
+hand-written with the Lean named beside them, and both the generated header and
+`rust/src/comms.rs` say so. `INSIGHTS.md` §27.
+
+**Checked live.** Reversing `hold_leg` in the Lean fence and regenerating turns
+`121 verified, 0 errors` into `117 verified, 4 errors`; dropping the doubling
+from the Lean `pairLegOk` costs one more. A generator that had quietly stopped
+being used would show neither.
+
+841 theorems, `sorry`-free; `121 verified, 0 errors`; 38 generated `spec fn`s.
+
+### S6 is complete, and what is left is a read
+
+* That `traj_ok` assembles `obs_ok`, `fence_dir` and `leg_ok` the way the Lean
+  `trajOk` does — a quantifier, so not generated, the same exclusion the team
+  model makes for its standing conditions.
+* The two refused `link_ok` clauses.
+* The proof structures, which stay separate whatever the definitions do.
+
+---
+
 ## 2026-09-12 — S6c: the safety traces, from Lean; S6 done  *(branch `safety`)*
 
 `rust/traces.sh` has said since they were written that six of its eight blocks
