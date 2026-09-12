@@ -492,3 +492,69 @@ exists, and the algorithm never reaches a state that exposes it.
 
 > **Lesson.** Every uniqueness theorem about a specification needs a
 > non-vacuity witness, or it is a theorem about your own definition.
+
+---
+
+## 20. State the vehicle contract in the units the proof already uses
+
+The fence (`Dpss/Fence.lean`, `rust/src/fence.rs`) had to remove three
+idealizations at once — point mass at unit speed, instantaneous reversal,
+perfect sensing. The obvious parameterization is by *speed*, because that is
+what "unit speed" idealizes. It is the wrong one, for two separate reasons that
+happened to point the same way.
+
+In Verus, a speed bound below one is a rational, and Verus has neither rationals
+nor reals. The team model got around that with the scaling argument of
+`Dpss/IntModel.lean` — a genuinely clever piece of work that took a sitting to
+find and rests on a parity invariant. None of it was needed here, because
+`Dmax` — *displacement per sample period* — is a length. Every quantity in the
+fence argument is then a length in the same units, there is no division
+anywhere, and the integer model is the model rather than a scaled image of it.
+
+In Lean, the same choice removed the continuous-time layer entirely. The motion
+between samples enters only as `p k - Dmax ≤ low k`, a hypothesis about a
+low-water mark. So a statement that quantifies over all instants —
+*the drone never crosses the fence* — is proved by a discrete induction with no
+analysis in it at all.
+
+And the third reason, which is the one that matters outside this repository:
+displacement per sample is what a flight test produces. Speed is not.
+
+> **Lesson.** When a proof must take a number from the physical world, let the
+> physical world choose the units. The interface is what an engineer can
+> measure, not what the idealization happened to normalize.
+
+---
+
+## 21. Test the coordinate change before budgeting the rewrite
+
+`adj_ordered` is `0 ≤ gap` — the separation invariant with `d = 0`. Raising it
+to `d ≤ gap` reads like a contradiction of the algorithm, because in DPSS a meet
+*is* a loss of separation: co-location is how a pair learns to escort. The
+plan's estimate for margined separation was accordingly "S if a shear works,
+else L", with a day set aside to find out which.
+
+The shear works, exactly. `yᵢ = xᵢ - i·d` turns separation into ordering;
+`Config.toPoint_advance` — the one lemma that would have failed had the shear
+been an approximation — says the dynamics commute; and the event predicates pull
+back one for one, with `CoLocated` becoming *"the pair has closed to the
+standoff"*, which is the physically right reading rather than a weakening.
+
+The catch is real and was worth finding early: the assigned segments do **not**
+shear. They have to be respaced, and `standoff_tiles` says how — each segment
+narrows by the factor `1 - (n-1)d`, with a buffer of exactly `d` between
+consecutive segments. `coverage_exact` then says the respacing loses nothing:
+when the standoff is two half-footprints, the two neighbouring drones cover the
+buffer between them precisely. A day of Lean converted an open question about
+the shape of a quarter's work into a change of constants, and produced a
+quantitative prediction on the way out — the convergence bound under standoff
+should be `(2 - 1/n)·(1 - (n-1)d)`, *better* than the point bound, because the
+drones have less ground to cover.
+
+One small dividend worth recording, because it is the kind of thing a hand-wave
+gets wrong: `toPoint_onPerimeter` does not need `0 ≤ d`. Containment transfers
+from the two outermost drones alone. The hypothesis was written down out of
+habit, and the proof did not use it.
+
+> **Lesson.** When a plan item is sized "S if X, else L", the first thing to
+> build is X. Not a prototype of the S branch, and certainly not the L one.
