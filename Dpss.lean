@@ -28,3 +28,4 @@ import Dpss.InductionStep
 import Dpss.Convergence
 import Dpss.Sharpness
 import Dpss.ThreeConverge
+import Dpss.Priority
