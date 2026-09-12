@@ -141,6 +141,7 @@ phase-1 result that this scope cannot reach by construction.
 | **`GUIDE.md`** | **Start here.** A guide to the whole work package — every item, what it claimed, how it was proved, and what it cost — with deep links into the source for each declaration named. |
 | **`STATUS.md`** | What is proved, what is **not**, and a full axiom audit. Written to be audited, not just read. §4 is the honest gap list. |
 | **`INSIGHTS.md`** | The non-obvious things learned. Read this before extending the work. |
+| **`ASSURANCE.md`** | **The assurance argument.** One claim about the Rust implementation, the five links it rests on, what each link does *not* cover, and the residual risks ranked. Read this to decide how much to believe. |
 | **`PLAN.md`** | The roadmap. The work package is complete, so this now holds the **backlog** — new directions, sized and scoped. |
 | `CHANGELOG.md` | What changed and when, newest first — including what each session did **not** finish. |
 | `rust/README.md` | **E1** — the executable Rust implementation verified with Verus. `rust/PLAN.md` is its build plan, `rust/REFINEMENT.md` the obligations it does *not* discharge. |

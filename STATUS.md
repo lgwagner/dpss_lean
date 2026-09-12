@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `aeda6aa638f4`  
+**Commit at time of writing:** `514003a1ef62`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2283,6 +2283,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+514003a  2026-09-12  S7c: the corruption table, and what the sweep is and is not for
 aeda6aa  2026-09-12  S7c: a generated state-space sweep, replacing two configurations with 1816
 e76a04d  2026-09-12  S7b: the boundary row the corruption experiment exposed, and the write-ups
 3d130a0  2026-09-12  S7b: the team's standing conditions are executable, and checked against Lean
@@ -2994,6 +2995,10 @@ and the proof structures, which stay separate whatever the definitions do.
 ---
 
 ## 11. S7 — what checks the Lean against the Rust, and what does not
+
+> The argument these mechanisms add up to is assembled in **`ASSURANCE.md`** —
+> the top claim, the five links, and the residual risks ranked. This section is
+> the mechanism-by-mechanism view; that file is the case they make together.
 
 Three mechanisms connect the two halves. They are not interchangeable, and the
 useful question about any given definition is *which one covers it*.
