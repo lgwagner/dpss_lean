@@ -49,32 +49,43 @@ lost, and `coverage_exact` says that if the standoff is two half-footprints —
 buffer is covered exactly by the two neighbouring drones at the ends of their
 segments. No gap in coverage, no overlap.
 
-## Consequence for S3
+## S3: the bound under standoff
 
-S3 is a change of constants, not a re-derivation. Every time in the point model
-is a time in the standoff model multiplied by `usable n d`, so the convergence
-bound becomes
+**Proved, not predicted.** `toPoint` has an inverse (`fromPoint`), so the two
+models are two coordinate systems on one thing; the standoff step is the point
+step read in standoff coordinates, and `toPoint_sStep` / `toPoint_sRun` are then
+immediate. The content is not the commuting square but the theorems saying the
+pullback is what an engineer would have written:
 
-    (2 - 1/n) · (1 - (n-1)·d)
+* `sStep_pos` — **drones still move at unit speed in standoff coordinates.** The
+  shear is by a constant per drone, so it changes where a drone is, never how
+  fast it goes;
+* `sTimeToNextEvent_eq` — the step's duration is the minimum over drones of
+  deadlines computed in standoff coordinates: `sBorderTime`, `sMeetTime` (still
+  half the *excess* gap, since a pair still closes at rate two), and
+  `sSeparationTime`, measured to the respaced boundary;
+* `sInvariant_toPoint` — the standing conditions correspond, so the invariant
+  can be stated about the standoff system rather than about its image;
+* **`sConvergesBy`** — Theorem 2.1 under standoff:
 
-which is *smaller* than `2 - 1/n`: standoff drones have less ground to cover.
-The cost is not in the bound, it is in the coverage — each drone patrols a
-shorter segment, and `1/n` of the perimeter is buffer.
+      every drone is inside its own respaced segment from
+      (2 − 1/n)·(1 − (n−1)·d) onwards.
 
-## What S0 does *not* settle
+That constant is *smaller* than `2 − 1/n`. A team holding a standoff has less
+ground between the walls to cover, so it converges sooner — the cost of the
+standoff is paid in coverage, not in time: each drone patrols a shorter segment,
+and `(n−1)·d` of the perimeter is buffer that the footprints, not the patrols,
+account for.
 
-The correspondence proved here is at the level of positions, motion and the
-event *predicates*. The scheduler — `timeToNextEvent`, `newDir`, `step` — is
-left to S3. Since every deadline is a time, and times scale by a single positive
-constant, that is arithmetic rather than a new idea; but it is not done here and
-is not claimed.
+The controller half of S3 — a **pair** under its own sampled controller
+maintaining `d ≤ gap` against a real vehicle — is `Dpss/Separation.lean`.
 
 ## Reference
 
 Avigad–van Doorn, arXiv:2008.04262 §2, for the point model being sheared.
 -/
 
-import Dpss.Events
+import Dpss.Convergence
 
 set_option linter.style.header false
 
@@ -346,6 +357,309 @@ theorem toPoint_onPerimeter {c : Config n} {d : ℝ} (hn : 0 < n)
     rw [toPoint_pos, div_le_one hL]
     unfold usable
     linarith
+
+/-! ## The map is a bijection
+
+`toPoint` has an inverse, so the standoff model and the point model are two
+coordinate systems on the same thing rather than two models with a map between
+them. That is what lets the standoff *step* be **defined** as the pullback of
+the point step below — and it is why the content of this section is not the
+commuting square (which is then trivial) but the theorems saying that the
+pullback has the standoff form an engineer would have written. -/
+
+/-- Undo the shear and the rescaling. -/
+noncomputable def fromPoint (d : ℝ) (c : Config n) : Config n where
+  time := c.time * usable n d
+  pos := fun i => c.pos i * usable n d + (i.val : ℝ) * d
+  dir := c.dir
+
+@[simp] theorem fromPoint_time (d : ℝ) (c : Config n) :
+    (c.fromPoint d).time = c.time * usable n d := rfl
+
+@[simp] theorem fromPoint_pos (d : ℝ) (c : Config n) (i : Fin n) :
+    (c.fromPoint d).pos i = c.pos i * usable n d + (i.val : ℝ) * d := rfl
+
+@[simp] theorem fromPoint_dir (d : ℝ) (c : Config n) (i : Fin n) :
+    (c.fromPoint d).dir i = c.dir i := rfl
+
+theorem fromPoint_toPoint {d : ℝ} (hL : usable n d ≠ 0) (c : Config n) :
+    (c.toPoint d).fromPoint d = c := by
+  apply Config.ext
+  · simp only [fromPoint_time, toPoint_time]; field_simp
+  · funext i; simp only [fromPoint_pos, toPoint_pos]; field_simp; ring
+  · rfl
+
+theorem toPoint_fromPoint {d : ℝ} (hL : usable n d ≠ 0) (c : Config n) :
+    (c.fromPoint d).toPoint d = c := by
+  apply Config.ext
+  · simp only [fromPoint_time, toPoint_time]; field_simp
+  · funext i; simp only [fromPoint_pos, toPoint_pos]; field_simp
+    ring
+  · rfl
+
+/-! ## The standoff step -/
+
+/-- One step of the standoff system: the point step, read in standoff
+coordinates. -/
+noncomputable def sStep (d : ℝ) (c : Config n) (hn : 0 < n) : Config n :=
+  ((c.toPoint d).step hn).fromPoint d
+
+/-- A run of the standoff system. -/
+noncomputable def sRun (d : ℝ) (c : Config n) (hn : 0 < n) : ℕ → Config n
+  | 0 => c
+  | k + 1 => (c.sRun d hn k).sStep d hn
+
+@[simp] theorem sRun_zero (d : ℝ) (c : Config n) (hn : 0 < n) :
+    c.sRun d hn 0 = c := rfl
+
+@[simp] theorem sRun_succ (d : ℝ) (c : Config n) (hn : 0 < n) (k : ℕ) :
+    c.sRun d hn (k + 1) = (c.sRun d hn k).sStep d hn := rfl
+
+/-- **The step commutes.** -/
+theorem toPoint_sStep {d : ℝ} (hL : usable n d ≠ 0) (c : Config n) (hn : 0 < n) :
+    (c.sStep d hn).toPoint d = (c.toPoint d).step hn :=
+  toPoint_fromPoint hL _
+
+/-- **And therefore so does the whole run.** -/
+theorem toPoint_sRun {d : ℝ} (hL : usable n d ≠ 0) (c : Config n) (hn : 0 < n)
+    (k : ℕ) : (c.sRun d hn k).toPoint d = (c.toPoint d).run hn k := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [sRun_succ, toPoint_sStep hL, ih, Config.run_succ]
+
+/-! ## The deadline, in standoff terms
+
+Everything above would be true of any bijection. This section is the content:
+the step's duration, computed in the point model, is the minimum of deadlines
+that are written in **standoff coordinates** — the ones a drone holding a
+standoff would actually compute. -/
+
+/-- How long the standoff system flies before the next event. -/
+noncomputable def sTimeToNextEvent (d : ℝ) (c : Config n) (hn : 0 < n) : ℝ :=
+  (c.toPoint d).timeToNextEvent hn * usable n d
+
+/-- **Drones move at unit speed in standoff coordinates too.** The shear is by a
+constant per drone, so it changes where a drone is, never how fast. -/
+theorem sStep_pos {d : ℝ} (hL : usable n d ≠ 0) (c : Config n) (hn : 0 < n)
+    (i : Fin n) :
+    (c.sStep d hn).pos i = c.pos i + (c.dir i).sign * c.sTimeToNextEvent d hn := by
+  unfold sStep sTimeToNextEvent
+  simp only [fromPoint_pos, Config.step_pos, toPoint_pos, toPoint_dir]
+  field_simp
+  ring
+
+/-- And the clock advances by that same duration. -/
+theorem sStep_time {d : ℝ} (hL : usable n d ≠ 0) (c : Config n) (hn : 0 < n) :
+    (c.sStep d hn).time = c.time + c.sTimeToNextEvent d hn := by
+  unfold sStep sTimeToNextEvent
+  simp only [fromPoint_time, Config.step_time, toPoint_time]
+  field_simp
+
+/-- Time to the wall drone `i` is heading for. Its own share of the standoff
+sits between it and the left wall; the remaining `usable` sits between it and
+the right one. -/
+noncomputable def sBorderTime (d : ℝ) (c : Config n) (i : Fin n) : ℝ :=
+  if c.dir i = Dir.left then c.pos i - (i.val : ℝ) * d
+  else (i.val : ℝ) * d + usable n d - c.pos i
+
+/-- Time until an approaching pair closes to the standoff. Still half the
+excess, because they still close at rate two. -/
+noncomputable def sMeetTime (d : ℝ) (c : Config n) (i : Fin n) (h : i.val + 1 < n) : ℝ :=
+  (c.gap i h - d) / 2
+
+/-- Time until an escorting pair reaches its respaced boundary. -/
+noncomputable def sSeparationTime (d : ℝ) (c : Config n) (i : Fin n) : ℝ :=
+  (standoffRightEnd d i - c.pos i) * (c.dir i).sign
+
+/-- An escort, at the standoff. -/
+def SEscorting (d : ℝ) (c : Config n) (i : Fin n) (h : i.val + 1 < n) : Prop :=
+  c.gap i h = d ∧ c.dir i = c.dir (nextIdx i h)
+
+theorem sBorderTime_eq {d : ℝ} (hL : 0 < usable n d) (c : Config n) (i : Fin n) :
+    c.sBorderTime d i = (c.toPoint d).borderTime i * usable n d := by
+  unfold sBorderTime borderTime
+  rw [toPoint_dir]
+  split_ifs with hd
+  · rw [toPoint_pos]; field_simp
+  · rw [toPoint_pos]; field_simp; ring
+
+theorem sMeetTime_eq {d : ℝ} (hL : 0 < usable n d) (c : Config n) (i : Fin n)
+    (h : i.val + 1 < n) :
+    c.sMeetTime d i h = (c.toPoint d).meetTime i h * usable n d := by
+  unfold sMeetTime meetTime
+  rw [toPoint_gap]
+  field_simp
+
+theorem sSeparationTime_eq {d : ℝ} (hL : 0 < usable n d) (c : Config n) (i : Fin n) :
+    c.sSeparationTime d i = (c.toPoint d).separationTime i * usable n d := by
+  unfold sSeparationTime separationTime commonEnd standoffRightEnd
+  rw [toPoint_pos, toPoint_dir]
+  field_simp
+  ring
+
+theorem sEscorting_iff {d : ℝ} (hL : 0 < usable n d) (c : Config n) (i : Fin n)
+    (h : i.val + 1 < n) :
+    c.SEscorting d i h ↔ (c.toPoint d).Escorting i h := by
+  unfold SEscorting Escorting
+  rw [toPoint_coLocated hL, toPoint_dir, toPoint_dir]
+
+open Classical in
+/-- The earliest deadline for one drone, in standoff terms. -/
+noncomputable def sDroneNextTime (d : ℝ) (c : Config n) (i : Fin n) : ℝ :=
+  if h : i.val + 1 < n then
+    if c.Approaching i h then min (c.sBorderTime d i) (c.sMeetTime d i h)
+    else if c.SEscorting d i h then min (c.sBorderTime d i) (c.sSeparationTime d i)
+    else c.sBorderTime d i
+  else c.sBorderTime d i
+
+theorem sDroneNextTime_eq {d : ℝ} (hL : 0 < usable n d) (c : Config n) (i : Fin n) :
+    c.sDroneNextTime d i = (c.toPoint d).droneNextTime i * usable n d := by
+  unfold sDroneNextTime droneNextTime
+  by_cases h : i.val + 1 < n
+  · rw [dif_pos h, dif_pos h]
+    have hA : (c.toPoint d).Approaching i h ↔ c.Approaching i h :=
+      toPoint_approaching d c i h
+    by_cases hAp : c.Approaching i h
+    · rw [if_pos hAp, if_pos (hA.mpr hAp), min_mul_of_nonneg _ _ hL.le,
+        sBorderTime_eq hL, sMeetTime_eq hL]
+    · rw [if_neg hAp, if_neg (fun hx => hAp (hA.mp hx))]
+      by_cases hE : c.SEscorting d i h
+      · rw [if_pos hE, if_pos ((sEscorting_iff hL c i h).mp hE),
+          min_mul_of_nonneg _ _ hL.le, sBorderTime_eq hL, sSeparationTime_eq hL]
+      · rw [if_neg hE, if_neg (fun hx => hE ((sEscorting_iff hL c i h).mpr hx)),
+          sBorderTime_eq hL]
+  · rw [dif_neg h, dif_neg h, sBorderTime_eq hL]
+
+/-- **The standoff deadline is the minimum of the standoff deadlines.**
+
+This is the theorem S0 left open, and with it the correspondence is complete:
+every quantity the algorithm computes has a standoff form, and the standoff
+forms agree with the point forms under the change of coordinates. -/
+theorem sTimeToNextEvent_eq {d : ℝ} (hL : 0 < usable n d) (c : Config n)
+    (hn : 0 < n) :
+    c.sTimeToNextEvent d hn
+      = Finset.univ.inf' (univ_fin_nonempty hn) (c.sDroneNextTime d) := by
+  unfold sTimeToNextEvent timeToNextEvent
+  rw [Finset.apply_inf'_eq_inf'_comp (univ_fin_nonempty hn) (fun t : ℝ => t * usable n d)
+    (fun x y => min_mul_of_nonneg x y hL.le)]
+  exact Finset.inf'_congr (univ_fin_nonempty hn) rfl
+    (fun i _ => (sDroneNextTime_eq hL c i).symm)
+
+/-! ## The standing conditions, in standoff terms
+
+Each condition the point model carries has a standoff form, and the two agree.
+With that, the convergence theorem can be *stated* about the standoff system
+rather than about its image. -/
+
+theorem toPoint_leftEnd_le_iff {d : ℝ} (hL : 0 < usable n d) (c : Config n)
+    (i : Fin n) :
+    leftEnd i ≤ (c.toPoint d).pos i ↔ standoffLeftEnd d i ≤ c.pos i := by
+  rw [toPoint_pos, le_div_iff₀ hL]
+  unfold standoffLeftEnd
+  constructor <;> intro h <;> linarith [mul_comm (leftEnd i) (usable n d)]
+
+theorem toPoint_le_rightEnd_iff {d : ℝ} (hL : 0 < usable n d) (c : Config n)
+    (i : Fin n) :
+    (c.toPoint d).pos i ≤ rightEnd i ↔ c.pos i ≤ standoffRightEnd d i := by
+  rw [toPoint_pos, div_le_iff₀ hL]
+  unfold standoffRightEnd
+  constructor <;> intro h <;> linarith [mul_comm (rightEnd i) (usable n d)]
+
+/-- Escorts point at the respaced boundary they are escorting to. -/
+def SEscortsCoherent (d : ℝ) (c : Config n) : Prop :=
+  ∀ (i : Fin n) (h : i.val + 1 < n), c.SEscorting d i h → 0 ≤ c.sSeparationTime d i
+
+theorem sEscortsCoherent_iff {d : ℝ} (hL : 0 < usable n d) (c : Config n) :
+    c.SEscortsCoherent d ↔ (c.toPoint d).EscortsCoherent := by
+  unfold SEscortsCoherent EscortsCoherent
+  constructor
+  · intro H i h hE
+    have hS := H i h ((sEscorting_iff hL c i h).mpr hE)
+    rw [sSeparationTime_eq hL] at hS
+    nlinarith [hS, hL]
+  · intro H i h hE
+    have hS := H i h ((sEscorting_iff hL c i h).mp hE)
+    rw [sSeparationTime_eq hL]
+    exact mul_nonneg hS hL.le
+
+/-- A pair at the standoff and heading apart sits on the boundary it shares. -/
+def SApartOnBoundary (d : ℝ) (c : Config n) (i : Fin n) (h : i.val + 1 < n) : Prop :=
+  c.gap i h = d → c.dir i = Dir.left → c.dir (nextIdx i h) = Dir.right →
+    c.pos i = standoffRightEnd d i
+
+def SApartOnBoundaries (d : ℝ) (c : Config n) : Prop :=
+  ∀ (i : Fin n) (h : i.val + 1 < n), c.SApartOnBoundary d i h
+
+theorem sApartOnBoundaries_iff {d : ℝ} (hL : 0 < usable n d) (c : Config n) :
+    c.SApartOnBoundaries d ↔ (c.toPoint d).ApartOnBoundaries := by
+  unfold SApartOnBoundaries ApartOnBoundaries SApartOnBoundary ApartOnBoundary commonEnd
+  constructor
+  · intro H i h hco hl hr
+    exact (toPoint_standoffRightEnd hL c i).mpr
+      (H i h ((toPoint_coLocated hL c i h).mp hco) hl hr)
+  · intro H i h hco hl hr
+    exact (toPoint_standoffRightEnd hL c i).mp
+      (H i h ((toPoint_coLocated hL c i h).mpr hco) hl hr)
+
+/-- The standing invariant of a standoff run: every pair holds the standoff, the
+outermost drones are inside the perimeter, and escorts are coherent. -/
+structure SInvariant (d : ℝ) (c : Config n) (hn : 0 < n) : Prop where
+  separated : c.Separated d
+  leftInside : 0 ≤ c.pos ⟨0, hn⟩
+  rightInside : c.pos ⟨n - 1, Nat.sub_lt hn Nat.one_pos⟩ ≤ 1
+  escortsCoherent : c.SEscortsCoherent d
+
+theorem sInvariant_toPoint {d : ℝ} (hL : 0 < usable n d) {c : Config n} {hn : 0 < n}
+    (hsi : c.SInvariant d hn) : (c.toPoint d).Invariant where
+  onPerimeter := toPoint_onPerimeter hn hL hsi.separated hsi.leftInside hsi.rightInside
+  adjOrdered := (separated_iff_adjOrdered hL c).mp hsi.separated
+  escortsCoherent := (sEscortsCoherent_iff hL c).mp hsi.escortsCoherent
+
+/-! ## Convergence under standoff
+
+The payoff. Time in the standoff system is time in the point system multiplied
+by `usable n d`, so the bound scales by exactly that factor — and it is
+*smaller* than `2 − 1/n`, because a team holding a standoff has less ground
+between the walls to cover. -/
+
+/-- **Theorem 2.1 under standoff.** From `(2 − 1/n)·(1 − (n−1)d)` on, every
+drone is inside its own respaced segment. -/
+def SConvergesBy (d : ℝ) (c : Config n) (hn : 0 < n) : Prop :=
+  ∀ (i : Fin n) (j : ℕ),
+    c.time + (2 - 1 / (n : ℝ)) * usable n d ≤ (c.sRun d hn j).time →
+      standoffLeftEnd d i ≤ (c.sRun d hn j).pos i ∧
+        (c.sRun d hn j).pos i ≤ standoffRightEnd d i
+
+theorem sConvergesBy {d : ℝ} (hL : 0 < usable n d) {c : Config n} {hn : 0 < n}
+    (hsi : c.SInvariant d hn) (hab : c.SApartOnBoundaries d) :
+    c.SConvergesBy d hn := by
+  intro i j ht
+  have hrun : (c.sRun d hn j).toPoint d = (c.toPoint d).run hn j :=
+    toPoint_sRun hL.ne' c hn j
+  have hcv : ConvergesBy (c.toPoint d) hn :=
+    convergesBy hn (sInvariant_toPoint hL hsi) ((sApartOnBoundaries_iff hL c).mp hab)
+  -- the deadline, divided through by the scale
+  have hnum : 0 ≤ (c.sRun d hn j).time - c.time - (2 - 1 / (n : ℝ)) * usable n d := by
+    linarith
+  have hquot : (0 : ℝ)
+      ≤ ((c.sRun d hn j).time - c.time - (2 - 1 / (n : ℝ)) * usable n d) / usable n d :=
+    div_nonneg hnum hL.le
+  have hsplit : ((c.sRun d hn j).time - c.time - (2 - 1 / (n : ℝ)) * usable n d)
+        / usable n d
+      = (c.sRun d hn j).time / usable n d
+        - (c.time / usable n d + (2 - 1 / (n : ℝ))) := by
+    field_simp
+    ring
+  have htime : (c.toPoint d).time + (2 - 1 / (n : ℝ))
+      ≤ ((c.toPoint d).run hn j).time := by
+    rw [← hrun]
+    simp only [toPoint_time]
+    rw [hsplit] at hquot
+    linarith
+  obtain ⟨hl, hr⟩ := hcv i j htime
+  rw [← hrun] at hl hr
+  exact ⟨(toPoint_leftEnd_le_iff hL _ i).mp hl, (toPoint_le_rightEnd_iff hL _ i).mp hr⟩
 
 end Config
 
