@@ -88,7 +88,7 @@ pub proof fn rep_error(
     k: nat,
 )
     requires
-        v.wf(),
+        wf(v),
         link_ok(v, a, q, rep, src),
     ensures
         -(v.eps + a * v.dmax) <= rep(k) - q(k) <= v.eps + a * v.dmax,
@@ -129,7 +129,7 @@ pub proof fn comms_to_fence(
     phat: spec_fn(nat) -> int, rep: spec_fn(nat) -> int, src: spec_fn(nat) -> nat,
 )
     requires
-        v.wf(),
+        wf(v),
         comms_ok(v, a, d, margin, p, q, low, mode, req, phat, rep, src),
     ensures
         traj_ok(comms_pair_vehicle(v, a), margin,
@@ -168,10 +168,10 @@ pub proof fn comms_le_low(
     k: nat,
 )
     requires
-        v.wf(),
+        wf(v),
         2 * (v.dmax + v.turn + v.eps) + a * v.dmax <= margin,
         comms_ok(v, a, d, margin, p, q, low, mode, req, phat, rep, src),
-        d + comms_pair_vehicle(v, a).clearance(mode(0)) <= q(0) - p(0),
+        d + clearance(comms_pair_vehicle(v, a), mode(0)) <= q(0) - p(0),
     ensures
         d <= low(k),
         d <= q(k) - p(k),
@@ -181,7 +181,7 @@ pub proof fn comms_le_low(
     let lw = |k: nat| low(k) - d;
     let ob = |k: nat| rep(k) - phat(k) - d;
     comms_to_fence(v, a, d, margin, p, q, low, mode, req, phat, rep, src);
-    assert(vc.wf());
+    assert(wf(vc));
     assert(vc.dmax + vc.turn + vc.eps <= margin);
     assert(safe(vc, pp(0), mode(0)));
     low_nonneg_at(vc, margin, pp, mode, lw, ob, req, k);
@@ -334,7 +334,7 @@ pub proof fn comms_ok_implies_steps(
     k: nat,
 )
     requires
-        v.wf(),
+        wf(v),
         comms_ok(v, a, d, margin, p, q, low, mode, req, phat, rep, src),
     ensures
         comms_step_ok(v, a, d, margin, q(k) - p(k), rep(k) - phat(k), mode(k), low(k),

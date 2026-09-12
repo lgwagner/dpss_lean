@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Verus specification from `Dpss/IntModel.lean`.
+"""Generate the Verus specification from Lean.
 
 The Rust half must be checked against *the* specification, not against a second
 one that somebody typed in again. So the scalar and boolean definitions of the
@@ -33,6 +33,21 @@ Lean source:
 None of those is arithmetic, which is where a transcription error would hide. The
 differential tests cover them end to end.
 
+## Two sources, two shapes
+
+`Dpss/IntModel.lean` describes the **team**, and every definition in it is a
+function of the configuration: the translator supplies `c: Snapshot` and, where
+the Lean takes a `Fin n`, an `i: int`.
+
+`Dpss/FenceInt.lean` describes **one drone against one wall** (S6a), and its
+definitions take their arguments explicitly — a vehicle, a position, a heading.
+So the translator reads the binders and emits them, and the grammar carries the
+propositional connectives that the safety predicates are built from: `∧`, `∨`,
+`¬` and `→` become `&&`, `||`, `!` and `==>`.
+
+The two shapes are `SOURCES` below. Everything else — the tokenizer, the
+expression grammar, and the refusal discipline — is shared.
+
 Usage: python3 scripts/lean_to_verus.py [--check]
 """
 from __future__ import annotations
@@ -42,14 +57,12 @@ import re
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-SRC = REPO / "Dpss" / "IntModel.lean"
-OUT = REPO / "rust" / "src" / "spec" / "model.rs"
 
 # --------------------------------------------------------------------------
 # What to translate, in dependency order. A name not listed here is not emitted;
 # a name listed here that cannot be parsed is a hard error.
 # --------------------------------------------------------------------------
-WHITELIST = [
+TEAM_WHITELIST = [
     "Dir.isign",
     "intPerimeter", "intLeftEnd", "intRightEnd", "intCommonEnd",
     "gap", "sepRate", "Approaching", "meetTime",
@@ -60,7 +73,7 @@ WHITELIST = [
 ]
 
 # Lean name -> Verus name.
-RENAME = {
+TEAM_RENAME = {
     "Dir.isign": "isign",
     "intPerimeter": "perimeter", "intLeftEnd": "left_end",
     "intRightEnd": "right_end", "intCommonEnd": "common_end",
@@ -77,17 +90,33 @@ RENAME = {
     "newDir": "new_dir",
 }
 
+# The drone-level half (S6a/S6d). These are the predicates a wrong transcription
+# would hide in: `leg_ok` and `obs_ok` never execute, so nothing but this
+# generator checks that the Verus ones say what the Lean ones say.
+FENCE_WHITELIST = [
+    "wf", "clearance", "fenceDir", "safe", "legOk", "obsOk",
+]
+
+FENCE_RENAME = {
+    "wf": "wf", "clearance": "clearance", "fenceDir": "fence_dir",
+    "safe": "safe", "legOk": "leg_ok", "obsOk": "obs_ok",
+}
+
 # Postfix projections, written `(e).name` in Lean, that become a call in Verus.
 PROJ = {".isign": "isign"}
 
 # Lean expression atoms that map to a fixed Verus expression.
-ATOMS = {
-    "Dir.left": "Dir::Left", "Dir.right": "Dir::Right",
-    "left": "Dir::Left", "right": "Dir::Right",
-    "K": "c.k", "n": "c.n",
-}
+ATOMS = {"Dir.left": "Dir::Left", "Dir.right": "Dir::Right"}
 
-RESULT_TYPE = {"ℤ": "int", "Bool": "bool", "Dir": "Dir"}
+# The team model reads the configuration's own fields as bare names.
+TEAM_ATOMS = {**ATOMS, "left": "Dir::Left", "right": "Dir::Right",
+              "K": "c.k", "n": "c.n"}
+
+RESULT_TYPE = {"ℤ": "int", "Bool": "bool", "Dir": "Dir", "Prop": "bool"}
+
+# Lean binder type -> Verus parameter type, for the explicitly-parameterized half.
+PARAM_TYPE = {"ℤ": "int", "ℕ": "nat", "Bool": "bool", "Dir": "Dir",
+              "Vehicle": "Vehicle"}
 
 # Words that end an application rather than continuing it. Without this,
 # `if c.dir i = Dir.left then ...` parses `then` as an argument of `Dir.left`.
@@ -123,7 +152,7 @@ def strip_comments(src: str) -> str:
     return "".join(out)
 
 
-DEF = re.compile(r"^def\s+([A-Za-z_][\w'.]*)\s*(.*?):\s*(ℤ|Bool|Dir)\s*:=\s*(.*)$")
+DEF = re.compile(r"^def\s+([A-Za-z_][\w'.]*)\s*(.*?):\s*(ℤ|ℕ|Bool|Dir|Prop)\s*:=\s*(.*)$")
 
 
 ISIGN = re.compile(
@@ -143,9 +172,9 @@ def read_isign(code_lines):
     return None
 
 
-def read_defs():
+def read_defs(src: pathlib.Path, whitelist):
     """name -> (line, params, result type, body). Namespace-qualified where needed."""
-    text = SRC.read_text(encoding="utf-8")
+    text = src.read_text(encoding="utf-8")
     code = strip_comments(text).splitlines()
     defs, ns = {}, []
     isign = read_isign(code)
@@ -179,7 +208,7 @@ def read_defs():
             j += 1
         qual = name if "." in name else ".".join(ns[1:] + [name]) if len(ns) > 1 else name
         short = name.split(".")[-1]
-        key = name if name in WHITELIST else short
+        key = name if name in whitelist else short
         defs[key] = (i + 1, params.strip(), ty, " ".join(body).strip())
         i = j
     return defs
@@ -194,7 +223,7 @@ TOKEN = re.compile(r"""
   | (?P<ty>ℤ|ℕ)
   | (?P<id>[A-Za-z_][\w'.]*)
   | (?P<proj>\.[A-Za-z_]\w*)
-  | (?P<op>==|&&|\|\||≤|≥|<|>|\+|-|\*|/|!|\(|\)|,|:|=>|\||=)
+  | (?P<op>==|&&|\|\||≤|≥|<|>|\+|-|\*|/|!|\(|\)|,|:|=>|\||=|→|∧|∨|¬)
 """, re.X)
 
 
@@ -214,17 +243,22 @@ def tokenize(expr: str, where: str):
 class Parser:
     """Precedence-climbing over the subset `Dpss/IntModel.lean` actually uses."""
 
-    # (lean op, verus op, precedence)
+    # (lean op, verus op, precedence, right-associative)
     BINOPS = [
-        ("||", "||", 1), ("&&", "&&", 2),
-        ("==", "==", 3), ("=", "==", 3),
-        ("<", "<", 4), ("≤", "<=", 4), (">", ">", 4), ("≥", ">=", 4),
-        ("+", "+", 5), ("-", "-", 5),
-        ("*", "*", 6), ("/", "/", 6),
+        ("→", "==>", 0, True),
+        ("||", "||", 1, False), ("∨", "||", 1, False),
+        ("&&", "&&", 2, False), ("∧", "&&", 2, False),
+        ("==", "==", 3, False), ("=", "==", 3, False),
+        ("<", "<", 4, False), ("≤", "<=", 4, False),
+        (">", ">", 4, False), ("≥", ">=", 4, False),
+        ("+", "+", 5, False), ("-", "-", 5, False),
+        ("*", "*", 6, False), ("/", "/", 6, False),
     ]
 
-    def __init__(self, toks, where, known):
+    def __init__(self, toks, where, known, mode="config", params=()):
         self.toks, self.i, self.where, self.known = toks, 0, where, known
+        self.mode, self.params = mode, set(params)
+        self.atoms = TEAM_ATOMS if mode == "config" else ATOMS
 
     def peek(self):
         return self.toks[self.i] if self.i < len(self.toks) else (None, None)
@@ -250,12 +284,12 @@ class Parser:
             if hit is None or hit[2] < minp:
                 return lhs
             self.take()
-            rhs = self.expr(hit[2] + 1)
+            rhs = self.expr(hit[2] if hit[3] else hit[2] + 1)
             lhs = f"({lhs} {hit[1]} {rhs})"
 
     def unary(self):
         k, v = self.peek()
-        if v == "!":
+        if v in ("!", "¬"):
             self.take(); return f"!{self.unary()}"
         if v == "-":
             self.take(); return f"(-{self.unary()})"
@@ -277,6 +311,8 @@ class Parser:
         return self.call(head, args)
 
     def call(self, head, args):
+        if self.mode == "explicit":
+            return self.call_explicit(head, args)
         # `min a b`
         if head == "min":
             if len(args) != 2:
@@ -302,6 +338,24 @@ class Parser:
                       if a not in ("c.k", "c.n", PROOF) and a != "h"]
             inner = ", ".join(["c"] + passed) if base != "isign" else ", ".join(passed)
             return f"{self.known[base]}({inner})"
+        raise Refused(f"{self.where}: unknown function {head!r}")
+
+    def call_explicit(self, head, args):
+        """The drone-level half passes its arguments explicitly, so a call is a
+        call. The one wrinkle is Lean's dot notation: `v.clearance d` is
+        `clearance(v, d)`, because `Vehicle` is a plain struct in Verus and its
+        specification functions are free functions."""
+        if head == "min":
+            if len(args) != 2:
+                raise Refused(f"{self.where}: min takes two arguments")
+            return f"vstd::math::min({args[0]}, {args[1]})"
+        if "." in head:
+            recv, fld = head.rsplit(".", 1)
+            if fld in self.known and recv.split(".")[0] in self.params:
+                return f"{self.known[fld]}({', '.join([snake(recv)] + args)})"
+            raise Refused(f"{self.where}: unknown projection or call {head!r}")
+        if head in self.known:
+            return f"{self.known[head]}({', '.join(args)})"
         raise Refused(f"{self.where}: unknown function {head!r}")
 
     def postfix(self, e):
@@ -331,8 +385,10 @@ class Parser:
             name = self.take()
             if name == "if":
                 return self.ite()
-            if name in ATOMS:
-                return ATOMS[name]
+            if name in self.atoms:
+                return self.atoms[name]
+            if self.mode == "explicit":
+                return self.atom_explicit(name)
             # the configuration's fields; `c.pos`/`c.dir` are applied to an index
             # by `call`, `c.time` stands alone
             if name in ("c.pos", "c.dir", "c.time"):
@@ -350,6 +406,24 @@ class Parser:
                 return name
             raise Refused(f"{self.where}: unknown identifier {name!r}")
         raise Refused(f"{self.where}: unexpected token {v!r}")
+
+    def atom_explicit(self, name):
+        """A bare name is a binder, a field of one, or a function about to be
+        applied. Anything else is refused."""
+        if name in self.params:
+            return snake(name)
+        if "." in name:
+            recv, fld = name.split(".", 1)
+            if recv in self.params:
+                if "." in fld:
+                    raise Refused(f"{self.where}: nested projection {name!r}")
+                return f"{snake(recv)}.{snake(fld)}"
+            if name.rsplit(".", 1)[1] in self.known:
+                return name
+            raise Refused(f"{self.where}: unknown identifier {name!r}")
+        if name in self.known or name == "min":
+            return name
+        raise Refused(f"{self.where}: unknown identifier {name!r}")
 
     def ite(self):
         """`if c then a else b` and `if h : c then a else b` (dite)."""
@@ -369,6 +443,12 @@ class Parser:
 # --------------------------------------------------------------------------
 # Emitting
 # --------------------------------------------------------------------------
+def snake(name: str) -> str:
+    """`pNext` -> `p_next`. Lean names the arguments in camel case; Verus, like
+    the rest of this crate, in snake."""
+    return re.sub(r"(?<=[a-z0-9])([A-Z])", lambda m: "_" + m.group(1).lower(), name)
+
+
 def verus_params(name, params):
     """Every spec fn takes the configuration; indices come through as `int`."""
     if name == "Dir.isign":
@@ -377,6 +457,31 @@ def verus_params(name, params):
     if re.search(r"\(i\s*:\s*Fin", params):
         ps.append("i: int")
     return ", ".join(ps)
+
+
+BINDER = re.compile(r"\(\s*([A-Za-z_][\w']*(?:\s+[A-Za-z_][\w']*)*)\s*:\s*([^)]+?)\s*\)")
+
+
+def explicit_params(params: str, where: str):
+    """Read `(v : Vehicle) (p : ℤ) (low pNext : ℤ)` into typed Verus binders.
+
+    Refused rather than guessed at if a binder is implicit, dependent, or of a
+    type the Verus side does not have."""
+    out, names, pos = [], [], 0
+    for m in BINDER.finditer(params):
+        if params[pos:m.start()].strip():
+            raise Refused(f"{where}: cannot read the binder at "
+                          f"{params[pos:m.start()].strip()!r}")
+        pos = m.end()
+        ty = m.group(2).strip()
+        if ty not in PARAM_TYPE:
+            raise Refused(f"{where}: binder type {ty!r} has no Verus counterpart")
+        for nm in m.group(1).split():
+            out.append(f"{snake(nm)}: {PARAM_TYPE[ty]}")
+            names.append(nm)
+    if params[pos:].strip():
+        raise Refused(f"{where}: trailing binder {params[pos:].strip()!r}")
+    return ", ".join(out), names
 
 
 def translate_isign(body, where):
@@ -388,82 +493,143 @@ def translate_isign(body, where):
             f"Dir::Right => {m.group(2)}int }}")
 
 
-def main() -> int:
-    check = "--check" in sys.argv
-    defs = read_defs()
-    known, out, missing = {}, [], []
+SOURCES = [
+    dict(
+        name="team",
+        src=REPO / "Dpss" / "IntModel.lean",
+        out=REPO / "rust" / "src" / "spec" / "model.rs",
+        whitelist=TEAM_WHITELIST,
+        rename=TEAM_RENAME,
+        qual={name: f"DPSS.{name}" for name in TEAM_WHITELIST},
+        mode="config",
+        imports="use crate::dir::Dir;\nuse crate::snapshot::Snapshot;",
+        note="""// What is deliberately NOT generated, and is hand-written in ../exec.rs and
+// ../inv.rs instead: `advance`, `step`, `run` (structure literals and recursion),
+// `timeToNextEvent` (a `Finset.inf'`), the four standing conditions (quantifiers
+// with a dependent proof argument), and `Dir` itself.""",
+        preamble="""// The translator is syntactic only. The one semantically interesting step of this
+// port -- real numbers to integers -- is done and *proved* in Lean
+// (`embed_step`, `intRun_converges`), not here.
+//""",
+    ),
+    dict(
+        name="fence",
+        src=REPO / "Dpss" / "FenceInt.lean",
+        out=REPO / "rust" / "src" / "spec" / "fence_model.rs",
+        whitelist=FENCE_WHITELIST,
+        rename=FENCE_RENAME,
+        qual={"wf": "DPSS.FenceInt.Vehicle.wf",
+              "clearance": "DPSS.FenceInt.Vehicle.clearance",
+              "fenceDir": "DPSS.FenceInt.fenceDir",
+              "safe": "DPSS.FenceInt.safe",
+              "legOk": "DPSS.FenceInt.legOk",
+              "obsOk": "DPSS.FenceInt.obsOk"},
+        mode="explicit",
+        imports="use crate::dir::Dir;\nuse crate::vehicle::Vehicle;",
+        note="""// What is deliberately NOT generated: `trajOk`, which quantifies over every
+// sample -- the same exclusion the team model makes for its standing conditions
+// -- and the `Vehicle` struct itself, which is hand-written in ../vehicle.rs as
+// `Dir` and `Snapshot` are. `traj_ok` is assembled from `obs_ok`, `fence_dir` and
+// `leg_ok` in ../fence.rs, so the predicates a wrong transcription would hide in
+// are all below.""",
+        preamble="""// These are the predicates that never execute, so nothing but this generator
+// checks that the Verus ones say what the Lean ones say. The `_ex` functions of
+// ../fence.rs are proved to compute them (S6b); this file is where they come
+// from (S6d).
+//
+// No scaling argument is involved, unlike the team model: `Dpss/FenceInt.lean`
+// states the fence over the same integers Verus has.
+//""",
+    ),
+]
 
-    for lean in WHITELIST:
+
+def generate(source) -> str | None:
+    """The Verus text for one source, or None after printing why it was refused."""
+    defs = read_defs(source["src"], source["whitelist"])
+    known, out, missing = {}, [], []
+    src, rename, mode = source["src"], source["rename"], source["mode"]
+
+    for lean in source["whitelist"]:
         key = lean if lean in defs else lean.split(".")[-1]
         if key not in defs:
             missing.append(lean)
             continue
         line, params, ty, body = defs[key]
-        where = f"{lean} (Dpss/IntModel.lean:{line})"
-        vname = RENAME[lean]
+        where = f"{lean} ({src.relative_to(REPO)}:{line})"
+        vname = rename[lean]
         try:
             if lean == "Dir.isign":
-                expr = translate_isign(body, where)
-            else:
+                expr, binders = translate_isign(body, where), verus_params(lean, params)
+            elif mode == "config":
                 expr = Parser(tokenize(body, where), where, known).parse()
+                binders = verus_params(lean, params)
+            else:
+                binders, names = explicit_params(params, where)
+                expr = Parser(tokenize(body, where), where, known, mode, names).parse()
         except Refused as e:
             print(f"::error::REFUSED {e}", file=sys.stderr)
             print("The grammar does not cover this definition. Extend the grammar "
                   "deliberately, or hand-write it on the Rust side and remove it "
-                  "from WHITELIST -- do not let the translator guess.",
+                  "from the whitelist -- do not let the translator guess.",
                   file=sys.stderr)
-            return 1
+            return None
         known[lean.split(".")[-1]] = vname
-        out.append(f"""/// `DPSS.{lean}` -- {SRC.relative_to(REPO)}:{line}
-pub open spec fn {vname}({verus_params(lean, params)}) -> {RESULT_TYPE[ty]} {{
+        out.append(f"""/// `{source["qual"][lean]}` -- {src.relative_to(REPO)}:{line}
+pub open spec fn {vname}({binders}) -> {RESULT_TYPE[ty]} {{
     {expr}
 }}
 """)
 
     if missing:
-        print(f"::error::not found in {SRC.name}: {', '.join(missing)}", file=sys.stderr)
-        return 1
+        print(f"::error::not found in {src.name}: {', '.join(missing)}",
+              file=sys.stderr)
+        return None
 
-    header = f'''// GENERATED by scripts/lean_to_verus.py -- DO NOT EDIT.
+    return f'''// GENERATED by scripts/lean_to_verus.py -- DO NOT EDIT.
 //
 // Every function below is a mechanical transliteration of a definition in
-// {SRC.relative_to(REPO)}, cited by file and line above each one. Regenerate with
+// {src.relative_to(REPO)}, cited by file and line above each one. Regenerate with
 //
 //     python3 scripts/lean_to_verus.py
 //
 // CI regenerates and fails if this file has drifted, so it cannot silently rot.
 //
-// The translator is syntactic only. The one semantically interesting step of this
-// port -- real numbers to integers -- is done and *proved* in Lean
-// (`embed_step`, `intRun_converges`), not here.
-//
-// What is deliberately NOT generated, and is hand-written in ../exec.rs and
-// ../inv.rs instead: `advance`, `step`, `run` (structure literals and recursion),
-// `timeToNextEvent` (a `Finset.inf'`), the four standing conditions (quantifiers
-// with a dependent proof argument), and `Dir` itself.
+{source["preamble"]}
+{source["note"]}
 
 use vstd::prelude::*;
-use crate::dir::Dir;
-use crate::snapshot::Snapshot;
+{source["imports"]}
 
 verus! {{
 
 {"".join(out)}}} // verus!
 '''
-    if check:
-        cur = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
-        if cur != header:
-            print("::error::rust/src/spec/model.rs is stale; "
-                  "run python3 scripts/lean_to_verus.py", file=sys.stderr)
-            return 1
-        print(f"model.rs is current ({len(out)} spec fns).")
-        return 0
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(header, encoding="utf-8")
-    print(f"generated {OUT.relative_to(REPO)}: {len(out)} spec fns "
-          f"from {SRC.relative_to(REPO)}")
-    return 0
+
+def main() -> int:
+    check = "--check" in sys.argv
+    rc = 0
+    for source in SOURCES:
+        text = generate(source)
+        if text is None:
+            return 1
+        out, src = source["out"], source["src"]
+        n = text.count("pub open spec fn")
+        if check:
+            cur = out.read_text(encoding="utf-8") if out.exists() else ""
+            if cur != text:
+                print(f"::error::{out.relative_to(REPO)} is stale; "
+                      "run python3 scripts/lean_to_verus.py", file=sys.stderr)
+                rc = 1
+                continue
+            print(f"{out.name} is current ({n} spec fns).")
+            continue
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text, encoding="utf-8")
+        print(f"generated {out.relative_to(REPO)}: {n} spec fns "
+              f"from {src.relative_to(REPO)}")
+    return rc
 
 
 if __name__ == "__main__":

@@ -34,6 +34,7 @@ use vstd::prelude::*;
 
 pub mod dir;
 pub mod snapshot;
+pub mod vehicle;
 pub mod spec;
 pub mod inv;
 pub mod geometry;

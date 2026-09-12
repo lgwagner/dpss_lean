@@ -43,75 +43,21 @@
 use vstd::prelude::*;
 use crate::dir::Dir;
 
+// `Vehicle` is a type, so it is hand-written, as `Dir` and `Snapshot` are. Its
+// specification functions -- `wf`, `clearance`, `fence_dir`, `safe`, `leg_ok`
+// and `obs_ok` -- are GENERATED from `Dpss/FenceInt.lean` by
+// `scripts/lean_to_verus.py` (S6d), so nobody types them twice.
+pub use crate::vehicle::Vehicle;
+pub use crate::spec::fence_model::*;
+
 verus! {
-
-/// What the proof needs to know about the airframe. Specification-only, like
-/// `Snapshot`: these are measured numbers, not program state.
-///
-/// `Dpss/Fence.lean`, `DPSS.Fence.Vehicle`.
-pub struct Vehicle {
-    /// The furthest the drone travels in one sample period.
-    pub dmax: int,
-    /// Overshoot allowance for a commanded reversal.
-    pub turn: int,
-    /// Position sensing error bound.
-    pub eps: int,
-}
-
-impl Vehicle {
-    pub open spec fn wf(self) -> bool {
-        &&& 0 <= self.dmax
-        &&& 0 <= self.turn
-        &&& 0 <= self.eps
-    }
-
-    /// The clearance a drone must hold from the fence, given its heading.
-    ///
-    /// `Dpss/Fence.lean`, `DPSS.Fence.Vehicle.margin`.
-    pub open spec fn clearance(self, d: Dir) -> int {
-        if d == Dir::Left { self.dmax + self.turn } else { self.turn }
-    }
-}
-
-/// The fence controller, as a specification.
-///
-/// `Dpss/Fence.lean`, `DPSS.Fence.fenceDir`.
-pub open spec fn fence_dir(margin: int, p_hat: int, req: Dir) -> Dir {
-    if p_hat <= margin { Dir::Right } else { req }
-}
-
-/// The invariant.
-///
-/// `Dpss/Fence.lean`, `DPSS.Fence.Traj.Safe`.
-pub open spec fn safe(v: Vehicle, p: int, d: Dir) -> bool {
-    v.clearance(d) <= p
-}
-
-/// The vehicle contract for one leg: `low` is the lowest position reached
-/// between this sample and the next, a leftward leg travels at most `dmax`, a
-/// reversal costs at most `turn`, and a reversal completes within the period.
-///
-/// `Dpss/Fence.lean`, the `left_leg` / `turn_leg` / `hold_leg` fields of
-/// `DPSS.Fence.Traj`.
-pub open spec fn leg_ok(v: Vehicle, p: int, d: Dir, low: int, p_next: int) -> bool {
-    &&& low <= p
-    &&& low <= p_next
-    &&& (d == Dir::Left ==> p - v.dmax <= low)
-    &&& (d == Dir::Right ==> p - v.turn <= low)
-    &&& (d == Dir::Right ==> p <= p_next)
-}
-
-/// Sensing is accurate to `eps`.
-pub open spec fn obs_ok(v: Vehicle, obs: int, p: int) -> bool {
-    -v.eps <= obs - p <= v.eps
-}
 
 /// **A safe sample leaves at least the turn allowance at the next one.**
 ///
 /// `Dpss/Fence.lean`, `DPSS.Fence.Traj.turn_le_pos_succ`.
 pub proof fn turn_le_next(v: Vehicle, p: int, d: Dir, low: int, p_next: int)
     requires
-        v.wf(),
+        wf(v),
         safe(v, p, d),
         leg_ok(v, p, d, low, p_next),
     ensures
@@ -125,7 +71,7 @@ pub proof fn turn_le_next(v: Vehicle, p: int, d: Dir, low: int, p_next: int)
 /// `Dpss/Fence.lean`, the body of `DPSS.Fence.Traj.low_nonneg`.
 pub proof fn low_nonneg(v: Vehicle, p: int, d: Dir, low: int, p_next: int)
     requires
-        v.wf(),
+        wf(v),
         safe(v, p, d),
         leg_ok(v, p, d, low, p_next),
     ensures
@@ -141,7 +87,7 @@ pub proof fn safe_step(
     p: int, d: Dir, low: int, p_next: int, obs: int, req: Dir,
 )
     requires
-        v.wf(),
+        wf(v),
         v.dmax + v.turn + v.eps <= margin,
         safe(v, p, d),
         leg_ok(v, p, d, low, p_next),
@@ -174,7 +120,7 @@ pub proof fn safe_at(
     k: nat,
 )
     requires
-        v.wf(),
+        wf(v),
         v.dmax + v.turn + v.eps <= margin,
         traj_ok(v, margin, p, d, low, obs, req),
         safe(v, p(0), d(0)),
@@ -203,7 +149,7 @@ pub proof fn low_nonneg_at(
     k: nat,
 )
     requires
-        v.wf(),
+        wf(v),
         v.dmax + v.turn + v.eps <= margin,
         traj_ok(v, margin, p, d, low, obs, req),
         safe(v, p(0), d(0)),
@@ -319,7 +265,7 @@ impl VehicleEx {
 
     /// `Vehicle::wf`, executable.
     pub fn wf_ex(&self) -> (r: bool)
-        ensures r == self@.wf(),
+        ensures r == wf(self@),
     {
         0 <= self.dmax && 0 <= self.turn && 0 <= self.eps
     }
@@ -327,7 +273,7 @@ impl VehicleEx {
     /// `Vehicle::clearance`, executable.
     pub fn clearance_ex(&self, d: Dir) -> (c: i64)
         requires self.bounded(),
-        ensures c as int == self@.clearance(d),
+        ensures c as int == clearance(self@, d),
     {
         if d == Dir::Left { self.dmax + self.turn } else { self.turn }
     }

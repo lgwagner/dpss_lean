@@ -77,7 +77,7 @@ pub proof fn pair_to_fence(
     low: spec_fn(nat) -> int, obs: spec_fn(nat) -> int, req: spec_fn(nat) -> Dir,
 )
     requires
-        v.wf(),
+        wf(v),
         pair_traj_ok(v, d, margin, gap, mode, low, obs, req),
     ensures
         traj_ok(pair_vehicle(v), margin,
@@ -100,7 +100,7 @@ pub proof fn pair_to_fence(
 
 /// The invariant: the pair holds the standoff plus the clearance its mode needs.
 pub open spec fn pair_safe(v: Vehicle, d: int, g: int, m: Dir) -> bool {
-    d + pair_vehicle(v).clearance(m) <= g
+    d + clearance(pair_vehicle(v), m) <= g
 }
 
 /// **Separation is maintained, between samples too.**
@@ -117,7 +117,7 @@ pub proof fn pair_le_low(
     k: nat,
 )
     requires
-        v.wf(),
+        wf(v),
         2 * (v.dmax + v.turn + v.eps) <= margin,
         pair_traj_ok(v, d, margin, gap, mode, low, obs, req),
         pair_safe(v, d, gap(0), mode(0)),
@@ -130,7 +130,7 @@ pub proof fn pair_le_low(
     let lw = |k: nat| low(k) - d;
     let ob = |k: nat| obs(k) - d;
     pair_to_fence(v, d, margin, gap, mode, low, obs, req);
-    assert(vp.wf());
+    assert(wf(vp));
     assert(vp.dmax + vp.turn + vp.eps <= margin);
     assert(safe(vp, p(0), mode(0)));
     low_nonneg_at(vp, margin, p, mode, lw, ob, req, k);
