@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `37a715921f2f`  
+**Commit at time of writing:** `5c128c25141a`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -1248,6 +1248,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+5c128c2  2026-09-12  feat: a counterexample -- the lemma I was trying to prove is false
 37a7159  2026-09-12  feat: why a drone ends up heading where it does
 2e8b565  2026-09-12  feat: Lemma 3.6, unconditionally
 0573e4d  2026-09-12  feat: a pinned left-synchronized drone freezes the clock
