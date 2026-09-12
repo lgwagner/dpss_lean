@@ -58,8 +58,56 @@ scheduled*.
 guarantees exists, in Lean and in Verus, against a vehicle described by
 measurable numbers and a network described by a bound on message age.
 
-What remains is not on this track, and none of it is a change of coordinates —
-`INSIGHTS.md` §23 is the diagnostic that says so:
+### S6 — raise the safety traces to a real differential test  ⟨M⟩
+
+**The known weakness in what Track A ships.** `rust/traces.sh` runs two kinds of
+block. `cfgS` and `spread` are a genuine differential test: Lean proves those
+runs by `decide`, the generator produces the spec Verus proves the executable
+step equals, and the binary must reproduce them. The six `fence` / `separation` /
+`stale link` blocks are **only a regression test** — they were recorded from the
+binary, because `Fence.Traj` and friends are structures over `ℕ → ℝ` and do not
+execute. They guard against the Rust changing; they do not check it against Lean.
+
+Four steps, in the order they pay:
+
+* **S6a — generalize the fence over an ordered ring, instantiate at `ℤ`.** ⟨S⟩
+  `Traj`, `safe_all` and `low_nonneg` use only ordered-ring arithmetic: no
+  division, no completeness. (`margin_sharp` does use division and
+  Archimedean-ness, so it stays over a field.) Instantiated at `ℤ`, the Lean and
+  Verus statements are about *the same integers*, and Separation and Comms
+  follow free because they are transfers. This is not a test — it deletes the
+  `ℝ`/`ℤ` gap from the inspection.
+* **S6b — exec mirrors of the spec predicates.** ⟨S⟩ **The step that matters
+  most.** The controller is five lines; a typo there fails any test. The
+  dangerous artifacts are `traj_ok`, `leg_ok`, `obs_ok`, `pair_leg_ok` and
+  `link_ok` — a wrong one makes the Verus theorem true about the wrong system,
+  and **no trace test can ever catch it, because spec predicates never
+  execute.** Write `leg_ok_ex(..) -> bool` with `ensures result == leg_ok(..)`;
+  Verus proves that, so the exec function provably computes the spec. Then
+  evaluate it on the trace from both sides and compare.
+* **S6c — `decide`-proved integer traces in Lean.** ⟨M⟩ Define the worst-case
+  simulator as a computable `ℤ`-valued function, `decide` its trace, and build a
+  `Traj` from it so the theorem applies — the shape of `Sharp.traj` and
+  `Flight.toTraj`, done twice already. `traces.expected` is then emitted from
+  Lean theorems and the six blocks become genuine differential tests.
+* **S6d — extend the generator to the safety specs.** ⟨M, higher risk⟩ Optional.
+  Correspondence by construction for the generated part; needs grammar
+  extensions (`Dir`-valued `if`, structure fields), and `INSIGHTS.md` records
+  that every E1 extension was a deliberate fix to a refusal.
+
+**Done when** `traces.sh` can truthfully say all blocks are checked against Lean.
+
+**What this still will not establish.** Even all four do not prove the Lean
+theorem and the Verus theorem are the same theorem. They make the remaining
+inspection short and mechanical — same integers, same predicates evaluated
+identically, same traces — but statement-level correspondence stays a human
+read. Only S6d removes part of that, and the proof structures stay separate
+regardless.
+
+---
+
+What remains beyond that is not on this track, and none of it is a change of
+coordinates — `INSIGHTS.md` §23 is the diagnostic that says so:
 
 * **Heterogeneous speeds.** A rewrite, and the reason is structural: uniform
   speed is what makes an escort stay together without a grouped representation.
