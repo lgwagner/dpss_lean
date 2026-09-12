@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `bc5bef846f04`  
+**Commit at time of writing:** `c12ef577ee2a`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -51,8 +51,10 @@ Stage 1 broken down:
 | Ordering invariant under motion | **done — main result so far** |
 | The three events as state transformations | done |
 | Per-event scheduling (when each event comes due) | done |
-| Combining them into `timeToNextEvent` (a minimum) | **not started** |
+| Combining them into `timeToNextEvent` (a minimum) | done |
+| `timeToNextEvent` strictly positive (local non-Zeno) | done |
 | `step` and runs | **not started** |
+| Non-Zeno proper (uniform lower bound on steps) | **not started** |
 | Runs / event sequences | **not started** |
 | Non-Zeno | **not started** |
 
@@ -61,7 +63,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**69 theorems**, all `sorry`-free, across 4 files (`Basic.lean` 199 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `Schedule.lean` 215 lines).
+**79 theorems**, all `sorry`-free, across 5 files (`Basic.lean` 199 lines, `Dynamics.lean` 228 lines, `Events.lean` 232 lines, `NextEvent.lean` 222 lines, `Schedule.lean` 215 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -158,35 +160,78 @@ sail through a convergence proof and mean nothing.
   before the next event for that pair, which is exactly the kind of fact
   non-Zeno gets assembled from.
 
+### 3.5 `Dpss/NextEvent.lean` — the time to the next event
+
+Takes the **minimum** over all the scheduled times and proves the fact that
+matters.
+
+- `borderTime` + `borderTime_pos` — a drone not currently at a border has
+  strictly positive time to reach one.
+- `separationTime_eq_zero_iff` — a separation is due exactly when the pair sits
+  on its shared boundary; the direction factor never vanishes and so never
+  interferes.
+- `NoEventDue` — no event of any kind is due at this instant. The subtle clause
+  is the meet one: a meet is due when a pair is co-located **and closing**, not
+  merely co-located. A co-located pair moving apart has just separated and owes
+  nothing. Had this been plain `CoLocated`, the predicate would have excluded
+  every mid-escort configuration — a perfectly ordinary state — and the theorem
+  below would have been close to vacuous.
+- `EscortsCoherent` — escorts point at the boundary they are escorting to.
+  Guaranteed by any meet event (`separationTime_nonneg_doMeet`); assumed of a
+  start configuration.
+- **`timeToNextEvent_pos`** — *the main result of the file.* If no event is due
+  right now, the team can fly a strictly positive stretch before anything
+  happens. No zero-length steps, so an event sequence cannot stall.
+
+**What this is not.** `timeToNextEvent_pos` is the *local* half of non-Zeno and
+nothing more. Infinitely many strictly positive steps can still sum to a finite
+time — that is exactly how Zeno behaviour works. Ruling it out needs a uniform
+lower bound on the step sizes, following Avigad–van Doorn §2. Not started.
+
 ---
 
 ## 4. What is **not** proved — read this part
 
 This is the honest gap list. Nothing below is done.
 
-1. **There is still no running system.** Each event now has a scheduled time
-   with a correctness proof (`Schedule.lean`), but **nothing takes the minimum
-   over them**, so there is no `timeToNextEvent`, no `step`, and no notion of a
-   run. Everything proved so far concerns *one* flight or *one* event in
-   isolation. This is the immediate next target.
+1. **There is still no running system.** `timeToNextEvent` now exists and is
+   proved strictly positive, but **nothing iterates it**. There is no `step`
+   function and no notion of a run, so every result so far still concerns *one*
+   flight or *one* event in isolation. This is the immediate next target.
+
+4. **Non-Zeno is not proved, and `timeToNextEvent_pos` is not it.** Strictly
+   positive steps can still sum to a finite time. What is missing is a uniform
+   lower bound on step size. This is the headline opportunity (§5) and it
+   remains open.
+
+5. **An unproved modelling claim.** `NextEvent.lean` computes `borderTime` for
+   *every* drone, not just the two on the ends. For an interior drone that
+   number does not correspond to a reachable border event — a neighbour is in
+   the way. I argue in the file header that including it is harmless, because
+   under `OnPerimeter` and ordering a spurious border time can never be
+   strictly smaller than the genuine event that preempts it. **That argument is
+   prose, not Lean.** It is believed but unverified, and it should either be
+   proved or the definition narrowed. Flagging it explicitly because it is
+   exactly the kind of plausible-sounding step that the original 2008 proof got
+   wrong.
 2. **Non-Zeno is not started.** This is the headline opportunity (§5) and it
    needs the run machinery from (1) first.
 3. **`Synchronized` is not defined**, so Theorem 2.1 is not even *stated* yet.
    That is Stage 2.
-4. **No sanity tests.** Nothing has been instantiated at `n = 2` or `n = 3`.
+6. **No sanity tests.** Nothing has been instantiated at `n = 2` or `n = 3`.
    The model has not been run even once. Until Stage 3 there is no evidence the
    definitions are non-vacuous *as a system* — only the two local checks in §3.2.
-5. **None of Lemmas 3.1–3.8 are formalized.** The proof skeleton is recorded in
+7. **None of Lemmas 3.1–3.8 are formalized.** The proof skeleton is recorded in
    `PLAN.md` §3 but not touched in Lean.
-6. **The nondeterminism is not modelled.** When three or more drones converge,
+8. **The nondeterminism is not modelled.** When three or more drones converge,
    the paper leaves open which neighbour the middle drone escorts. My events are
    currently deterministic per-pair. This does not bite in phase 2, but a fully
    faithful model needs a relation, not a function.
-7. **Unused definitions.** `Config.Together` and `Config.Valid` are defined
+9. **Unused definitions.** `Config.Together` and `Config.Valid` are defined
    but no theorem uses them. (`OnPerimeter`, `escortDir`, `AtSeparation`,
    `AtLeftBorder` and `AtRightBorder` were on this list and are now discharged
    by `Schedule.lean`.)
-8. **Algorithm B is entirely out of scope** — wrong estimates, changing
+10. **Algorithm B is entirely out of scope** — wrong estimates, changing
    perimeter, drones joining or leaving. That is where the original proof broke
    and where the open problem lives.
 
@@ -303,6 +348,16 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.doBorder_dir_of_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sepRate_eq_zero_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_advance_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.separationTime_pos_of_escorting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetTime_pos_of_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.droneNextTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.univ_fin_nonempty' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.timeToNextEvent_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_zero_of_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.pos_eq_one_of_ge' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.coLocated_of_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -320,7 +375,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.separationTime_pos_doMeet' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**69/69 clean — `sorryAx` appears zero times.**
+**79/79 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -370,6 +425,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+c12ef57  2026-09-12  feat: event scheduling, and make the status report self-refreshing
 bc5bef8  2026-09-12  feat: the three DPSS events, plus an auditable status report
 b5de469  2026-09-12  feat: motion between events, and the ordering invariant
 fbeab29  2026-09-12  docs: ACL2 convergence proof is conditional on unproved termination
@@ -387,12 +443,10 @@ bcdb11f  2026-09-11  Create README.md
 ## 9. Next steps, in order
 
 1. ~~Constrain the border predicates.~~ **Done** — `Schedule.lean`.
-2. `timeToNextEvent` — the minimum over all pending events — and prove it
-   **strictly positive** when no event is currently due. This is the local half
-   of non-Zeno and the first thing the ACL2 development could not do. The
-   per-event times and their correctness proofs are now in place, so this is
-   the minimum-over-a-finite-set step.
-3. `step` and runs: iterate event-to-event.
-4. Non-Zeno proper, following AvD §2. The load-bearing step is: *if drone `i+1`
+2. ~~`timeToNextEvent`, proved strictly positive.~~ **Done** — `NextEvent.lean`.
+3. Either prove the spurious-border-time claim (gap 3 above) or narrow the
+   definition so it is not needed.
+4. `step` and runs: iterate event-to-event.
+5. Non-Zeno proper, following AvD §2. The load-bearing step is: *if drone `i+1`
    makes two consecutive left turns, drone `i` must turn right in between.*
-5. Then Stage 2: define `Synchronized`, state Theorem 2.1.
+6. Then Stage 2: define `Synchronized`, state Theorem 2.1.
