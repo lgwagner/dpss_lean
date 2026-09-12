@@ -24,11 +24,22 @@ jobs:
       - name: Axiom audit (no theorem may depend on sorryAx)
         run: python3 scripts/audit.py
 
-      # Belt and braces: catch a `sorry` in the sources directly.
+      # Belt and braces: catch a `sorry` in the sources directly. This looks at
+      # code only -- a plain grep also matched the doc comment in
+      # Synchronization.lean that explains why there is no `sorry`, so the
+      # repository's own explanation failed the check looking for one.
       - name: No `sorry` in sources
+        run: python3 scripts/no_sorry.py
+
+      # STATUS.md's generated blocks and GUIDE.md's deep links both claim to
+      # describe the code. Both scripts self-check and fail if they no longer do.
+      - name: Generated documentation is current
         run: |
-          if grep -rn "sorry" Dpss/; then
-            echo "::error::found 'sorry' in Dpss/"
+          python3 scripts/refresh_status.py
+          python3 scripts/refresh_guide_links.py
+          git --no-pager diff --stat -- STATUS.md GUIDE.md
+          if ! git diff --quiet -- GUIDE.md; then
+            echo "::error::GUIDE.md deep links are stale; run scripts/refresh_guide_links.py"
             exit 1
           fi
-          echo "no 'sorry' found"
+          echo "documentation is current"

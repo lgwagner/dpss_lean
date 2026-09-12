@@ -13,10 +13,10 @@ This file supplies the run-level half of that argument:
 * `time_advance_of_crossing` — therefore, crossing from one endpoint to the
   other costs at least `1/n` of time.
 
-What remains for full non-Zeno is the counting step: every event turns at least
-one drone, each drone turns at most once per `1/n`, so only finitely many
-events fit in a bounded interval. That needs a pigeonhole over `Fin n` and is
-not done here.
+The counting step that completes non-Zeno — every event turns at least one
+drone, each drone turns at most once per `1/n`, so only finitely many events
+fit in a bounded interval — is in `NonZenoProof.lean`, which is where `nonZeno`
+itself is proved.
 
 ## Careful: when does a turn actually happen?
 

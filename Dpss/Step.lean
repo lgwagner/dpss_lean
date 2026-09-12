@@ -24,12 +24,21 @@ Most of these can never actually compete, and it is worth knowing which:
 * A drone cannot separate from both neighbours at once. The two separations
   would have to happen at `commonEnd (i-1)` and `commonEnd i`, which are
   different points.
-* A separation and a meet **can** coincide. This is the genuine ambiguity
-  Avigad–van Doorn flag (§2): when three or more drones come together, the
-  middle one may escort either neighbour, and they deliberately leave it
-  unspecified. Giving separation priority is *one* resolution. The paper notes
-  the strongest upper bound would quantify over all of them, which needs a
-  relation rather than a function. Recorded as a known gap in `STATUS.md`.
+* A separation and a meet **can** coincide. This looked like the genuine
+  ambiguity Avigad–van Doorn flag (§2) — when three or more drones come
+  together, the middle one may escort either neighbour, and they deliberately
+  leave it unspecified — so giving separation priority was recorded for a long
+  time as *one* resolution among several.
+
+  **It is not.** `Priority.lean` computes both answers for every pair of events
+  that can be due at one drone at one instant: two combinations are impossible,
+  five agree, and the one that differs is the paper's *bounce*, where taking
+  the meet instead provably walks a drone out of its own interval. And
+  `Nondeterminism.lean` models the paper's actual open case as a **relation**,
+  then proves it collapses: on any configuration satisfying the standing
+  conditions there is exactly one legitimate successor, so every trajectory of
+  the relation is this function's run. Which is what the paper itself asserts —
+  *"our upper bound only concerns phase 2, where these issues do not arise"*.
 
 ## Reference
 
@@ -228,9 +237,10 @@ noncomputable def run (c : Config n) (hn : 0 < n) : ℕ → Config n
 /-- What it means for the system to be free of Zeno behaviour: the times along
 the run grow without bound, so every instant is eventually passed.
 
-Stated here, **not yet proved**. `timeToNextEvent_pos` gives strictly positive
-steps, which is necessary but nowhere near sufficient: a sequence of strictly
-positive steps can still sum to something finite. -/
+Stated here and proved in `NonZenoProof.lean`. `timeToNextEvent_pos` gives
+strictly positive steps, which is necessary but nowhere near sufficient: a
+sequence of strictly positive steps can still sum to something finite. The
+proof instead counts turns — see `TurnSpacing.lean`. -/
 def NonZeno (c : Config n) (hn : 0 < n) : Prop :=
   ∀ T : ℝ, ∃ k : ℕ, T < (c.run hn k).time
 

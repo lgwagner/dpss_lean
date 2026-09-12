@@ -18,6 +18,13 @@ worth checking against the primary text before any of them is turned into a Lean
 > assumption**. See the flagged subsection in sec 4.4 — it changes what this project is
 > worth. See PLAN.md for the formalization plan this fed into.
 
+> **What happened next.** This brief is the input to the formalization, and is kept as
+> written — it is a record of what was understood *before* the Lean, including where it
+> was wrong. The work it fed into is finished: non-Zeno is proved, Theorem 2.1 is proved
+> for every `n` with the constant exactly `2 − 1/n`, the bound is shown attained, and the
+> nondeterminism §2 of arXiv:2008.04262 leaves open is proved not to arise. `GUIDE.md`
+> walks all of it; `STATUS.md` §4 is the honest list of what is still not done.
+
 ---
 
 ## 1. TL;DR
@@ -317,6 +324,10 @@ mechanization but assumes non-Zeno.
 **A Lean development that formalizes the AvD non-Zeno argument closes a gap that the
 existing mechanization explicitly leaves open.** That is a real contribution rather than
 a reproduction, and it sits in Stage 1 — the part that looked like pure plumbing.
+
+> **Done** — `Dpss/NonZenoProof.lean`, by a different route than AvD's; see `STATUS.md`
+> §5 for what it does and does not claim, and §3.16 for why the paper's own argument was
+> not the one formalized.
 
 Other details worth having: ACL2 has no reals, so their model is **rational**-valued;
 Lean's `ℝ` is strictly more faithful. The development is ~11K lines of ACL2 and the

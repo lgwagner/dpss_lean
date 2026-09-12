@@ -1,8 +1,11 @@
-# PLAN — work yet to be done
+# PLAN — the roadmap
 
-The forward-looking roadmap. `STATUS.md` records what **is** proved;
-`INSIGHTS.md` records what was **learned**; this file records what to do
-**next** and in what order.
+The forward-looking document. `STATUS.md` records what **is** proved;
+`INSIGHTS.md` records what was **learned**; `GUIDE.md` walks the finished work
+package; this file records what to do **next** and in what order.
+
+**The work package is complete.** What follows is a backlog of new directions,
+plus the record of what each finished item built and taught.
 
 > The original scoping document — the decisions taken at the start, and the one
 > planning error they contained — is `PLAN-original.md`.

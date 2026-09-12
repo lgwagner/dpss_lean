@@ -59,7 +59,7 @@ phase-1 result that this scope cannot reach by construction.
 | **`GUIDE.md`** | **Start here.** A guide to the whole work package — every item, what it claimed, how it was proved, and what it cost — with deep links into the source for each declaration named. |
 | **`STATUS.md`** | What is proved, what is **not**, and a full axiom audit. Written to be audited, not just read. §4 is the honest gap list. |
 | **`INSIGHTS.md`** | The non-obvious things learned. Read this before extending the work. |
-| **`PLAN.md`** | **Work yet to be done** — the roadmap. Start here to pick up the work. |
+| **`PLAN.md`** | The roadmap. The work package is complete, so this now holds the **backlog** — new directions, sized and scoped. |
 | `CHANGELOG.md` | What changed and when, newest first — including what each session did **not** finish. |
 | `PLAN-original.md` | The original scoping plan, including one recorded planning error. |
 | `dpss-perimeter-surveillance-brief.md` | Literature brief, with corrections from the primary sources. |

@@ -33,11 +33,12 @@ The middle drone is simultaneously
 * co-located with drone `0`, which is still heading right — a *meet*; and
 * on the boundary `2/3` it shares with drone `2` — a *separation*.
 
-The paper leaves open which neighbour the middle drone escorts. `newDir` gives
-separation priority, so here it turns left and takes drone `0` with it. That is
-one resolution of a genuine choice, and `STATUS.md` gap 5 records it as such.
-The trace below is therefore a trace of *this* model, and a different
-resolution would give a different — also valid — run.
+The paper leaves open which neighbour a middle drone escorts, and `newDir`
+gives separation priority, so here drone `1` turns left and takes drone `0`
+with it. That looked like one resolution among several. `Nondeterminism.lean`
+proves it is the only one: on any configuration satisfying the standing
+conditions the choice collapses, so this trace is not a trace of one resolution
+but *the* trace.
 
 ## Reference
 

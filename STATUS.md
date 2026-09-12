@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `f757d924c71f`  
+**Commit at time of writing:** `90279855abca`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -14,7 +14,9 @@
 This document is written to be *audited*, not just read. Every claim about what
 is proved is backed by machine output reproduced verbatim in §6, and §7 tells
 you how to regenerate it yourself. §4 is the part to read if you want to know
-what is **not** done — it is deliberately longer than §3.
+what is **not** done; it was for a long time deliberately longer than §3, and
+most of it is now struck through rather than deleted, so that a reader can see
+what changed instead of having to diff.
 
 ---
 
@@ -22,7 +24,7 @@ what is **not** done — it is deliberately longer than §3.
 
 | Decision | Choice |
 |---|---|
-| How far | Stages 0–3 committed; the `2 − 1/n` proof itself is a stretch goal |
+| How far | Stages 0–3 committed; the `2 − 1/n` proof itself a stretch goal — **reached**, §3.28 |
 | Algorithm | **A only** (all drones already hold correct estimates) |
 | Time model | **Continuous real time** — positions and times in `ℝ` |
 | Verification | Read both primary papers in full before writing Lean |
@@ -80,7 +82,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**594 theorems**, all `sorry`-free, across 33 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 551 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**594 theorems**, all `sorry`-free, across 33 files (`BalanceInvariant.lean` 321 lines, `Basic.lean` 213 lines, `Coherence.lean` 386 lines, `Convergence.lean` 314 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 320 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `InductionStep.lean` 265 lines, `LeftSyncLemmas.lean` 224 lines, `Meeting.lean` 443 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `Nondeterminism.lean` 461 lines, `PairBalance.lean` 472 lines, `PhaseInvariant.lean` 123 lines, `Priority.lean` 273 lines, `Reachable.lean` 207 lines, `RealTime.lean` 341 lines, `Schedule.lean` 214 lines, `Sharpness.lean` 363 lines, `SharpnessGeneral.lean` 384 lines, `Step.lean` 249 lines, `Synchronization.lean` 161 lines, `ThreeConverge.lean` 552 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -216,7 +218,10 @@ is automatic and no ordering of updates needs justifying.
 can never compete: a drone cannot meet both neighbours (that needs opposite
 headings), nor separate from both (the two points differ). A separation and a
 meet *can* coincide — the genuine ambiguity the paper leaves open — and giving
-separation priority is one resolution. See gap 5.
+separation priority looked like *one* resolution among several. It is not:
+§3.31 shows the order is forced in seven of its eight competing cases, and
+§3.33 shows the paper's actual open case cannot arise on a reachable
+configuration. Gap 5 is closed.
 
 Proved: `adjOrdered_step` (a step never flies past a collision, so nobody
 overtakes) and `step_time_lt` (time strictly advances when nothing was due).
@@ -1339,8 +1344,12 @@ result is not vacuous. `#print axioms` reports only `propext`,
 
 See §3.16 for the argument and a careful statement of what it does and does not
 claim — in particular it does **not** literally discharge the ACL2 hypothesis,
-which would require their model rather than this one, and it inherits this
-development's choice of one resolution of the paper's nondeterminism.
+which would require their model rather than this one.
+
+It no longer inherits a *choice* of resolution, though: §3.33 models the step
+as a relation admitting every legitimate resolution and proves the relation has
+exactly one successor on any reachable configuration, so `nonZeno_of_isRun`
+holds for every trajectory.
 
 **A departure worth flagging.** I am *not* following the paper's own non-Zeno
 argument. It rests on the claim that "if drone `i+1` makes two consecutive left
@@ -2015,6 +2024,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+9027985  2026-09-12  docs: refresh STATUS.md generated blocks
 f757d92  2026-09-12  docs: GUIDE.md covers the whole work package, with deep links
 d7bef14  2026-09-12  docs: check the C and D group rows too
 588a976  2026-09-12  docs: GUIDE and CHANGELOG catch up with the closed work package

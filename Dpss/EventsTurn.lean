@@ -245,7 +245,8 @@ theorem someDroneTurns_of_border_deadline {c : Config n} (hn : 0 < n)
 /-- A step whose length is set by an approaching pair's meeting time really
 does bring that pair together, still closing. Whether the resulting *turn*
 happens to that pair or to another drone depends on which event wins the
-priority order in `newDir`, which is the part still open. -/
+priority order in `newDir` — which `Priority.lean` shows is forced in seven of
+its eight competing cases, and `Nondeterminism.lean` settles entirely. -/
 theorem meet_due_of_meet_deadline {c : Config n} (hn : 0 < n) {i : Fin n}
     {h : i.val + 1 < n} (hA : c.Approaching i h)
     (hmin : c.timeToNextEvent hn = c.meetTime i h) :

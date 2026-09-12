@@ -25,14 +25,15 @@ Two facts make it the right quantity.
 And its sign says precisely what Lemma 3.2's induction needs: **balance ≥ 0 iff
 any meeting of the pair happens at or beyond their shared boundary.**
 
-## What is proved here, and what is not
+## What is proved here, and what is finished elsewhere
 
-Everything below is proved. What is *not* yet proved is that balance stays
-nonnegative along a run. That is the real content of Lemma 3.2 and it needs the
-timing argument: the danger is both drones heading left at once, which drives
-the balance down, and ruling that out requires knowing how their turns
-interleave. `LeftSyncFrom` at the end states the obligation precisely rather
-than assuming it.
+Everything below is proved. What this file deliberately does *not* prove is
+that the balance stays nonnegative along a run — the real content of Lemma 3.2,
+where the danger is both drones heading left at once. `BalanceNonneg` at the
+end states that obligation precisely rather than assuming it, and
+`BalanceInvariant.lean` discharges it with the phase invariant derived in
+`STATUS.md` §8a. Keeping the obligation as a named definition rather than a
+hypothesis is what stopped it being used by accident while it was open.
 
 ## Reference
 
@@ -295,7 +296,8 @@ closed:
 2. **neither** drone reverses — impossible, they were already escorting and
    stay together (`coLocated_step_of_both_left`);
 3. the left drone **holds** its leftward heading while the right one
-   **reverses** to leftward — still open.
+   **reverses** to leftward — closed in `BalanceInvariant.lean`, by the phase
+   invariant derived in `STATUS.md` §8a.
 
 Case 3 is where drone `j`'s left synchronization has to do its work, and it is
 positional rather than temporal, which is the useful discovery. In the state
@@ -412,9 +414,11 @@ theorem pinned_of_balance_zero {c : Config n} {i : Fin n} {h : i.val + 1 < n}
 /-! ## The remaining obligation, stated
 
 Everything above is unconditional. What Lemma 3.2 additionally needs is that
-the balance, once zero, never goes negative. Stated here as a definition rather
-than assumed as a hypothesis, so that it is visible as an open obligation and
-cannot be used by accident. -/
+the balance, once zero, never goes negative. It is stated here as a definition
+rather than assumed as a hypothesis, so that it was visible as an obligation
+and could not be used by accident — and it is discharged in
+`BalanceInvariant.lean` by `balanceNonneg_of_pairPhase`, which is what makes
+`leftSync_of_separation` unconditional. -/
 
 /-- The balance of pair `(i, i+1)` never goes negative from step `k` on.
 
