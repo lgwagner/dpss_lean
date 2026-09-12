@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `e36d467346b5`  
+**Commit at time of writing:** `56882f245432`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -1459,6 +1459,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+56882f2  2026-09-12  docs: PLAN.md records what each completed item built and taught
+b91c5a2  2026-09-12  docs: PLAN.md is now the roadmap of work yet to be done
 e36d467  2026-09-12  docs: derive B1's invariant instead of guessing at it
 239b599  2026-09-12  feat: ApartOnBoundary is preserved by a step
 4a98d33  2026-09-12  feat: B7 complete -- "by symmetry" made honest
