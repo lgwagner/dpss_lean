@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `588a9764691d`  
+**Commit at time of writing:** `f757d924c71f`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2015,6 +2015,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+f757d92  2026-09-12  docs: GUIDE.md covers the whole work package, with deep links
+d7bef14  2026-09-12  docs: check the C and D group rows too
 588a976  2026-09-12  docs: GUIDE and CHANGELOG catch up with the closed work package
 f572c5b  2026-09-12  docs: the record catches up with C3' and C1'
 ff6a26c  2026-09-12  feat: C1' -- the nondeterminism, as a relation, proved to collapse
