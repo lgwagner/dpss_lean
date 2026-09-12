@@ -190,7 +190,81 @@ theorem exists_coLocated_of_approaching {c : Config n} (hn : 0 < n)
   rw [hzero] at hkey
   linarith
 
+/-! ## The first turn, and exactly when it happens
+
+Lemma 3.5's arithmetic needs not a bound on when each drone first reverses but
+the **exact** elapsed time: a drone travelling in one direction covers distance
+equal to time, so the moment it turns is pinned by *where* it turns. That is
+the paper's `w` and `z`. -/
+
+/-- **The first moment a drone heads right**, together with where it was
+heading until then and exactly how long that took. -/
+theorem exists_firstRight {c : Config n} (hn : 0 < n) (hi : c.Invariant)
+    (i : Fin n) (a : ℕ) :
+    ∃ b, a ≤ b ∧ (c.run hn b).dir i = Dir.right ∧
+      (∀ p, a ≤ p → p < b → (c.run hn p).dir i = Dir.left) ∧
+      (c.run hn b).time - (c.run hn a).time
+        = (c.run hn a).pos i - (c.run hn b).pos i := by
+  classical
+  rcases Dir.eq_left_or_right ((c.run hn a).dir i) with hL | hR
+  · -- heading left: it must turn eventually, and the first such moment is the
+    -- one we want
+    have hex : ∃ m : ℕ, (c.run hn (a + m)).dir i = Dir.right := by
+      obtain ⟨q, hq, hd⟩ := exists_dir_right_of_dir_left hn hi hL
+      exact ⟨q - a, by rwa [show a + (q - a) = q from by omega]⟩
+    refine ⟨a + Nat.find hex, by omega, Nat.find_spec hex, ?_, ?_⟩
+    · intro p hp1 hp2
+      rcases Dir.eq_left_or_right ((c.run hn p).dir i) with hx | hx
+      · exact hx
+      · exact absurd (by rwa [show a + (p - a) = p from by omega])
+          (Nat.find_min hex (m := p - a) (by omega))
+    · have hconst : ∀ p, a ≤ p → p < a + Nat.find hex →
+          (c.run hn p).dir i = (c.run hn a).dir i := by
+        intro p hp1 hp2
+        rw [hL]
+        rcases Dir.eq_left_or_right ((c.run hn p).dir i) with hx | hx
+        · exact hx
+        · exact absurd (by rwa [show a + (p - a) = p from by omega])
+            (Nat.find_min hex (m := p - a) (by omega))
+      have hk := pos_sub_eq_of_dirConst hn i a (Nat.find hex) hconst
+      rw [hL, Dir.sign_left] at hk
+      linarith
+  · -- already heading right: nothing to wait for
+    exact ⟨a, le_rfl, hR, by intro p hp1 hp2; omega, by ring⟩
+
+/-- **The first moment a drone heads left**, likewise. -/
+theorem exists_firstLeft {c : Config n} (hn : 0 < n) (hi : c.Invariant)
+    (i : Fin n) (a : ℕ) :
+    ∃ b, a ≤ b ∧ (c.run hn b).dir i = Dir.left ∧
+      (∀ p, a ≤ p → p < b → (c.run hn p).dir i = Dir.right) ∧
+      (c.run hn b).time - (c.run hn a).time
+        = (c.run hn b).pos i - (c.run hn a).pos i := by
+  classical
+  rcases Dir.eq_left_or_right ((c.run hn a).dir i) with hL | hR
+  · exact ⟨a, le_rfl, hL, by intro p hp1 hp2; omega, by ring⟩
+  · have hex : ∃ m : ℕ, (c.run hn (a + m)).dir i = Dir.left := by
+      obtain ⟨q, hq, hd⟩ := exists_dir_left_of_dir_right hn hi hR
+      exact ⟨q - a, by rwa [show a + (q - a) = q from by omega]⟩
+    refine ⟨a + Nat.find hex, by omega, Nat.find_spec hex, ?_, ?_⟩
+    · intro p hp1 hp2
+      rcases Dir.eq_left_or_right ((c.run hn p).dir i) with hx | hx
+      · exact absurd (by rwa [show a + (p - a) = p from by omega])
+          (Nat.find_min hex (m := p - a) (by omega))
+      · exact hx
+    · have hconst : ∀ p, a ≤ p → p < a + Nat.find hex →
+          (c.run hn p).dir i = (c.run hn a).dir i := by
+        intro p hp1 hp2
+        rw [hR]
+        rcases Dir.eq_left_or_right ((c.run hn p).dir i) with hx | hx
+        · exact absurd (by rwa [show a + (p - a) = p from by omega])
+            (Nat.find_min hex (m := p - a) (by omega))
+        · exact hx
+      have hk := pos_sub_eq_of_dirConst hn i a (Nat.find hex) hconst
+      rw [hR, Dir.sign_right, one_mul] at hk
+      linarith
+
 end Config
 
 end DPSS
+
 
