@@ -131,6 +131,18 @@ events take priority precisely so that this is unconditional. -/
     c.newDir i = Dir.left := by
   unfold newDir; rw [if_neg h1, if_pos h2]
 
+/-- `newDir` never consults the clock, so configurations agreeing on positions
+and headings turn identically. Needed to recognise that a configuration reached
+mid-trace is the same one analysed earlier. -/
+theorem newDir_congr {c c' : Config n} (hp : c.pos = c'.pos)
+    (hd : c.dir = c'.dir) (i : Fin n) : c.newDir i = c'.newDir i := by
+  obtain ⟨ta, pa, da⟩ := c
+  obtain ⟨tb, pb, db⟩ := c'
+  simp only at hp hd
+  subst hp
+  subst hd
+  rfl
+
 /-! ## The step
 
 Fly to the next event, then fire everything due. -/

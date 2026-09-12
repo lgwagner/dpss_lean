@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `05f29ef69994`  
+**Commit at time of writing:** `00d447f33fce`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -37,7 +37,7 @@ Target theorem, from Avigad–van Doorn (arXiv:2008.04262) Theorem 2.1:
 | 0 | Toolchain, Mathlib project, papers read, `[verify]` items resolved | **done** |
 | 1 | Definitional layer: state, events, runs, order invariant, non-Zeno | **in progress** — non-Zeno outstanding |
 | 2 | `Synchronized` defined; Theorem 2.1 stated | **done** |
-| 3 | Sanity tests at `n = 2, 3`; refute the false phase-1 bound | **begun** — found a bug, see §3.11 |
+| 3 | Sanity tests at `n = 2, 3`; refute the false phase-1 bound | `n = 2` traced; `n = 3` not started |
 | 4 | Close the `2 − 1/n` proof | Lemma 3.1 done; 3.2–3.8 not started |
 | 5 | Phase-1 upper bound (open problem) | explicitly out of scope |
 
@@ -60,6 +60,7 @@ Stage 1 broken down:
 | Escorts stay coherent (`escortsCoherent_step`) | done |
 | Invariants hold along a whole run (`invariant_run`) | done |
 | Concrete examples; bounce regression test | done |
+| Full `n = 2` trace; synchronized forever; period 1 | done |
 | **Non-Zeno proper (the counting step)** | **not started** |
 
 ---
@@ -67,7 +68,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**162 theorems**, all `sorry`-free, across 11 files (`Basic.lean` 212 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 158 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 214 lines, `Step.lean` 227 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
+**191 theorems**, all `sorry`-free, across 11 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `Examples.lean` 472 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -287,7 +288,7 @@ about the running system:
   was previously a hypothesis ("assume they stay on the perimeter") is a
   theorem.
 
-### 3.11 `Dpss/Examples.lean` — concrete configurations, and a bug they found
+### 3.11 `Dpss/Examples.lean` — concrete configurations and a full trace
 
 Everything else here is universally quantified, and nothing forces the
 definitions to be *satisfiable*. A formalization whose hypotheses can never be
@@ -300,21 +301,40 @@ be **escorting**, i.e. co-located *and heading the same way*. But two drones
 converging on their shared boundary have **opposite** headings right up to the
 instant they meet. So no separation fired, the meet branch took over, and the
 right-hand drone was sent **left — out of its own interval**, permanently
-destroying the very property this development exists to prove.
+destroying the very property this development exists to prove. It was invisible
+to 145 passing theorems.
 
-The definition is now co-location on the shared boundary, however the pair got
-there. The theorems `bounce_newDir_d0`, `bounce_newDir_d1` and
-`bounce_separates` pin the correct behaviour down as a regression test.
+`bounce_newDir_d0`, `bounce_newDir_d1` and `bounce_separates` now pin the
+correct behaviour down as a regression test.
 
-Also `approach_invariant`: the standing invariant of a run is **satisfiable**.
-Without it, every theorem conditioned on `Invariant` would hold for the empty
-reason.
+#### A complete trace at `n = 2`
 
-This is exactly what gap 4 warned about, and it is the clearest evidence in the
-project that a concrete case is worth more than another layer of general
-theory. It also vindicates the ordering decision made at the very start:
-**Stage 3 before Stage 4** — validate the model before proving the headline
-theorem about it.
+The system is `noncomputable` (real division, and `newDir` uses classical
+choice) so it cannot be `#eval`ed. The trace is therefore built as symbolic
+proof: `timeToNextEvent_two` reduces the team-wide deadline to a `min`, and
+three step equations do the rest.
+
+    approach ──1/4──▶ atBoundary ──1/2──▶ atEnds ──1/2──▶ atBoundary ──▶ ⋯
+
+- `step_approach`, `step_atBoundary`, `step_atEnds` — one step each, exactly.
+- **`run_approach`** — by induction, the configuration at *every* step index.
+  The system alternates forever between the two steady-state configurations.
+- **`approach_allSync`** — **the first end-to-end result about a running DPSS
+  system here**: not a property of one step but of the entire infinite future.
+  Every drone stays inside its own interval for all time.
+- `approach_converges` — Theorem 2.1 holds for this configuration, and
+  comfortably: the `n = 2` bound is `3/2` and this team is synchronized at time
+  zero.
+- **`approach_period`** — the steady state repeats with period **1** in time.
+  The paper gives the steady-state period as `2/n`, which at `n = 2` is exactly
+  1. **This is an independent check of the model against a number the paper
+  states**, and it agrees.
+
+Also `approach_invariant`: the standing invariant of a run is satisfiable,
+without which every theorem conditioned on `Invariant` would hold vacuously.
+
+This section vindicates the ordering decision made at the very start: validate
+the model (Stage 3) before proving the headline theorem about it (Stage 4).
 
 ---
 
@@ -331,30 +351,28 @@ This is the honest gap list, ordered by importance.
 
 2. **The minimum is not yet proved genuine.** `timeToNextEvent` minimises over
    `borderTime` for *every* drone, including interior ones where no border
-   event is reachable. The local domination lemmas are proved, anchoring every
-   spurious deadline at an end drone whose border event *is* genuine. The
-   chaining into "`timeToNextEvent` is attained by a genuine event" is not done.
+   event is reachable. The local domination lemmas are proved; the chaining
+   into "`timeToNextEvent` is attained by a genuine event" is not done.
 
    Instructive: my first attempt at the rightward version was **false**, and
    Lean caught it.
 
-3. **Theorem 2.1 is stated but not proved**, except at `n = 1`. Lemma 3.1 is
-   done; **Lemmas 3.2 through 3.8 are untouched.** Lemma 3.5 in particular
-   ("every adjacent pair has met by time 1") is the uniform timing result that
-   makes the bound `n`-independent, and nothing here approaches it.
+3. **Theorem 2.1 is not proved in general** — only at `n = 1`, and for one
+   specific `n = 2` configuration. Lemma 3.1 is done; **Lemmas 3.2 through 3.8
+   are untouched.** Lemma 3.5 in particular ("every adjacent pair has met by
+   time 1") is the uniform timing result that makes the bound `n`-independent,
+   and nothing here approaches it.
 
-4. **Sanity checking has barely started.** §3.11 now exhibits concrete
-   configurations and one regression test, and that alone found a model bug.
-   But there is still **no multi-step trace**: nothing runs the system for
-   several steps and checks it does what the paper says. The `n = 2` case is
-   fully analysable by hand and should be done.
+4. **The traces cover only the easy case.** `approach` is *already*
+   synchronized at time zero, so it never exercises convergence — it shows the
+   steady state is a fixed point of the dynamics, not that anything converges
+   to it. A configuration that starts unsynchronized and takes real time to
+   settle would be a far better test, and the paper's sharp `n = 2` worst case
+   (both drones together near a border, needing `5/2`) is the one to build.
 
-   A practical obstacle: the model is `noncomputable` throughout (real
-   division, and `newDir` uses classical choice), so it cannot be `#eval`ed.
-   Checks have to be symbolic proofs about concrete configurations.
-
-5. **The paper's sharp `n = 2` and `n = 3` values are not checked.** They are
-   the obvious regression tests (`2` and `2.5` for `n = 2`).
+5. **`n = 3` is untouched**, and the paper calls it the first interesting case.
+   The known-false phase-1 bound lives there, and refuting it was Stage 3's
+   headline goal.
 
 6. **The nondeterminism is not modelled.** When three or more drones converge
    the paper leaves open which neighbour the middle one escorts, and notes the
@@ -452,6 +470,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.rightEnd_le_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.leftEnd_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.rightEnd_last' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.ext' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.together_refl' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.together_symm' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_advance' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -528,6 +547,33 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Examples.approach_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.approach_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.approach_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.hn2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.timeToNextEvent_two' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.droneNextTime_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.droneNextTime_d0_approaching' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.droneNextTime_d0_apart' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.nextIdx_d0_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atBoundary_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atBoundary_dir_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atBoundary_dir_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atEnds_pos_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atEnds_pos_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atEnds_dir_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atEnds_dir_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atBoundary_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.atEnds_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_atBoundary' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_atEnds' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_timeToNext' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.step_approach' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.leftEnd_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.rightEnd_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.rightEnd_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.run_approach' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_pos_bounds' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_allSync' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_converges' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Examples.approach_period' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -573,6 +619,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.newDir_of_noEvent' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.newDir_atLeftBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.newDir_atRightBorder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDir_congr' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.step_time' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.step_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.step_gap' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -600,7 +647,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**162/162 clean — `sorryAx` appears zero times.**
+**191/191 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -650,6 +697,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+00d447f  2026-09-12  fix: bounce events sent a drone out of its own interval
 05f29ef  2026-09-12  feat: escorts stay coherent -- the last assumption discharged
 f2d3eca  2026-09-12  docs: bring STATUS.md up to date, and guard it against silent edit failures
 9f72d4c  2026-09-12  feat: Stage 2 -- synchronization defined, Theorem 2.1 stated
@@ -676,12 +724,11 @@ bcdb11f  2026-09-11  Create README.md
 
 ## 9. Next steps, in order
 
-1. ~~Border predicates, `timeToNextEvent`, `step` and runs, Lemma 3.1,
-   `Synchronized`, Theorem 2.1 stated, escort coherence, run invariants.~~
-   **All done.**
-2. **Finish non-Zeno** (gap 1): every event turns a drone; pigeonhole over
-   `Fin n`; conclude finitely many events per bounded interval.
-3. Chain the domination lemmas into "the minimum is genuine" (gap 2).
-4. Stage 3: instantiate at `n = 2, 3` and check the paper's sharp values
-   symbolically, since the model cannot be evaluated.
+1. ~~Everything through Lemma 3.1, the run invariants, and an `n = 2` trace.~~
+   **Done.**
+2. **A converging trace**: start `n = 2` unsynchronized (both drones together
+   near a border) and show it settles, checking the paper's sharp `5/2`.
+3. **Finish non-Zeno** (gap 1): every event turns a drone; pigeonhole over
+   `Fin n`.
+4. `n = 3`, and the known-false phase-1 bound.
 5. Lemmas 3.2 → 3.7, then Theorem 2.1 itself.

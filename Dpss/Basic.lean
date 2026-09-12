@@ -182,6 +182,12 @@ structure Config (n : ℕ) where
 
 namespace Config
 
+/-- Two configurations agreeing on clock, positions and headings are equal.
+Needed to state that a concrete trace reaches a concrete configuration. -/
+@[ext] theorem ext {c c' : Config n} (ht : c.time = c'.time)
+    (hp : c.pos = c'.pos) (hd : c.dir = c'.dir) : c = c' := by
+  cases c; cases c'; simp_all
+
 variable (c : Config n)
 
 /-- Drones are indexed left to right and never pass each other. This is an
