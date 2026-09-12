@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `49bac2d50835`  
+**Commit at time of writing:** `d0aaa02dbb3d`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**347 theorems**, all `sorry`-free, across 21 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**352 theorems**, all `sorry`-free, across 22 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -746,6 +746,31 @@ Two moves carry the preservation argument, and both are proved:
 applies the above to each route. The two hard moves exist; what remains is the
 enumeration, and §3.20 is the map of which branch needs which move.
 
+### 3.22 `Dpss/EventuallyTurns.lean` — every drone turns, and how soon
+
+A step towards **Lemma 3.5**. Its proof opens with *"eventually `j` turns
+around at or before it reaches 0, and `j+1` turns around at or before it
+reaches 1"* — taken for granted, as it should be on paper.
+
+Formally it needs an argument, and it is **where non-Zeno finally pays for
+itself** beyond being a headline result:
+
+- A drone that never turned would hold one heading forever, so its position
+  would track elapsed time exactly (`pos_sub_eq_of_dirConst`).
+- Non-Zeno says elapsed time is **unbounded**.
+- So it would leave the perimeter, which `onPerimeter_run` forbids.
+
+Without non-Zeno the clock could stall and the drone sit still forever, never
+turning and never leaving `[0,1]`. **This lemma could not have been proved
+earlier in the development.**
+
+- `exists_dir_right_of_dir_left` and its mirror; `exists_turn` — every drone
+  turns, whichever way it starts.
+- `time_bound_of_dir_left` / `_right` — the quantitative form Lemma 3.5 needs:
+  a drone cannot head left for longer than its distance to `0`, nor right for
+  longer than its distance to `1`. These are the `w` and `z` of the paper's
+  proof, which bounds the meeting time by `z − w ≤ 1`.
+
 ---
 
 ## 4. What is **not** proved — read this part
@@ -1000,6 +1025,11 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.separation_due_of_separation_deadline' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.someDroneTurns_step' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.someDroneTurns_run' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_dir_right_of_dir_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_dir_left_of_dir_right' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.exists_turn' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_bound_of_dir_left' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.time_bound_of_dir_right' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.d0_next' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.commonEnd_d0' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Examples.leftEnd_d1' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1240,7 +1270,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**347/347 clean — `sorryAx` appears zero times.**
+**352/352 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1290,6 +1320,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+d0aaa02  2026-09-12  docs: record the symmetric half as a work item -- I had not counted it
 49bac2d  2026-09-12  feat: the invariant the counterexample called for
 eb396c4  2026-09-12  docs: actually fix the stale gap cross-references
 2edf1c0  2026-09-12  docs: fix stale gap cross-references in the work package
@@ -1352,7 +1383,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | **B** | **Theorem 2.1** | | *the headline* |
 | B1 | Lemma 3.2 — `BothLeftApart` case 3 | **L** | needs a **reachability invariant**; §3.20 says which |
 | B2 | ~~Lemmas 3.3, 3.4~~ | ✅ | §3.17 — conditional on `BothLeftApart` only, as 3.2 is |
-| B3 | Lemma 3.5 — every pair has met by time 1 | **L** | `HaveMetBy` now defined (§3.17); the proof is not |
+| B3 | Lemma 3.5 — every pair has met by time 1 | **L** | §3.22 supplies the turning lemmas; the meeting argument is not done |
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` (left half) | S | |
