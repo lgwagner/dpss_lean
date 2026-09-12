@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `9cdd78166dc0`  
+**Commit at time of writing:** `57dd848d94a6`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -75,7 +75,7 @@ Stage 1 broken down:
 ## 3. What is actually proved
 
 <!-- BEGIN:COUNTS -->
-**399 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 499 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
+**413 theorems**, all `sorry`-free, across 23 files (`Basic.lean` 218 lines, `Coherence.lean` 386 lines, `Counterexample.lean` 170 lines, `Dynamics.lean` 228 lines, `Events.lean` 246 lines, `EventsTurn.lean` 319 lines, `EventuallyTurns.lean` 136 lines, `Examples.lean` 805 lines, `ExamplesThree.lean` 375 lines, `LeftSyncLemmas.lean` 224 lines, `Mirror.lean` 737 lines, `NextEvent.lean` 315 lines, `NonZeno.lean` 143 lines, `NonZenoProof.lean` 160 lines, `PairBalance.lean` 468 lines, `PhaseInvariant.lean` 123 lines, `Reachable.lean` 94 lines, `Schedule.lean` 214 lines, `Step.lean` 239 lines, `Synchronization.lean` 161 lines, `TurnPersistence.lean` 99 lines, `TurnSpacing.lean` 116 lines, `Turning.lean` 180 lines).
 <!-- END:COUNTS -->
 
 ### 3.1 `Dpss/Basic.lean` — geometry and snapshots
@@ -817,11 +817,30 @@ reflection law.
 - `atSeparation_mirror`, `sepRight_mirror`, `meetRight_mirror` — `SepRight`
   becomes `SepLeft` and `MeetRight` becomes `MeetLeft`.
 
-**What remains:** `newDir` under reflection, then the commutation itself. One
-subtlety already visible: `escortDir` and `escortDirLeft` reflect into each
-other **except exactly on the shared boundary**, where the two tie-break
-oppositely. That case is unreachable — a separation outranks a meet there — but
-the proof will have to say so.
+**Part 2 is complete.**
+
+- `newDir_mirror` — the heading a step installs commutes with reflection. Seven
+  branches on each side, paired by the correspondences above. The pairing
+  *crosses* the priority order (the left border is checked first on one side
+  and second on the other), which is harmless because paired branches are
+  mutually exclusive — proved as `not_sepLeft_of_sepRight` and friends.
+- `advance_mirror`, **`step_mirror`**, **`run_mirror`** — flying, stepping and
+  running all commute with reflection.
+- **`rightSync_iff_leftSync_mirror`** — *the transfer principle*. Right
+  synchronization of a run **is** left synchronization of the mirrored run.
+- `invariant_mirror` — the reflection of a well-behaved configuration is well
+  behaved, so the principle applies wherever the invariant is assumed.
+
+One subtlety was real: `escortDir` and `escortDirLeft` reflect into each other
+**except exactly on the shared boundary**, where they tie-break oppositely —
+one reads `pos < boundary`, the other `boundary < pos`, and at equality those
+disagree. Both lemmas carry a disequality hypothesis, discharged where used: a
+meet is only consulted once a separation is ruled out, and for a co-located
+pair a separation *is* being on the boundary.
+
+That is the kind of thing "by symmetry" hides. The mathematics is symmetric;
+the **definitions** are not quite, because a strict inequality has to break the
+tie one way and reflection turns that into breaking it the other.
 
 A recurring obstacle worth noting: these predicates carry the index inside a
 *proof argument*, which blocks `rw` with "motive is not type correct". Four
@@ -840,10 +859,9 @@ This is the honest gap list, ordered by importance.
    **3.5 and 3.7 are untouched.** Lemma 3.5 ("every adjacent pair has met by
    time 1") is the uniform timing result that makes the bound `n`-independent.
 
-2. **The symmetric half is not started, and I had not recorded it.** Every
-   convergence result here concerns **left** synchronization. `ConvergesBy`
-   needs both halves, and `RightSync` has nothing proved about it beyond
-   monotonicity.
+2. ~~**The symmetric half is not started.**~~ **Closed** — §3.23. The
+   reflection principle is proved, so right synchronization transfers from left
+   for free. Kept as a record that I had not counted it as work.
 
    Avigad–van Doorn dispose of this in four words — *"by symmetry it suffices
    to show all the drones are left synchronized"* — and on paper that is
@@ -1264,6 +1282,20 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.atSeparation_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.sepRight_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.meetRight_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.sepLeft_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.meetLeft_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDir_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.escortDirLeft_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_sepLeft_of_sepRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.not_meetLeft_of_meetRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_ne_commonEnd_of_meetRight' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.pos_ne_leftEnd_of_meetLeft' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.newDir_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.advance_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.step_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.run_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.rightSync_iff_leftSync_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DPSS.Config.invariant_mirror' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.borderTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DPSS.Config.separationTime_eq_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
@@ -1374,7 +1406,7 @@ standard axioms of Lean's logic and are what ordinary mathematics uses.
 'DPSS.Config.turn_separation' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-**399/399 clean — `sorryAx` appears zero times.**
+**413/413 clean — `sorryAx` appears zero times.**
 <!-- END:AUDIT -->
 
 ---
@@ -1424,6 +1456,8 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+57dd848  2026-09-12  feat: escort headings under reflection, and the tie-break that nearly bites
+0aa2894  2026-09-12  feat: events swap under reflection (B7, part 2c)
 9cdd781  2026-09-12  feat: the global deadline is invariant under reflection (B7, part 2b)
 97067a2  2026-09-12  feat: reflected quantities and events (B7, part 2a)
 92eb248  2026-09-12  feat: the perimeter reflected (B7, part 1)
@@ -1495,7 +1529,7 @@ What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 an
 | B4 | ~~Lemma 3.6 — turn persistence~~ | ✅ | §3.18, unconditional |
 | B5 | Lemma 3.7 — the `+1/n` inductive step | M | |
 | B6 | Assemble `2 − 1/n` (left half) | S | |
-| **B7** | The symmetric half — right synchronization | **L** | §3.23 does the geometry; step-commutation remains |
+| **B7** | ~~The symmetric half — right synchronization~~ | ✅ | **§3.23 — done.** `rightSync_iff_leftSync_mirror` |
 | **C** | **Fidelity** | | |
 | C1 | Nondeterminism: a relation, not a function | M | gap 5; §3.20 shows it biting |
 | C2 | Converging `n = 3` trace; a genuine three-way meeting | M | gap 3 |

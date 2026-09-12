@@ -548,6 +548,190 @@ theorem escortDirLeft_mirror (c : Config n) (i : Fin n)
     rw [if_pos (by rw [hpos]; linarith), if_neg (by rw [hce, not_lt]; linarith)]
     rfl
 
+/-! ## Mutual exclusion
+
+The branch orders of `newDir` do *not* correspond under reflection — the left
+border is checked first on one side and second on the other. That is harmless
+because the paired branches are mutually exclusive, which is what these say. -/
+
+theorem not_sepLeft_of_sepRight {c : Config n} {i : Fin n} (h : c.SepRight i) :
+    ¬ c.SepLeft i := by
+  have hn : 0 < n := lt_of_le_of_lt (Nat.zero_le i.val) i.isLt
+  rintro hl
+  have h1 : c.pos i = commonEnd i := h.2.2
+  have h2 : c.pos i = leftEnd i := pos_eq_leftEnd_of_sepLeft hl
+  have : leftEnd i < commonEnd i := by unfold commonEnd; exact leftEnd_lt_rightEnd hn i
+  rw [h1] at h2
+  linarith
+
+theorem not_meetLeft_of_meetRight {c : Config n} {i : Fin n} (h : c.MeetRight i) :
+    ¬ c.MeetLeft i := by
+  obtain ⟨_hh, _hc, hA⟩ := h
+  exact not_meetLeft_of_dir_right hA.1
+
+/-- A meeting pair not separating is a pair off its shared boundary. -/
+theorem pos_ne_commonEnd_of_meetRight {c : Config n} {i : Fin n}
+    (hm : c.MeetRight i) (hns : ¬ c.SepRight i) : c.pos i ≠ commonEnd i := by
+  obtain ⟨h, hco, -⟩ := hm
+  intro hp
+  exact hns ⟨h, hco, hp⟩
+
+/-- And likewise on the other side. -/
+theorem pos_ne_leftEnd_of_meetLeft {c : Config n} {i : Fin n}
+    (hm : c.MeetLeft i) (hns : ¬ c.SepLeft i) : c.pos i ≠ leftEnd i := by
+  obtain ⟨hp0, hco, -⟩ := hm
+  intro hp
+  refine hns ⟨hp0, hco, ?_⟩
+  have hsame : c.pos (nextIdx (prevIdx i hp0) (prevIdx_lt i hp0)) = c.pos i := by
+    rw [nextIdx_prevIdx]
+  have hgap : c.gap (prevIdx i hp0) (prevIdx_lt i hp0) = 0 := hco
+  unfold gap at hgap
+  rw [hsame] at hgap
+  have hce : commonEnd (prevIdx i hp0) = leftEnd i := by
+    unfold commonEnd
+    rw [rightEnd_eq_leftEnd_succ (prevIdx i hp0) (prevIdx_lt i hp0)]
+    congr 1
+    exact nextIdx_prevIdx i hp0
+  rw [hce, ← hp]
+  linarith
+
+/-! ## The reflected heading
+
+**`newDir` commutes with reflection.** Seven branches on each side, paired by
+the correspondences above; the pairing crosses the priority order, which is
+harmless because paired branches are mutually exclusive. -/
+
+theorem newDir_mirror (c : Config n) (i : Fin n) :
+    c.mirror.newDir i = (c.newDir (mirrorIdx i)).flip := by
+  have hALB := atLeftBorder_mirror c i
+  have hARB := atRightBorder_mirror c i
+  have hSR := sepRight_mirror c i
+  have hSL := sepLeft_mirror c i
+  have hMR := meetRight_mirror c i
+  have hML := meetLeft_mirror c i
+  by_cases b1 : c.mirror.AtLeftBorder i
+  · have r2 : c.AtRightBorder (mirrorIdx i) := hALB.mp b1
+    have r1 : ¬ c.AtLeftBorder (mirrorIdx i) := not_atLeftBorder_of_atRightBorder r2
+    rw [newDir_atLeftBorder b1, newDir_atRightBorder r1 r2]
+    rfl
+  by_cases b2 : c.mirror.AtRightBorder i
+  · have r1 : c.AtLeftBorder (mirrorIdx i) := hARB.mp b2
+    rw [newDir_atRightBorder b1 b2, newDir_atLeftBorder r1]
+    rfl
+  have nr1 : ¬ c.AtLeftBorder (mirrorIdx i) := fun hx => b2 (hARB.mpr hx)
+  have nr2 : ¬ c.AtRightBorder (mirrorIdx i) := fun hx => b1 (hALB.mpr hx)
+  by_cases b3 : c.mirror.SepRight i
+  · have r4 : c.SepLeft (mirrorIdx i) := hSR.mp b3
+    have nb4 : ¬ c.mirror.SepLeft i := not_sepLeft_of_sepRight b3
+    have nr3 : ¬ c.SepRight (mirrorIdx i) := fun hx => nb4 (hSL.mpr hx)
+    have hl : c.mirror.newDir i = Dir.left := by
+      unfold newDir; rw [if_neg b1, if_neg b2, if_pos b3]
+    have hr : c.newDir (mirrorIdx i) = Dir.right := by
+      unfold newDir; rw [if_neg nr1, if_neg nr2, if_neg nr3, if_pos r4]
+    rw [hl, hr]; rfl
+  by_cases b4 : c.mirror.SepLeft i
+  · have r3 : c.SepRight (mirrorIdx i) := hSL.mp b4
+    have hl : c.mirror.newDir i = Dir.right := by
+      unfold newDir; rw [if_neg b1, if_neg b2, if_neg b3, if_pos b4]
+    have hr : c.newDir (mirrorIdx i) = Dir.left := by
+      unfold newDir; rw [if_neg nr1, if_neg nr2, if_pos r3]
+    rw [hl, hr]; rfl
+  have nr3 : ¬ c.SepRight (mirrorIdx i) := fun hx => b4 (hSL.mpr hx)
+  have nr4 : ¬ c.SepLeft (mirrorIdx i) := fun hx => b3 (hSR.mpr hx)
+  by_cases b5 : c.mirror.MeetRight i
+  · have r6 : c.MeetLeft (mirrorIdx i) := hMR.mp b5
+    have nb6 : ¬ c.mirror.MeetLeft i := not_meetLeft_of_meetRight b5
+    have nr5 : ¬ c.MeetRight (mirrorIdx i) := fun hx => nb6 (hML.mpr hx)
+    have hne : c.mirror.pos i ≠ commonEnd i := pos_ne_commonEnd_of_meetRight b5 b3
+    have hl : c.mirror.newDir i = c.mirror.escortDir i := by
+      unfold newDir; rw [if_neg b1, if_neg b2, if_neg b3, if_neg b4, if_pos b5]
+    have hr : c.newDir (mirrorIdx i) = c.escortDirLeft (mirrorIdx i) := by
+      unfold newDir
+      rw [if_neg nr1, if_neg nr2, if_neg nr3, if_neg nr4, if_neg nr5, if_pos r6]
+    rw [hl, hr, escortDir_mirror c i hne]
+  by_cases b6 : c.mirror.MeetLeft i
+  · have r5 : c.MeetRight (mirrorIdx i) := hML.mp b6
+    have hne : c.mirror.pos i ≠ leftEnd i := pos_ne_leftEnd_of_meetLeft b6 b4
+    have hl : c.mirror.newDir i = c.mirror.escortDirLeft i := by
+      unfold newDir
+      rw [if_neg b1, if_neg b2, if_neg b3, if_neg b4, if_neg b5, if_pos b6]
+    have hr : c.newDir (mirrorIdx i) = c.escortDir (mirrorIdx i) := by
+      unfold newDir
+      rw [if_neg nr1, if_neg nr2, if_neg nr3, if_neg nr4, if_pos r5]
+    rw [hl, hr, escortDirLeft_mirror c i hne]
+  have nr5 : ¬ c.MeetRight (mirrorIdx i) := fun hx => b6 (hML.mpr hx)
+  have nr6 : ¬ c.MeetLeft (mirrorIdx i) := fun hx => b5 (hMR.mpr hx)
+  rw [newDir_of_noEvent b1 b2 b3 b4 b5 b6,
+    newDir_of_noEvent nr1 nr2 nr3 nr4 nr5 nr6]
+  rfl
+
+/-! ## Reflection commutes with running the system
+
+The payoff. -/
+
+/-- Flying and reflecting commute. -/
+theorem advance_mirror (c : Config n) (dt : ℝ) :
+    c.mirror.advance dt = (c.advance dt).mirror := by
+  refine Config.ext rfl (funext fun i => ?_) (funext fun i => ?_)
+  · simp only [advance_pos, mirror_pos, mirror_dir, Dir.sign_flip]
+    ring
+  · simp only [advance_dir, mirror_dir]
+
+/-- **Stepping and reflecting commute.** -/
+theorem step_mirror (c : Config n) (hn : 0 < n) :
+    c.mirror.step hn = (c.step hn).mirror := by
+  have hdt : c.mirror.timeToNextEvent hn = c.timeToNextEvent hn :=
+    timeToNextEvent_mirror c hn
+  refine Config.ext ?_ (funext fun i => ?_) (funext fun i => ?_)
+  · simp only [step_time, mirror_time, hdt]
+  · simp only [step_pos, mirror_pos, mirror_dir, Dir.sign_flip, hdt]
+    ring
+  · show (c.mirror.advance (c.mirror.timeToNextEvent hn)).newDir i
+      = ((c.advance (c.timeToNextEvent hn)).newDir (mirrorIdx i)).flip
+    rw [hdt, advance_mirror, newDir_mirror]
+
+/-- **Running and reflecting commute.** -/
+theorem run_mirror (c : Config n) (hn : 0 < n) (k : ℕ) :
+    c.mirror.run hn k = (c.run hn k).mirror := by
+  induction k with
+  | zero => rfl
+  | succ k ih => rw [run_succ, ih, step_mirror, run_succ]
+
+/-! ## "By symmetry", made honest
+
+Right synchronization of a run **is** left synchronization of the mirrored
+run. Every result proved on the left now transfers. -/
+
+/-- **The transfer principle.** -/
+theorem rightSync_iff_leftSync_mirror (c : Config n) (hn : 0 < n) (i : Fin n)
+    (k : ℕ) : RightSync c hn i k ↔ LeftSync c.mirror hn (mirrorIdx i) k := by
+  unfold RightSync LeftSync
+  constructor
+  · intro h j hj
+    rw [run_mirror]
+    exact (leftEnd_le_mirror_pos_iff (c := c.run hn j) (mirrorIdx i)).mpr
+      (by rw [mirrorIdx_mirrorIdx]; exact h j hj)
+  · intro h j hj
+    have hx := h j hj
+    rw [run_mirror] at hx
+    have := (leftEnd_le_mirror_pos_iff (c := c.run hn j) (mirrorIdx i)).mp hx
+    rwa [mirrorIdx_mirrorIdx] at this
+
+/-- The reflection of a well-behaved configuration is well behaved, so the
+transfer principle applies wherever the invariant is assumed. -/
+theorem invariant_mirror {c : Config n} (hn : 0 < n) (hi : c.Invariant) :
+    c.mirror.Invariant := by
+  refine ⟨onPerimeter_mirror hi.onPerimeter, ?_, ?_⟩
+  · intro i h
+    have := (gap_mirror c i h) ▸ (hi.adjOrdered (mirrorIdx (nextIdx i h))
+      (mirror_next_lt i h))
+    exact this
+  · intro i h he
+    have he' : c.Escorting (mirrorIdx (nextIdx i h)) (mirror_next_lt i h) :=
+      (escorting_mirror c i h).mp he
+    rw [separationTime_mirror c i h he]
+    exact hi.escortsCoherent _ _ he'
+
 end Config
 
 end DPSS
