@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `239b59977c43`  
+**Commit at time of writing:** `e36d467346b5`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -1459,6 +1459,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+e36d467  2026-09-12  docs: derive B1's invariant instead of guessing at it
 239b599  2026-09-12  feat: ApartOnBoundary is preserved by a step
 4a98d33  2026-09-12  feat: B7 complete -- "by symmetry" made honest
 57dd848  2026-09-12  feat: escort headings under reflection, and the tie-break that nearly bites
@@ -1582,6 +1583,10 @@ the three-clause invariant and its preservation proof, assembled from them.
 ---
 
 ## 9. The work package
+
+> **The actionable roadmap now lives in `PLAN.md`** — target, ingredients,
+> approach and a checkable *done-when* for each item, in dependency order. The
+> table below is the summary; `PLAN.md` is what to work from.
 
 What is left, sized. **B is the bulk and B1 is the gate** — Lemmas 3.3, 3.4 and
 3.7 all quote it.

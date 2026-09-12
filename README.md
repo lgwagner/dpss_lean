@@ -37,7 +37,8 @@ Everything is `sorry`-free and CI enforces it.
 |---|---|
 | **`STATUS.md`** | What is proved, what is **not**, and a full axiom audit. Written to be audited, not just read. §4 is the honest gap list. |
 | **`INSIGHTS.md`** | The non-obvious things learned. Read this before extending the work. |
-| `PLAN.md` | The original plan, including one recorded planning error. |
+| **`PLAN.md`** | **Work yet to be done** — the roadmap. Start here to pick up the work. |
+| `PLAN-original.md` | The original scoping plan, including one recorded planning error. |
 | `dpss-perimeter-surveillance-brief.md` | Literature brief, with corrections from the primary sources. |
 | `Dpss/` | The development. Each file opens with prose explaining the mathematics. |
 

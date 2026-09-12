@@ -1,212 +1,170 @@
-# Formalizing DPSS in Lean 4 — plan of work
+# PLAN — work yet to be done
 
-**Status:** Stage 0 in progress. **Scope agreed 2026-09-12:** Stages 0–3 committed,
-Stage 4 (the proof itself) as a stretch goal. Algorithm A only. Continuous real
-time. Teaching-grade commentary throughout.
+The forward-looking roadmap. `STATUS.md` records what **is** proved;
+`INSIGHTS.md` records what was **learned**; this file records what to do
+**next** and in what order.
 
-This document is written to be readable without prior Lean or hybrid-systems
-background. If something here is opaque, that is a defect in this document —
-say so and I will fix it.
+> The original scoping document — the decisions taken at the start, and the one
+> planning error they contained — is `PLAN-original.md`.
 
----
-
-## 0. What we are actually trying to do
-
-The DPSS algorithm coordinates a team of drones patrolling a perimeter. Its 2008
-convergence proof was published, cited for a decade, and was **wrong**. A model
-checker found the error in 2019; a corrected hand proof appeared in 2020–21; part
-of it was mechanized in ACL2 in 2022.
-
-We are going to rebuild the corrected proof in Lean 4 — a proof assistant that
-checks every inference mechanically, so that a gap like the 2008 one cannot hide.
-
-The headline target is **Theorem 2.1** of Avigad–van Doorn:
-
-> Assuming all the drones have the correct estimates, they are all synchronized
-> at time `2 − 1/n`.
+**How to use this.** Work the critical path top to bottom. Each item states the
+target, the ingredients that already exist, the approach, and a **done-when**
+that is checkable. Do not start an item whose dependencies are open.
 
 ---
 
-## 1. The model, precisely
+## Where things stand
 
-From arXiv:2008.04262 §2, read in full on 2026-09-12. Normalization: the
-perimeter is the **unit interval `[0,1]`**, drones move at **one unit per unit
-time**.
+**416 theorems, all `sorry`-free.** Non-Zeno is proved. Theorem 2.1 is stated
+and proved at `n = 1` and for specific `n = 2`, `n = 3` configurations.
 
-- `n` drones numbered `1..n` left to right. Drone `i`'s interval is
-  `[(i−1)/n, i/n]`. The **common endpoint** of drones `i` and `i+1` is `i/n`.
-- Each drone has a direction `d = ±1` and an estimate `((a,ℓ),(b,m))`:
-  estimated left endpoint, drones to the left, estimated right endpoint, drones
-  to the right. Note `a` and `b` need **not** lie in `[0,1]` — estimates can be
-  wrong in the general algorithm.
-- Derived quantities: interval size `I = (b−a)/(ℓ+m+1)`, left endpoint
-  `L = a + ℓI`, right endpoint `R = a + (ℓ+1)I`.
-
-### 1.1 The three events — note the terminology carefully
-
-A drone continues in its current direction until one of these occurs:
-
-| Event | Meaning |
+| Done | Open |
 |---|---|
-| **Border event** | The drone reaches the true left (or right) border of `[0,1]`. It corrects that endpoint estimate, sets the drone count on that side to 0, and turns around. |
-| **Meet event** | Two drones occupy the same position. Each adopts the other's far-side estimate, incrementing the drone count by 1. They now agree on their intervals, and both set direction toward their **common endpoint**. |
-| **Separation event** | Two drones travelling together (with consistent estimates) reach their common endpoint. One reverses so each stays in its own interval. |
-
-A **bounce event** is the special case where a meet and a separation coincide —
-i.e. two drones meet *exactly at* their common endpoint.
-
-> ⚠️ The original brief (§3.4) used "bounce" for what the paper calls a **border
-> event**. That is a terminology collision that would have corrupted the Lean
-> model. This plan uses the paper's vocabulary throughout.
-
-Drones starting together share estimates at time 0.
-
-### 1.2 Two places the algorithm is genuinely underspecified
-
-The paper flags both (§2, final paragraph):
-
-1. Whether a drone's estimate must be consistent with its own position (e.g. can
-   a drone at `0.9` believe the right border is at `0.8`?).
-2. When **three or more** drones come together and three are inside the middle
-   drone's interval, the middle drone may escort *either* neighbour.
-
-Point 2 means the true dynamics are **nondeterministic**. The strongest possible
-upper bound quantifies over all resolutions of that choice. **Design consequence:**
-the Lean step relation should be a `Prop`-valued *relation*, not a function.
-Neither issue arises in phase 2, so Algorithm A can be modelled deterministically
-if the relational version proves painful — but relational is the better target.
+| A (non-Zeno), B2 (L 3.3, 3.4), B4 (L 3.6), B7 (symmetry) | **B1**, **B3**, B5, B6, C, D |
 
 ---
 
-## 2. Why "Algorithm A only" is the right first scope
+## Critical path
 
-Algorithm A is the case where every drone already holds correct estimates. The
-estimate machinery `(a,ℓ,b,m)` then collapses: every drone already knows its true
-interval, and the dynamics reduce to (quoting §3):
+### 1 — B1. Lemma 3.2: `BalanceNonneg`  ⟨**L**⟩
 
-> when two drones meet, they escort each other to their common endpoint and then
-> separate.
+**Target.** `BalanceNonneg c hn i h k` for a pair that has just separated. This
+single result completes Lemmas **3.2, 3.3 and 3.4** together, since §3.17 has
+all three waiting on it.
 
-That is a dramatic simplification — no estimate propagation at all. It is also
-the case with a known-true, known-**sharp**, already-mechanized target.
+**Approach.** Derived in `STATUS.md` §8a — read that first. A three-clause
+invariant:
 
-Algorithm B (wrong estimates, changing perimeter, drones joining/leaving) is
-where the 2008 proof broke and where the open problem lives. Out of scope here.
+1. `0 ≤ balance`
+2. pair heading `(left, right)` ⟹ `balance = 0`
+3. `BothLeftApart` ⟹ `pos i = leftEnd i`
 
----
+Clause 2 is the engine: the balance rate is the **sum** of the two headings
+(unlike the gap, which uses the difference), so a pair heading apart holds its
+balance *constant*. Entering that state therefore only needs to happen at zero.
 
-## 3. The proof skeleton to reproduce
+**Ingredients — all present.** `pairBalance_advance`,
+`pairBalance_eq_zero_of_atSeparation`, `pairBalance_eq_two_mul_separationTime`,
+`pairBalance_nonneg_step`, `pinned_of_balance_zero`,
+`timeToNextEvent_eq_zero_of_pinned`, `apart_transfer`,
+`coLocated_of_turnsLeft`/`_turnsRight`, `newDir_left_cases`/`_right_cases`,
+`dir_left_of_newDir_apart` and partner.
 
-From §3 of the paper. By symmetry it suffices to prove **left** synchronization.
+**Steps.**
+1. State the three-clause invariant as a structure, say `PairPhase`.
+2. Preservation, clause 2: split on co-located / apart. Apart is the easy half
+   — every event that could deliver `(left, right)` needs this pair co-located,
+   so the pair was already in that state. Co-located is §3.21's enumeration.
+3. Preservation, clause 3: from clause 2 plus `pinned_of_balance_zero`.
+4. Preservation, clause 1: from clause 3 plus
+   `timeToNextEvent_eq_zero_of_pinned` (apart) and `pairBalance_nonneg_step`
+   (co-located).
+5. Chain along a run; feed `leftSync_of_balanceNonneg`.
 
-- **Lemma 3.1** — if drone `j` is moving right, then the next time it changes
-  direction it is at or to the right of its right endpoint. (Symmetric for left.)
-- **Lemma 3.2** — if drone `j` is left synchronized and `j`, `j+1` separate at
-  their common endpoint, then `j+1` is left synchronized. *This is the 2008
-  argument, stated correctly.*
-- **Lemma 3.3** — `j`, `j+1` together moving left and `j` left synchronized ⟹
-  `j+1` left synchronized.
-- **Lemma 3.4** — `j < n` at or right of its right endpoint, moving right, left
-  synchronized ⟹ `j+1` left synchronized.
-- **Lemma 3.5** — for every `j < n`, drones `j` and `j+1` **have met by time 1**.
-  The uniform timing result that makes the bound `n`-independent.
-- **Lemma 3.6** — a "no direction change since the last separation" persistence
-  result, used to reach back to an earlier separation time.
-- **Lemma 3.7** — **the key inductive step.** If `1..j` are left synchronized and
-  `j`, `j+1` have met, then `j+1` is left synchronized by time `t + 1/n`.
+**Done when.** `leftSync_of_atSeparation` and the Lemma 3.3 / 3.4 statements in
+`LeftSyncLemmas.lean` lose their `hnever`/`BothLeftApart` hypotheses.
 
-Drone 1 is always left synchronized; all pairs have met by time 1; induction
-gives drones `1..i` left synchronized at `1 + (i−1)/n`. At `i = n` this is
-`2 − 1/n`. ∎
-
-**`have met by time t`** is the load-bearing definition: drones `j` and `j+1`
-have met by time `t` if either they started together moving in the same
-direction, or they have been involved in a meet or bounce event.
-
-### 3.1 Theorem 2.2 — missing from the original brief
-
-> If all drones start with **incorrect** estimates, and all have correct
-> estimates at time `t`, then all are synchronized by time `t + 1 − 1/n`.
-
-Proved via **Lemma 3.8**. The "incorrect" hypothesis is necessary: Theorem 2.1
-being sharp means 2.2 fails if drones start correct. This is what turns the
-`4 − 1/n` phase-1 lower bound into the `5 − 3/n` total.
+**Hazard.** Two attempts have already failed by guessing the invariant's shape.
+Do not start proving before the three clauses are written down and each one's
+*purpose* is clear.
 
 ---
 
-## 4. Non-Zeno: the most valuable thing in this project
+### 2 — B3. Lemma 3.5: every pair has met by time 1  ⟨**L**⟩
 
-**This section was upgraded on 2026-09-12 after reading the ACL2 paper in full.**
+**Target.** `HaveMetBy c hn i h (c.time + 1)` for every adjacent pair.
 
-Non-Zeno — no infinitely many events in finite time — looked like tedious
-well-definedness plumbing. It is in fact the part where a Lean development has
-something genuinely new to offer.
+Independent of B1 — can be done in either order. This is the result that makes
+the bound `n`-independent; without it the argument degrades to linear in `n`,
+which is what Kingston et al.'s original proof gave.
 
-The ACL2 mechanization **does not prove it**. Their event-stepping function
-`step-time` was admitted as a partial function via `def::ung`, and the
-assumption `(step-time-always-terminates)` appears as an explicit hypothesis in
-their top-level convergence theorem. They are candid about it and invite exactly
-this improvement: *"given sufficient interest and resources, a proper measure
-for step-time could be developed and used to dispatch this assumption, further
-strengthening our results."*
+**Approach (the paper's).** Let `w` be where drone `j` sits when it first heads
+right, `z` where `j+1` sits when it first heads left. Total distance covered
+before they meet is `2(z − w) − (y − x)`, so they meet by `z − w ≤ 1`.
 
-Avigad–van Doorn, meanwhile, **do** supply the argument (§2) but do not
-mechanize it. The two artifacts are complementary, and the gap between them is
-precisely what Stage 1 produces.
+**Ingredients.** `exists_dir_right_of_dir_left` and its mirror (every drone
+eventually turns — this is where non-Zeno pays for itself);
+`time_bound_of_dir_left`/`_right` (the quantitative `w` and `z` bounds);
+`pos_sub_eq_of_dirConst`; `onPerimeter_run`.
 
-So the target is sharper than "reproduce a known result":
+**Steps.**
+1. Define the first-turn indices via `Nat.find`, as `exists_first_turn_after`
+   already does for a different purpose.
+2. Show the pair is approaching once both have turned.
+3. Bound the meeting time; conclude `HaveMetBy`.
 
-> Formalize the AvD non-Zeno argument in Lean and thereby discharge the
-> hypothesis that the only existing mechanization has to assume.
+**Done when.** The statement holds for all `i`, `h`, with no hypothesis beyond
+`Invariant`.
 
-That stands on its own even if Stage 4 never closes.
-
-The paper's argument, which we get to reuse rather than invent:
-
-1. Suppose infinitely many events with least upper bound `T`.
-2. Some drone changes direction infinitely often in `(T−ε, T)`.
-3. **Key step:** if drone `j+1` makes two consecutive left turns, drone `j` must
-   turn right in between. So infinite turning propagates to all drones.
-4. Take `ε < 1/2n`. At `T−ε` either some adjacent pair is more than `2ε` apart,
-   or an end drone is more than `ε` from its border. In each case the relevant
-   drone turns at most once in `(T−ε, T)`. Contradiction.
-
-Step 3 is a clean standalone lemma and a good early Lean target.
+**Hazard.** Watch the index-versus-time friction (see §4 below). The conclusion
+is a bound on *time*, so state it that way and let indices follow.
 
 ---
 
-## 5. Staged deliverables
+### 3 — B5. Lemma 3.7: the `+1/n` inductive step  ⟨M⟩
 
-| Stage | Deliverable | Status |
+**Depends on:** B1 (for 3.2/3.3/3.4 unconditional), B3 (for `have met`).
+
+**Target.** Drones `1..j` left synchronized and the pair `(j, j+1)` having met
+⟹ `j+1` left synchronized by `t + 1/n`.
+
+**Approach.** Three cases, all of whose tools now exist:
+- `j` heading right ⟹ within `1/n` it is at or beyond its right endpoint ⟹
+  Lemma 3.4;
+- `j` heading left and together with `j+1` ⟹ Lemma 3.3;
+- `j` heading left and apart ⟹ Lemma 3.6 reaches back to the last co-location,
+  then Lemma 3.2.
+
+**Hazard — resolve before starting.** `LeftSync` is indexed by **step**, but
+`+1/n` bounds **time**. A drone can cross its right endpoint mid-step, so the
+natural index arrives too late. Add a time-indexed
+`LeftSyncFrom (T : ℝ) := ∀ j, T ≤ (run j).time → leftEnd i ≤ (run j).pos i`
+alongside the existing predicate, and relate the two, *before* attempting the
+lemma.
+
+---
+
+### 4 — B6. Assemble Theorem 2.1  ⟨S⟩
+
+**Depends on:** B5, and B7 (done).
+
+**Steps.**
+1. Base case: drone `0` is always left synchronized — `leftEnd_zero` plus
+   `onPerimeter_run`. Not yet stated; it is two lines.
+2. Induct with B5: drones `1..i` left synchronized by `1 + (i−1)/n`.
+3. At `i = n`: left synchronization by `2 − 1/n`.
+4. Right synchronization via `rightSync_iff_leftSync_mirror` (B7).
+5. Discharge `ConvergesBy`, which needs both halves.
+
+**Done when.** `theorem convergesBy (hi : c.Invariant) : ConvergesBy c hn`
+exists and `scripts/audit.py` passes.
+
+---
+
+## Off the critical path
+
+Worth doing, in no particular order, and none of it blocks Theorem 2.1.
+
+| | Item | Size |
 |---|---|---|
-| 0 | Toolchain, Mathlib project, papers read, `[verify]` items resolved | in progress |
-| 1 | Definitional layer: state, events, trajectory, order invariant, non-Zeno — **now carries independent novelty, see §4** | |
-| 2 | `Synchronized` defined; Theorem 2.1 **stated** (with `sorry`) | |
-| 3 | Sanity tests at `n = 2, 3`; refute the false phase-1 bound | |
-| 4 | Close the `2 − 1/n` proof | stretch |
-| 5 | Phase-1 upper bound — **open problem, not in scope** | — |
-
-Useful small cases from §2: `n = 1` is trivial; `n = 2` gives correct estimates
-by time 2 and synchronization by `2.5`, both sharp; **`n = 3` is the first
-interesting case**.
+| **C1** | Model the nondeterminism as a *relation*. §3.20 shows it biting — `newDir` currently picks one resolution of the choice the paper leaves open, and every result here inherits that restriction. | M |
+| **C2** | A converging `n = 3` trace, and one with a genuine three-way meeting. | M |
+| **C3** | An `ε`-family showing the `2 − 1/n` bound is *attained*. The paper asserts it; nothing here checks it. | M |
+| **D1** | Remove `Config.Together` (unused) and `Config.Valid` (superseded by `Config.Invariant`). | S |
+| **D2** | Consider making `HaveMetBy` locally checkable rather than history-shaped, if B3 or B5 turns unwieldy — the ACL2 team reported this was what made their proof tractable. | M |
 
 ---
 
-## 6. Risks
+## Standing hazards
 
-- **Sharpness leaves no slack.** `2 − 1/n` is attained. Any analysis that loses
-  an `ε` will not close.
-- **Rationals vs reals.** ACL2 has no reals, so their model is rational-valued.
-  Our `ℝ` model is strictly more faithful, but it also means their termination
-  intuitions do not transfer for free.
-- **Localize, don't globalize.** The ACL2 team reported that predicates defined
-  over execution *history* or extrapolated futures "tended to draw heavily on
-  human intuition" and resisted mechanization; locally checkable invariants over
-  a drone and its neighbour worked. `have met` is exactly such a predicate.
-  A Lean development that reasons globally risks stalling the way bounded model
-  checking did.
-- **The escort is not a point event.** A meet begins joint motion of indefinite
-  duration, and escorts cascade. Modelling a co-moving group as first-class is
-  likely better than N coincidentally-equal positions.
-- **Definitions can be vacuous.** Hence Stage 3 before Stage 4: if the model
-  cannot refute the known-false phase-1 bound, the model is wrong.
+- **Two attempts at B1 failed by guessing an invariant's shape.** Derive, write
+  down, then prove.
+- **When a case analysis will not close, suspect the goal.** Building the §3.20
+  counterexample took less time than the failed proof did, and produced
+  something permanent.
+- **`sorry` is never acceptable here** — CI enforces it, and the whole value of
+  the artefact is that its claims are checkable.
+- **Run `scripts/audit.py` before quoting a theorem count.** It has been wrong
+  in commit messages three times.
+- **Edit `STATUS.md` by section boundary, not by prose matching.** Four silent
+  edit failures so far, each behind a commit message claiming otherwise.
