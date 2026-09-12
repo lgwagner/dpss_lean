@@ -28,6 +28,13 @@ jobs:
       - name: Install the pinned toolchain
         run: ./scripts/setup_verus.sh
 
+      # The specification is generated from Dpss/IntModel.lean. If it has drifted,
+      # the Rust below is being verified against something that is no longer the
+      # Lean specification -- which is the one failure this whole design exists to
+      # prevent. No Lean toolchain needed: the generator reads the source text.
+      - name: The generated specification is current
+        run: python3 scripts/lean_to_verus.py --check
+
       # A build can succeed while a proof is stubbed out. Verus reports a count;
       # anything other than "0 errors" fails the step.
       - name: Verify the Rust half

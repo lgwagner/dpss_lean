@@ -13,8 +13,8 @@ got to. `PLAN.md` E1 is the one-paragraph version; this is the whole of it.
 |---|---|---|
 | **M0** | Toolchain, pinned and scripted | ✅ `3 verified, 0 errors` |
 | **M1** | The integer model, in Lean | ✅ `embed_step`, `embed_run`, `intRun_converges` |
-| **M2** | The generator | **next** |
-| **M3** | Verus spec and invariants | not started |
+| **M2** | The generator | ✅ 24 spec fns, fail-loud, CI-checked |
+| **M3** | Verus spec and invariants | **next** |
 | **M4** | Executable code and the key equivalence | not started |
 | **M5** | Differential testing | not started |
 | **M6** | The controller, scoped not built | not started |
@@ -43,6 +43,14 @@ so a bump or a restart does not rediscover them:
   **not** decidable, because the index carries a dependent proof (`∀ i, ∀ h : i+1 < n`).
   Prove it from `onLattice_run` instead of recomputing; that is what the closure
   theorem is for.
+- The generator refuses four things by design and they are hand-written instead:
+  `advance`/`step`/`run` (structure literals and recursion), `timeToNextEvent` (a
+  `Finset.inf'`), the four standing conditions (quantifiers with a dependent proof
+  argument), and `Dir` itself. None is arithmetic, which is where a transcription
+  error would hide.
+- `spec fn`s carry no proof obligations, so a crate of nothing but generated
+  specifications verifies **vacuously**. `rust/src/facts.rs` exists so that
+  "0 errors" means something.
 - `Dpss/IntModel.lean` shadows ~17 model names on purpose (`gap`, `step`, `newDir`,
   …). That broke `scripts/refresh_guide_links.py`, which keyed on bare names and
   silently dropped anything declared twice. It is now namespace-aware — worth

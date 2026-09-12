@@ -31,3 +31,6 @@
 #![allow(unused_imports)]
 
 pub mod dir;
+pub mod view;
+pub mod spec;
+pub mod facts;
