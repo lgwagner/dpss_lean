@@ -100,8 +100,9 @@ A statement about *who turned first* became arithmetic on interval endpoints.
 
 ### 4a. …but zero-length steps complicate it
 
-A wrinkle found while trying to finish the argument, and the reason case 3 is
-still open.
+A wrinkle found while trying to finish the argument, and the reason case 3 held
+out as long as it did. (It is closed — `BalanceInvariant.lean` — and the wrinkle
+below turned into one of the tools that closed it.)
 
 A step can legitimately take **zero** time: when an event is already due, the
 step fires it without advancing the clock. That breaks the tidy story "the

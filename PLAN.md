@@ -256,8 +256,9 @@ co-located within one unit of time — plus `exists_coLocated_of_approaching`,
   pair's gap close at a steady rate: neither drone can turn while they are
   apart. That single lemma has now paid for itself four times.
 - **`HaveMetBy` did **not** need to become locally checkable.** The
-  history-shaped definition was adequate here; D2 stays optional. Whether B5
-  needs it is still open.
+  history-shaped definition was adequate here. B5 did not need it either — it
+  consumes the meeting index by searching back for the last one, in two lines —
+  so D2 was closed as unnecessary rather than done.
 - **Gap and balance are the difference and the sum.** The gap moves at the
   difference of the two velocities, the balance at their sum. That is why a
   pair heading apart has a growing gap and a constant balance — B1's key

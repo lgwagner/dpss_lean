@@ -2,7 +2,7 @@
 
 <!-- BEGIN:META -->
 **Generated:** 2026-09-12  
-**Commit at time of writing:** `90279855abca`  
+**Commit at time of writing:** `fcd0d2f75f0d`  
 **Toolchain:** Lean (version 4.33.1, x86_64-unknown-linux-gnu, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6, Release), Mathlib v4.33.1
 <!-- END:META -->
 
@@ -2024,6 +2024,7 @@ untested.** §4 item 4 is the one to watch.
 
 <!-- BEGIN:COMMITS -->
 ```
+fcd0d2f  2026-09-12  chore: bring the whole repo up to current status, and fix a red CI step
 9027985  2026-09-12  docs: refresh STATUS.md generated blocks
 f757d92  2026-09-12  docs: GUIDE.md covers the whole work package, with deep links
 d7bef14  2026-09-12  docs: check the C and D group rows too
